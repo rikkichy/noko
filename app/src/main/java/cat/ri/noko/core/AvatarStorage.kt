@@ -14,10 +14,19 @@ object AvatarStorage {
         return fileName
     }
 
-    fun getFile(context: Context, fileName: String): File =
-        File(context.filesDir, fileName)
+    fun getFile(context: Context, fileName: String): File {
+        requireSafeFileName(fileName)
+        return File(context.filesDir, fileName)
+    }
 
     fun delete(context: Context, fileName: String) {
+        requireSafeFileName(fileName)
         File(context.filesDir, fileName).delete()
+    }
+
+    private fun requireSafeFileName(fileName: String) {
+        require(!fileName.contains("..") && !fileName.contains(File.separator)) {
+            "Invalid avatar filename"
+        }
     }
 }

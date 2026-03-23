@@ -44,6 +44,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import cat.ri.noko.core.SettingsManager
 import cat.ri.noko.core.api.OpenRouterClient
+import cat.ri.noko.core.api.humanizeException
 import cat.ri.noko.model.api.ModelInfo
 import cat.ri.noko.ui.util.rememberNokoHaptics
 import kotlinx.coroutines.launch
@@ -74,7 +75,7 @@ fun ModelListScreen(onBack: () -> Unit) {
             val response = OpenRouterClient.getModels()
             models = response.data.sortedBy { it.name.lowercase() }
         } catch (e: Exception) {
-            error = e.message ?: "Failed to load models"
+            error = humanizeException(e)
         }
         loading = false
     }
@@ -153,7 +154,7 @@ fun ModelListScreen(onBack: () -> Unit) {
                                         val response = OpenRouterClient.getModels()
                                         models = response.data.sortedBy { it.name.lowercase() }
                                     } catch (e: Exception) {
-                                        error = e.message ?: "Failed to load models"
+                                        error = humanizeException(e)
                                     }
                                     loading = false
                                 }
