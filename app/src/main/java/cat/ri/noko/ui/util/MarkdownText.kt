@@ -30,7 +30,7 @@ private fun AnnotatedString.Builder.parse(
     var i = 0
     while (i < text.length) {
         when {
-            // Bold+Italic ***text***
+
             text.startsWith("***", i) -> {
                 val end = text.indexOf("***", i + 3)
                 if (end >= 0) {
@@ -43,7 +43,7 @@ private fun AnnotatedString.Builder.parse(
                     i++
                 }
             }
-            // Bold **text**
+
             text.startsWith("**", i) -> {
                 val end = text.indexOf("**", i + 2)
                 if (end >= 0) {
@@ -56,7 +56,7 @@ private fun AnnotatedString.Builder.parse(
                     i++
                 }
             }
-            // Italic *text*
+
             text[i] == '*' && i + 1 < text.length && text[i + 1] != ' ' -> {
                 val end = text.indexOf('*', i + 1)
                 if (end >= 0 && text[end - 1] != ' ') {
@@ -69,7 +69,7 @@ private fun AnnotatedString.Builder.parse(
                     i++
                 }
             }
-            // Strikethrough ~~text~~
+
             text.startsWith("~~", i) -> {
                 val end = text.indexOf("~~", i + 2)
                 if (end >= 0) {
@@ -82,7 +82,7 @@ private fun AnnotatedString.Builder.parse(
                     i++
                 }
             }
-            // Inline code `text`
+
             text[i] == '`' -> {
                 val end = text.indexOf('`', i + 1)
                 if (end >= 0) {

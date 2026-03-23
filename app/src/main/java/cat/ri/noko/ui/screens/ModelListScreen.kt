@@ -106,7 +106,7 @@ fun ModelListScreen(onBack: () -> Unit) {
                 .fillMaxSize()
                 .padding(padding),
         ) {
-            // Search bar
+
             TextField(
                 value = search,
                 onValueChange = { search = it },

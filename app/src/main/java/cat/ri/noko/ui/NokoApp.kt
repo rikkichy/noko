@@ -38,14 +38,14 @@ import cat.ri.noko.ui.theme.NokoTheme
 @Composable
 fun NokoApp() {
     NokoTheme {
-        // null = not loaded yet, avoids flash in either direction
+
         @Suppress("USELESS_CAST")
         val onboardingComplete by SettingsManager.onboardingComplete
             .map { it as Boolean? }
             .collectAsState(initial = null)
         var onboardingDismissed by remember { mutableStateOf(false) }
 
-        if (onboardingComplete == null) return@NokoTheme // wait for DataStore
+        if (onboardingComplete == null) return@NokoTheme
 
         if (!onboardingDismissed && onboardingComplete == false) {
             OnboardingScreen(onComplete = { onboardingDismissed = true })
@@ -86,8 +86,8 @@ fun NokoApp() {
                     .padding(innerPadding)
                     .consumeWindowInsets(innerPadding),
             ) {
-                // ChatScreen always stays in composition to preserve message state.
-                // Moved off-screen (offset) when not selected to block rendering & touches.
+
+
                 Box(
                     Modifier.fillMaxSize().then(
                         if (selectedTab != 1) Modifier.offset(x = 10000.dp) else Modifier

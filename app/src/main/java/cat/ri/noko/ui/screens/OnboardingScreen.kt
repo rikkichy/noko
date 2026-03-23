@@ -79,13 +79,13 @@ fun OnboardingScreen(onComplete: () -> Unit) {
 
     var step by remember { mutableStateOf(OnboardingStep.ApiKey) }
 
-    // API key state
+
     var apiKeyInput by remember { mutableStateOf("") }
     var keyError by remember { mutableStateOf<String?>(null) }
     var isTesting by remember { mutableStateOf(false) }
     val keyShake = remember { Animatable(0f) }
 
-    // Persona state
+
     var personaName by remember { mutableStateOf("") }
     var personaDescription by remember { mutableStateOf("") }
     var avatarFileName by remember { mutableStateOf<String?>(null) }

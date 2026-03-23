@@ -99,7 +99,7 @@ import coil3.request.ImageRequest
 import kotlinx.coroutines.launch
 import java.util.UUID
 
-/** Strip incomplete markdown delimiter fragments from the end of streaming text. */
+
 private fun stripTrailingDelimiters(text: String): String {
     val trailing = listOf("***", "**", "~~", "*", "`")
     for (d in trailing) {
@@ -155,11 +155,11 @@ fun ChatScreen(
     val haptics = rememberNokoHaptics()
     val imeVisible = WindowInsets.isImeVisible
 
-    // Chat session state
+
     var currentChatId by remember { mutableStateOf(UUID.randomUUID().toString()) }
     var isSecretChat by remember { mutableStateOf(false) }
 
-    // Persona & character selection state
+
     val allEntries by SettingsManager.allEntries.collectAsState(initial = emptyList())
     val personas = remember(allEntries) { allEntries.filter { it.type == PersonaType.PERSONA } }
     val characters = remember(allEntries) { allEntries.filter { it.type == PersonaType.CHARACTER } }
@@ -195,7 +195,7 @@ fun ChatScreen(
     var editingMessageIdx by remember { mutableStateOf(-1) }
     var editingText by remember { mutableStateOf("") }
 
-    // Save current chat to encrypted storage
+
     fun saveCurrentChat() {
         if (isSecretChat) return
         val character = activeCharacter ?: return
@@ -223,7 +223,7 @@ fun ChatScreen(
         }
     }
 
-    // Starts a streaming API call, appending an assistant message at the end of `messages`
+
     fun startStreaming() {
         if (apiKey.isBlank() || modelId.isBlank()) return
         isGenerating = true
@@ -247,8 +247,6 @@ fun ChatScreen(
                     stream = true,
                 )
                 var lastHapticTime = 0L
-                var hapticCount = 0
-                var streamStartTime = 0L
                 var lastUiUpdate = 0L
                 OpenRouterClient.streamChat(request).collect { token ->
                     buffer.append(token)
@@ -260,24 +258,13 @@ fun ChatScreen(
                             content = buffer.toString(),
                         )
                     }
-                    // Progressive haptics: confirm on first token, then
-                    // taper from active pulsing to ambient as the stream
-                    // settles in — avoids monotone buzzing on long replies.
-                    if (streamStartTime == 0L) streamStartTime = now
-                    val elapsed = now - streamStartTime
-                    val hapticInterval = when {
-                        hapticCount == 0 -> 0L    // immediate first pulse
-                        elapsed < 2_000 -> 300L   // active pulsing
-                        elapsed < 5_000 -> 600L   // easing off
-                        else -> 1_200L            // ambient reminder
-                    }
-                    if (now - lastHapticTime >= hapticInterval) {
+
+                    if (now - lastHapticTime >= 2_000) {
                         lastHapticTime = now
-                        if (hapticCount == 0) haptics.confirm() else haptics.toggle()
-                        hapticCount++
+                        haptics.toggle()
                     }
                 }
-                // Final commit + completion pulse
+
                 messages[assistantIdx] = messages[assistantIdx].copy(
                     content = buffer.toString(),
                 )
@@ -306,7 +293,7 @@ fun ChatScreen(
         }
     }
 
-    // Handle pending actions from HomeScreen / NokoApp
+
     LaunchedEffect(pendingAction) {
         when (val action = pendingAction) {
             is ChatAction.NewChat -> {
@@ -314,7 +301,7 @@ fun ChatScreen(
                 messages.clear()
                 currentChatId = UUID.randomUUID().toString()
                 isSecretChat = action.isSecret
-                // Re-add greeting if character has one
+
                 if (activeCharacter?.greetingMessage != null) {
                     messages.add(
                         ChatMessage(
@@ -331,20 +318,20 @@ fun ChatScreen(
                 messages.clear()
                 currentChatId = action.meta.id
                 isSecretChat = false
-                // Load full conversation from encrypted storage
+
                 val loaded = ChatStorage.loadChat(action.meta.id)
                 if (loaded != null) {
                     messages.addAll(loaded)
                 }
-                // Select the character from the recent chat
+
                 SettingsManager.setSelectedCharacterId(action.meta.characterId)
                 onActionConsumed()
             }
-            null -> { /* no action pending */ }
+            null -> {  }
         }
     }
 
-    // Show character greeting when chat is empty and character has one
+
     LaunchedEffect(activeCharacter?.id) {
         if (messages.isEmpty() && activeCharacter?.greetingMessage != null) {
             messages.add(
@@ -362,7 +349,7 @@ fun ChatScreen(
             .fillMaxSize()
             .imePadding(),
     ) {
-        // TopAppBar with character avatar + name
+
         TopAppBar(
             title = {
                 Row(
@@ -424,7 +411,7 @@ fun ChatScreen(
                     messages.clear()
                     currentChatId = UUID.randomUUID().toString()
                     isSecretChat = false
-                    // Re-add greeting if character has one
+
                     if (activeCharacter?.greetingMessage != null) {
                         messages.add(
                             ChatMessage(
@@ -440,7 +427,7 @@ fun ChatScreen(
             },
         )
 
-        // Messages
+
         LazyColumn(
             state = listState,
             reverseLayout = true,
@@ -451,7 +438,7 @@ fun ChatScreen(
             verticalArrangement = Arrangement.spacedBy(12.dp),
             contentPadding = androidx.compose.foundation.layout.PaddingValues(top = 8.dp),
         ) {
-            // Typing indicator first in builder = bottom visually in reverseLayout
+
             val lastMsg = messages.lastOrNull()
             val showTyping = isGenerating &&
                 (lastMsg == null || lastMsg.role != ChatMessage.Role.ASSISTANT || lastMsg.content.isBlank())
@@ -463,7 +450,7 @@ fun ChatScreen(
             }
 
             items(messages.asReversed(), key = { it.id }) { message ->
-                // Hide the empty assistant placeholder while typing indicator is shown
+
                 if (isGenerating && message == messages.lastOrNull()
                     && message.role == ChatMessage.Role.ASSISTANT && message.content.isBlank()
                 ) return@items
@@ -483,7 +470,7 @@ fun ChatScreen(
                         {
                             val idx = messages.indexOfFirst { it.id == message.id }
                             if (idx >= 0) {
-                                // Remove this assistant message, then re-stream
+
                                 messages.removeAt(idx)
                                 startStreaming()
                             }
@@ -502,7 +489,7 @@ fun ChatScreen(
                         {
                             val idx = messages.indexOfFirst { it.id == message.id }
                             if (idx >= 0) {
-                                // Remove everything after this message
+
                                 while (messages.size > idx + 1) {
                                     messages.removeAt(messages.lastIndex)
                                 }
@@ -513,7 +500,7 @@ fun ChatScreen(
             }
         }
 
-        // Edit message dialog
+
         if (editingMessageIdx >= 0) {
             AlertDialog(
                 onDismissRequest = { editingMessageIdx = -1 },
@@ -546,7 +533,7 @@ fun ChatScreen(
             )
         }
 
-        // RP format chips
+
         AnimatedVisibility(
             visible = imeVisible,
             enter = fadeIn(tween(100)),
@@ -583,7 +570,7 @@ fun ChatScreen(
             }
         }
 
-        // Input row with persona avatar
+
         Row(
             modifier = Modifier
                 .fillMaxWidth()
@@ -658,7 +645,7 @@ fun ChatScreen(
         }
     }
 
-    // Character picker bottom sheet
+
     if (showCharacterPicker) {
         PersonaPickerSheet(
             title = "Select Character",
@@ -673,7 +660,7 @@ fun ChatScreen(
         )
     }
 
-    // Persona picker bottom sheet
+
     if (showPersonaPicker) {
         PersonaPickerSheet(
             title = "Select Persona",
@@ -781,7 +768,7 @@ private fun MessageBubble(
     val canInteract = !isStreaming && !isGenerating
     var showActions by remember { mutableStateOf(false) }
 
-    // Shake animation when stopped by user
+
     val shakeOffset = remember { Animatable(0f) }
     LaunchedEffect(message.stoppedByUser) {
         if (message.stoppedByUser) {
@@ -833,7 +820,7 @@ private fun MessageBubble(
                         )
                         .then(if (canInteract) Modifier.clickable { showActions = !showActions } else Modifier),
                 ) {
-                    // Remember if this bubble ever streamed to avoid composable swap
+
                     var wasStreaming by remember { mutableStateOf(false) }
                     if (isStreaming) wasStreaming = true
 
@@ -921,8 +908,8 @@ private fun StreamingText(
                 val target = targetText
                 if (displayed.length < target.length) {
                     val behind = target.length - displayed.length
-                    // Scale chunk size by elapsed time so reveal speed is
-                    // consistent across refresh rates (60 Hz, 120 Hz, etc.)
+
+
                     val dt = if (lastFrameMs == 0L) 16f else (frameMs - lastFrameMs).toFloat()
                     val scale = dt / 16f
                     val baseChunk = when {
@@ -942,7 +929,7 @@ private fun StreamingText(
 
     if (displayed.length > text.length) displayed = text
 
-    // Only strip trailing delimiters while actively streaming and still catching up
+
     val renderText = if (isStreaming && displayed.length < text.length) {
         stripTrailingDelimiters(displayed)
     } else {

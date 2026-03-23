@@ -37,7 +37,6 @@ object ChatStorage {
 
     private fun chatFile(chatId: String): File = File(chatsDir(), "$chatId.enc")
 
-    // --- Index operations ---
 
     private fun loadIndex(): List<ChatSessionMeta> {
         val file = indexFile()
@@ -57,18 +56,17 @@ object ChatStorage {
         writeEncrypted(indexFile(), data)
     }
 
-    // --- Chat operations ---
 
     suspend fun saveChat(
         chatId: String,
         messages: List<ChatMessage>,
         meta: ChatSessionMeta,
     ) = withContext(Dispatchers.IO) {
-        // Write full message history
+
         val data = json.encodeToString(messages).toByteArray()
         writeEncrypted(chatFile(chatId), data)
 
-        // Update index
+
         val current = _recentChats.value.filterNot { it.id == meta.id }
         val updated = (current + meta)
             .sortedByDescending { it.updatedAt }
@@ -97,7 +95,6 @@ object ChatStorage {
         _recentChats.value = updated
     }
 
-    // --- Encrypted file helpers ---
 
     private fun encryptedFile(file: File): EncryptedFile =
         EncryptedFile.Builder(
@@ -108,7 +105,7 @@ object ChatStorage {
         ).build()
 
     private fun writeEncrypted(file: File, bytes: ByteArray) {
-        // EncryptedFile requires the file to not exist on creation
+
         if (file.exists()) file.delete()
         encryptedFile(file).openFileOutput().use { it.write(bytes) }
     }

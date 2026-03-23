@@ -58,7 +58,7 @@ object SettingsManager {
         migrateApiKeyFromDataStore()
     }
 
-    /** One-time migration: move plain-text API key from DataStore to encrypted storage. */
+
     private fun migrateApiKeyFromDataStore() {
         val legacyKey = stringPreferencesKey("api_key")
         @Suppress("OPT_IN_USAGE")

@@ -86,7 +86,7 @@ object OpenRouterClient {
         return api!!.getModels()
     }
 
-    /** Validates the API key against OpenRouter's /auth/key endpoint. Throws on invalid key. */
+
     suspend fun validateKey() {
         requireConfigured()
         api!!.validateKey()
@@ -135,7 +135,7 @@ object OpenRouterClient {
                             close(e)
                             return@launch
                         } catch (_: Exception) {
-                            // Skip malformed chunks
+
                         }
                     }
                 } finally {
@@ -143,7 +143,7 @@ object OpenRouterClient {
                 }
                 channel.close()
             } catch (_: java.io.IOException) {
-                // Connection closed (cancelled by user)
+
                 channel.close()
             }
         }

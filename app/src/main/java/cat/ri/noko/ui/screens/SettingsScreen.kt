@@ -88,7 +88,7 @@ fun SettingsScreen(navController: NavController) {
                 .padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp),
         ) {
-            // Appearance
+
             Card(
                 colors = CardDefaults.cardColors(
                     containerColor = MaterialTheme.colorScheme.surfaceContainer,
@@ -131,7 +131,7 @@ fun SettingsScreen(navController: NavController) {
                 }
             }
 
-            // OpenRouter
+
             Card(
                 colors = CardDefaults.cardColors(
                     containerColor = MaterialTheme.colorScheme.surfaceContainer,
@@ -223,7 +223,7 @@ fun SettingsScreen(navController: NavController) {
                                                     0f at 400
                                                 },
                                             )
-                                            // Restore previous working key
+
                                             if (apiKey.isNotBlank()) {
                                                 OpenRouterClient.configure(apiKey)
                                             }
@@ -249,7 +249,7 @@ fun SettingsScreen(navController: NavController) {
                                         haptics.tap()
                                         isChangingKey = false
                                         keyError = null
-                                        // Restore previous key
+
                                         if (apiKey.isNotBlank()) {
                                             OpenRouterClient.configure(apiKey)
                                         }
@@ -289,7 +289,7 @@ fun SettingsScreen(navController: NavController) {
                 }
             }
 
-            // Prompt Builder
+
             Card(
                 colors = CardDefaults.cardColors(
                     containerColor = MaterialTheme.colorScheme.surfaceContainer,
@@ -333,7 +333,7 @@ fun SettingsScreen(navController: NavController) {
                 }
             }
 
-            // Personas & Characters
+
             Card(
                 colors = CardDefaults.cardColors(
                     containerColor = MaterialTheme.colorScheme.surfaceContainer,
@@ -403,7 +403,7 @@ fun SettingsScreen(navController: NavController) {
                 }
             }
 
-            // Version
+
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
