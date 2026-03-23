@@ -1,12 +1,14 @@
 package cat.ri.noko.ui
 
+import androidx.compose.animation.core.animateIntAsState
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.consumeWindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
-import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.IntOffset
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ChatBubble
 import androidx.compose.material.icons.filled.Home
@@ -26,13 +28,15 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.unit.dp
 import cat.ri.noko.core.SettingsManager
-import kotlinx.coroutines.flow.map
 import cat.ri.noko.ui.screens.ChatScreen
 import cat.ri.noko.ui.screens.HomeScreen
 import cat.ri.noko.ui.screens.OnboardingScreen
 import cat.ri.noko.ui.screens.SettingsNavHost
 import cat.ri.noko.ui.theme.NokoTheme
+import kotlinx.coroutines.flow.map
 
 @OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
@@ -54,6 +58,10 @@ fun NokoApp() {
 
         var selectedTab by rememberSaveable { mutableIntStateOf(0) }
         var chatAction by remember { mutableStateOf<ChatAction?>(null) }
+        var homeRefreshKey by remember { mutableIntStateOf(0) }
+        val density = androidx.compose.ui.platform.LocalDensity.current
+        val screenWidthPx = with(density) { LocalConfiguration.current.screenWidthDp.dp.roundToPx() }
+        val animSpec = tween<Int>(durationMillis = 250)
 
         Scaffold(
             contentWindowInsets = WindowInsets(0),
@@ -61,7 +69,10 @@ fun NokoApp() {
                 ShortNavigationBar {
                     ShortNavigationBarItem(
                         selected = selectedTab == 0,
-                        onClick = { selectedTab = 0 },
+                        onClick = {
+                            if (selectedTab != 0) homeRefreshKey++
+                            selectedTab = 0
+                        },
                         icon = { Icon(Icons.Filled.Home, contentDescription = "Home") },
                         label = { Text("Home") },
                     )
@@ -86,21 +97,22 @@ fun NokoApp() {
                     .padding(innerPadding)
                     .consumeWindowInsets(innerPadding),
             ) {
+                val homeOffset by animateIntAsState(
+                    targetValue = (0 - selectedTab) * screenWidthPx,
+                    animationSpec = animSpec,
+                )
+                val chatOffset by animateIntAsState(
+                    targetValue = (1 - selectedTab) * screenWidthPx,
+                    animationSpec = animSpec,
+                )
+                val settingsOffset by animateIntAsState(
+                    targetValue = (2 - selectedTab) * screenWidthPx,
+                    animationSpec = animSpec,
+                )
 
-
-                Box(
-                    Modifier.fillMaxSize().then(
-                        if (selectedTab != 1) Modifier.offset(x = 10000.dp) else Modifier
-                    )
-                ) {
-                    ChatScreen(
-                        pendingAction = chatAction,
-                        onActionConsumed = { chatAction = null },
-                    )
-                }
-
-                when (selectedTab) {
-                    0 -> HomeScreen(
+                Box(Modifier.fillMaxSize().offset { IntOffset(homeOffset, 0) }) {
+                    HomeScreen(
+                        refreshKey = homeRefreshKey,
                         onNewChat = {
                             chatAction = ChatAction.NewChat(isSecret = false)
                             selectedTab = 1
@@ -114,7 +126,17 @@ fun NokoApp() {
                             selectedTab = 1
                         },
                     )
-                    2 -> SettingsNavHost()
+                }
+
+                Box(Modifier.fillMaxSize().offset { IntOffset(chatOffset, 0) }) {
+                    ChatScreen(
+                        pendingAction = chatAction,
+                        onActionConsumed = { chatAction = null },
+                    )
+                }
+
+                Box(Modifier.fillMaxSize().offset { IntOffset(settingsOffset, 0) }) {
+                    SettingsNavHost()
                 }
             }
         }
