@@ -123,7 +123,7 @@ fun SettingsScreen(navController: NavController) {
                         Switch(
                             checked = amoled,
                             onCheckedChange = { enabled ->
-                                haptics.toggle()
+                                if (enabled) haptics.toggleOn() else haptics.toggleOff()
                                 scope.launch { SettingsManager.setAmoledMode(enabled) }
                             },
                         )

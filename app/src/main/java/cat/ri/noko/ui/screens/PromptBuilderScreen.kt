@@ -103,7 +103,7 @@ fun PromptBuilderScreen(onBack: () -> Unit) {
                     persona = activePersona,
                     character = activeCharacter,
                     onToggle = { enabled ->
-                        haptics.toggle()
+                        if (enabled) haptics.toggleOn() else haptics.toggleOff()
                         sections = sections.toMutableList().also {
                             it[index] = section.copy(enabled = enabled)
                         }

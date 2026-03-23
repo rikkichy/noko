@@ -261,7 +261,7 @@ fun ChatScreen(
 
                     if (now - lastHapticTime >= 2_000) {
                         lastHapticTime = now
-                        haptics.toggle()
+                        haptics.tick()
                     }
                 }
 

@@ -13,19 +13,15 @@ class NokoHaptics internal constructor(
     private val view: View,
 ) {
     fun tap() {
-        view.performHapticFeedback(HapticFeedbackConstants.CONTEXT_CLICK)
-    }
-
-    fun toggle() {
-        view.performHapticFeedback(HapticFeedbackConstants.CLOCK_TICK)
+        view.performHapticFeedback(HapticFeedbackConstants.VIRTUAL_KEY)
     }
 
     fun confirm() {
-        view.performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP)
-    }
-
-    fun longPress() {
-        view.performHapticFeedback(HapticFeedbackConstants.LONG_PRESS)
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+            view.performHapticFeedback(HapticFeedbackConstants.CONFIRM)
+        } else {
+            view.performHapticFeedback(HapticFeedbackConstants.VIRTUAL_KEY)
+        }
     }
 
     fun reject() {
@@ -34,6 +30,30 @@ class NokoHaptics internal constructor(
         } else {
             view.performHapticFeedback(HapticFeedbackConstants.LONG_PRESS)
         }
+    }
+
+    fun toggleOn() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
+            view.performHapticFeedback(HapticFeedbackConstants.TOGGLE_ON)
+        } else {
+            view.performHapticFeedback(HapticFeedbackConstants.CONTEXT_CLICK)
+        }
+    }
+
+    fun toggleOff() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
+            view.performHapticFeedback(HapticFeedbackConstants.TOGGLE_OFF)
+        } else {
+            view.performHapticFeedback(HapticFeedbackConstants.CONTEXT_CLICK)
+        }
+    }
+
+    fun tick() {
+        view.performHapticFeedback(HapticFeedbackConstants.CLOCK_TICK)
+    }
+
+    fun longPress() {
+        view.performHapticFeedback(HapticFeedbackConstants.LONG_PRESS)
     }
 }
 
