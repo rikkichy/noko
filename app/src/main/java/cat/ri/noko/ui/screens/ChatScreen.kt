@@ -247,6 +247,8 @@ fun ChatScreen(
                     stream = true,
                 )
                 var lastHapticTime = 0L
+                var hapticCount = 0
+                var streamStartTime = 0L
                 var lastUiUpdate = 0L
                 OpenRouterClient.streamChat(request).collect { token ->
                     buffer.append(token)
@@ -258,14 +260,28 @@ fun ChatScreen(
                             content = buffer.toString(),
                         )
                     }
-                    if (now - lastHapticTime > 300) {
+                    // Progressive haptics: confirm on first token, then
+                    // taper from active pulsing to ambient as the stream
+                    // settles in — avoids monotone buzzing on long replies.
+                    if (streamStartTime == 0L) streamStartTime = now
+                    val elapsed = now - streamStartTime
+                    val hapticInterval = when {
+                        hapticCount == 0 -> 0L    // immediate first pulse
+                        elapsed < 2_000 -> 300L   // active pulsing
+                        elapsed < 5_000 -> 600L   // easing off
+                        else -> 1_200L            // ambient reminder
+                    }
+                    if (now - lastHapticTime >= hapticInterval) {
                         lastHapticTime = now
-                        haptics.toggle()
+                        if (hapticCount == 0) haptics.confirm() else haptics.toggle()
+                        hapticCount++
                     }
                 }
+                // Final commit + completion pulse
                 messages[assistantIdx] = messages[assistantIdx].copy(
                     content = buffer.toString(),
                 )
+                haptics.confirm()
             } catch (e: kotlinx.coroutines.CancellationException) {
                 if (assistantIdx < messages.size) {
                     messages[assistantIdx] = messages[assistantIdx].copy(
