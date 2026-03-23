@@ -56,6 +56,8 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextField
 import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.TopAppBarDefaults
+import androidx.compose.ui.graphics.Color
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -74,7 +76,6 @@ import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.isImeVisible
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
@@ -221,6 +222,9 @@ fun ChatScreen(
             lastMessagePreview = preview,
             lastMessageRole = lastMsg.role.name,
             updatedAt = System.currentTimeMillis(),
+            messageCount = messages.count { !it.isGreeting },
+            personaName = activePersona?.name,
+            personaAvatarFileName = activePersona?.avatarFileName,
         )
         scope.launch {
             ChatStorage.saveChat(
@@ -503,6 +507,7 @@ fun ChatScreen(
                     Icon(Icons.Filled.Add, contentDescription = "New chat")
                 }
             },
+            colors = TopAppBarDefaults.topAppBarColors(containerColor = Color.Transparent),
         )
 
 
