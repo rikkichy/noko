@@ -7,7 +7,10 @@ import java.io.File
 object AvatarStorage {
 
     fun save(context: Context, bitmap: Bitmap, id: String): String {
-        val fileName = "avatar_$id.jpg"
+        context.filesDir.listFiles()
+            ?.filter { it.name.startsWith("avatar_$id") && it.name.endsWith(".jpg") }
+            ?.forEach { it.delete() }
+        val fileName = "avatar_${id}_${System.currentTimeMillis()}.jpg"
         context.openFileOutput(fileName, Context.MODE_PRIVATE).use { out ->
             bitmap.compress(Bitmap.CompressFormat.JPEG, 85, out)
         }

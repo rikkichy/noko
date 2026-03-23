@@ -67,8 +67,10 @@ object ChatStorage {
         writeEncrypted(chatFile(chatId), data)
 
 
+        val existing = _recentChats.value.find { it.id == meta.id }
+        val preservedMeta = if (existing?.pinned == true) meta.copy(pinned = true) else meta
         val current = _recentChats.value.filterNot { it.id == meta.id }
-        val updated = (current + meta)
+        val updated = (current + preservedMeta)
             .sortedByDescending { it.updatedAt }
             .take(50)
         saveIndex(updated)
@@ -86,6 +88,14 @@ object ChatStorage {
         } catch (_: Exception) {
             null
         }
+    }
+
+    suspend fun togglePin(chatId: String) = withContext(Dispatchers.IO) {
+        val updated = _recentChats.value.map {
+            if (it.id == chatId) it.copy(pinned = !it.pinned) else it
+        }
+        saveIndex(updated)
+        _recentChats.value = updated
     }
 
     suspend fun deleteChat(chatId: String) = withContext(Dispatchers.IO) {
