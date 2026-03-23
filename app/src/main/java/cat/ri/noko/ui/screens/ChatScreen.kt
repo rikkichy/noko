@@ -1,9 +1,12 @@
 package cat.ri.noko.ui.screens
 
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.animateContentSize
 import androidx.compose.animation.expandVertically
 import androidx.compose.animation.shrinkVertically
 import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.core.Spring
+import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
@@ -805,7 +808,14 @@ private fun MessageBubble(
                 Surface(
                     shape = RoundedCornerShape(16.dp),
                     color = MaterialTheme.colorScheme.surfaceVariant,
-                    modifier = if (canInteract) Modifier.clickable { showActions = !showActions } else Modifier,
+                    modifier = Modifier
+                        .animateContentSize(
+                            animationSpec = spring(
+                                dampingRatio = Spring.DampingRatioNoBouncy,
+                                stiffness = Spring.StiffnessHigh,
+                            )
+                        )
+                        .then(if (canInteract) Modifier.clickable { showActions = !showActions } else Modifier),
                 ) {
                     // Remember if this bubble ever streamed to avoid composable swap
                     var wasStreaming by remember { mutableStateOf(false) }
