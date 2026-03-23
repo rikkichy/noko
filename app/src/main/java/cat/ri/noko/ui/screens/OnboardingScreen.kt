@@ -28,6 +28,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.ArrowBack
 import androidx.compose.material.icons.automirrored.rounded.ArrowForward
 import androidx.compose.material.icons.filled.Person
+import androidx.compose.material.icons.filled.SmartToy
 import androidx.compose.material.icons.rounded.OpenInNew
 import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
@@ -68,7 +69,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
-private enum class OnboardingStep { ApiKey, Persona }
+private enum class OnboardingStep { ApiKey, Persona, Character }
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -95,6 +96,19 @@ fun OnboardingScreen(onComplete: () -> Unit) {
     var descError by remember { mutableStateOf(false) }
     val nameShake = remember { Animatable(0f) }
     val descShake = remember { Animatable(0f) }
+
+
+    var charName by remember { mutableStateOf("") }
+    var charDescription by remember { mutableStateOf("") }
+    var charGreeting by remember { mutableStateOf("") }
+    var charAvatarFileName by remember { mutableStateOf<String?>(null) }
+    val charId = remember { java.util.UUID.randomUUID().toString() }
+    var charNameError by remember { mutableStateOf(false) }
+    var charDescError by remember { mutableStateOf(false) }
+    val charNameShake = remember { Animatable(0f) }
+    val charDescShake = remember { Animatable(0f) }
+
+    var cropForCharacter by remember { mutableStateOf(false) }
 
     val photoPicker = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.PickVisualMedia(),
@@ -125,8 +139,13 @@ fun OnboardingScreen(onComplete: () -> Unit) {
             imageUri = pendingCropUri!!,
             onCrop = { bitmap ->
                 scope.launch {
-                    val fileName = AvatarStorage.save(context, bitmap, personaId)
-                    avatarFileName = fileName
+                    if (cropForCharacter) {
+                        val fileName = AvatarStorage.save(context, bitmap, charId)
+                        charAvatarFileName = fileName
+                    } else {
+                        val fileName = AvatarStorage.save(context, bitmap, personaId)
+                        avatarFileName = fileName
+                    }
                     pendingCropUri = null
                 }
             },
@@ -148,6 +167,19 @@ fun OnboardingScreen(onComplete: () -> Unit) {
                             IconButton(onClick = {
                                 haptics.tap()
                                 step = OnboardingStep.ApiKey
+                            }) {
+                                Icon(Icons.AutoMirrored.Rounded.ArrowBack, contentDescription = "Back")
+                            }
+                        },
+                    )
+                }
+                OnboardingStep.Character -> {
+                    TopAppBar(
+                        title = { Text("Create a character") },
+                        navigationIcon = {
+                            IconButton(onClick = {
+                                haptics.tap()
+                                step = OnboardingStep.Persona
                             }) {
                                 Icon(Icons.AutoMirrored.Rounded.ArrowBack, contentDescription = "Back")
                             }
@@ -277,6 +309,7 @@ fun OnboardingScreen(onComplete: () -> Unit) {
                                 .clip(CircleShape)
                                 .clickable {
                                     haptics.tap()
+                                    cropForCharacter = false
                                     photoPicker.launch(
                                         PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly),
                                     )
@@ -381,6 +414,154 @@ fun OnboardingScreen(onComplete: () -> Unit) {
                                 )
                                 SettingsManager.saveEntry(entry)
                                 SettingsManager.setSelectedPersonaId(entry.id)
+                                step = OnboardingStep.Character
+                            }
+                        },
+                        modifier = Modifier.fillMaxWidth(),
+                    ) {
+                        Icon(Icons.AutoMirrored.Rounded.ArrowForward, contentDescription = null)
+                        Spacer(Modifier.width(8.dp))
+                        Text("Next")
+                    }
+                }
+
+                OnboardingStep.Character -> {
+                    Text(
+                        "Create a character for the AI to play.",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+
+                    Spacer(Modifier.height(4.dp))
+
+                    Column(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                    ) {
+                        Box(
+                            modifier = Modifier
+                                .size(100.dp)
+                                .clip(CircleShape)
+                                .clickable {
+                                    haptics.tap()
+                                    cropForCharacter = true
+                                    photoPicker.launch(
+                                        PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly),
+                                    )
+                                },
+                            contentAlignment = Alignment.Center,
+                        ) {
+                            if (charAvatarFileName != null) {
+                                AsyncImage(
+                                    model = ImageRequest.Builder(context)
+                                        .data(AvatarStorage.getFile(context, charAvatarFileName!!))
+                                        .build(),
+                                    contentDescription = "Avatar",
+                                    modifier = Modifier
+                                        .fillMaxSize()
+                                        .clip(CircleShape),
+                                    contentScale = ContentScale.Crop,
+                                )
+                            } else {
+                                Icon(
+                                    Icons.Filled.SmartToy,
+                                    contentDescription = "Add avatar",
+                                    modifier = Modifier.size(40.dp),
+                                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                                )
+                            }
+                        }
+                        Spacer(Modifier.height(4.dp))
+                        Text(
+                            "Tap to set avatar",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    }
+
+                    Spacer(Modifier.height(4.dp))
+
+                    OutlinedTextField(
+                        value = charName,
+                        onValueChange = {
+                            charName = it
+                            if (charNameError) charNameError = false
+                        },
+                        label = { Text("Name") },
+                        placeholder = { Text("Character name...") },
+                        singleLine = true,
+                        isError = charNameError,
+                        supportingText = if (charNameError) {
+                            { Text("Name is required") }
+                        } else null,
+                        shape = RoundedCornerShape(20.dp),
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .offset { IntOffset(charNameShake.value.toInt(), 0) },
+                    )
+
+                    OutlinedTextField(
+                        value = charDescription,
+                        onValueChange = {
+                            charDescription = it
+                            if (charDescError) charDescError = false
+                        },
+                        label = { Text("Description") },
+                        placeholder = { Text("Describe the character...") },
+                        isError = charDescError,
+                        supportingText = if (charDescError) {
+                            { Text("Description is required") }
+                        } else null,
+                        shape = RoundedCornerShape(20.dp),
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(160.dp)
+                            .offset { IntOffset(charDescShake.value.toInt(), 0) },
+                        maxLines = 6,
+                    )
+
+                    OutlinedTextField(
+                        value = charGreeting,
+                        onValueChange = { charGreeting = it },
+                        label = { Text("Greeting Message") },
+                        placeholder = { Text("First message when starting a chat...") },
+                        shape = RoundedCornerShape(20.dp),
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(120.dp),
+                        maxLines = 4,
+                    )
+
+                    Button(
+                        onClick = {
+                            haptics.tap()
+                            val nameMissing = charName.isBlank()
+                            val descMissing = charDescription.isBlank()
+
+                            if (nameMissing || descMissing) {
+                                haptics.reject()
+                                if (nameMissing) {
+                                    charNameError = true
+                                    shake(charNameShake)
+                                }
+                                if (descMissing) {
+                                    charDescError = true
+                                    shake(charDescShake)
+                                }
+                                return@Button
+                            }
+
+                            scope.launch {
+                                val entry = PersonaEntry(
+                                    id = charId,
+                                    type = PersonaType.CHARACTER,
+                                    name = charName.trim(),
+                                    description = charDescription.trim(),
+                                    greetingMessage = charGreeting.trim().ifBlank { null },
+                                    avatarFileName = charAvatarFileName,
+                                )
+                                SettingsManager.saveEntry(entry)
+                                SettingsManager.setSelectedCharacterId(entry.id)
                                 SettingsManager.setOnboardingComplete()
                                 onComplete()
                             }

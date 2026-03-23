@@ -14,7 +14,9 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
@@ -204,6 +206,7 @@ fun PersonaEditScreen(
                 label = { Text("Name") },
                 placeholder = { Text(if (type == PersonaType.PERSONA) "Persona name..." else "Character name...") },
                 singleLine = true,
+                shape = RoundedCornerShape(20.dp),
                 modifier = Modifier.fillMaxWidth(),
             )
 
@@ -211,9 +214,10 @@ fun PersonaEditScreen(
                 value = description,
                 onValueChange = { description = it },
                 label = { Text("Description") },
+                shape = RoundedCornerShape(20.dp),
                 modifier = Modifier
                     .fillMaxWidth()
-                    .size(160.dp),
+                    .height(160.dp),
                 maxLines = 6,
             )
 
@@ -223,9 +227,10 @@ fun PersonaEditScreen(
                     onValueChange = { greetingMessage = it },
                     label = { Text("Greeting Message") },
                     placeholder = { Text("First message when starting a chat...") },
+                    shape = RoundedCornerShape(20.dp),
                     modifier = Modifier
                         .fillMaxWidth()
-                        .size(120.dp),
+                        .height(120.dp),
                     maxLines = 4,
                 )
             }

@@ -200,7 +200,7 @@ fun ChatScreen(
         if (isSecretChat) return
         val character = activeCharacter ?: return
         val lastMsg = messages.lastOrNull { !it.isGreeting && it.content.isNotBlank() } ?: return
-        val senderName = when (lastMsg.role) {
+        val senderName = lastMsg.senderName ?: when (lastMsg.role) {
             ChatMessage.Role.USER -> activePersona?.name ?: "You"
             ChatMessage.Role.ASSISTANT -> character.name
         }
@@ -229,7 +229,12 @@ fun ChatScreen(
         isGenerating = true
         hasStreamedContent = false
         val assistantIdx = messages.size
-        messages.add(ChatMessage(role = ChatMessage.Role.ASSISTANT, content = ""))
+        messages.add(ChatMessage(
+            role = ChatMessage.Role.ASSISTANT,
+            content = "",
+            senderName = activeCharacter?.name,
+            senderAvatarFileName = activeCharacter?.avatarFileName,
+        ))
 
         streamJob = scope.launch {
             val buffer = StringBuilder()
@@ -307,6 +312,8 @@ fun ChatScreen(
                             role = ChatMessage.Role.ASSISTANT,
                             content = activeCharacter.greetingMessage,
                             isGreeting = true,
+                            senderName = activeCharacter.name,
+                            senderAvatarFileName = activeCharacter.avatarFileName,
                         ),
                     )
                 }
@@ -338,6 +345,8 @@ fun ChatScreen(
                     role = ChatMessage.Role.ASSISTANT,
                     content = activeCharacter.greetingMessage,
                     isGreeting = true,
+                    senderName = activeCharacter.name,
+                    senderAvatarFileName = activeCharacter.avatarFileName,
                 ),
             )
         }
@@ -417,6 +426,8 @@ fun ChatScreen(
                                 role = ChatMessage.Role.ASSISTANT,
                                 content = activeCharacter.greetingMessage,
                                 isGreeting = true,
+                                senderName = activeCharacter.name,
+                                senderAvatarFileName = activeCharacter.avatarFileName,
                             ),
                         )
                     }
@@ -619,7 +630,12 @@ fun ChatScreen(
                     val text = input.text.trim()
                     if (text.isNotEmpty()) {
                         haptics.tap()
-                        messages.add(ChatMessage(role = ChatMessage.Role.USER, content = text))
+                        messages.add(ChatMessage(
+                            role = ChatMessage.Role.USER,
+                            content = text,
+                            senderName = activePersona?.name,
+                            senderAvatarFileName = activePersona?.avatarFileName,
+                        ))
                         input = TextFieldValue()
                         keyboard?.hide()
 
@@ -681,6 +697,21 @@ internal fun SmallAvatar(
     fallbackIcon: androidx.compose.ui.graphics.vector.ImageVector,
     size: Int,
 ) {
+    SmallAvatar(
+        name = entry?.name,
+        avatarFileName = entry?.avatarFileName,
+        fallbackIcon = fallbackIcon,
+        size = size,
+    )
+}
+
+@Composable
+internal fun SmallAvatar(
+    name: String?,
+    avatarFileName: String?,
+    fallbackIcon: androidx.compose.ui.graphics.vector.ImageVector,
+    size: Int,
+) {
     val context = LocalContext.current
     Box(
         modifier = Modifier
@@ -688,12 +719,12 @@ internal fun SmallAvatar(
             .clip(CircleShape),
         contentAlignment = Alignment.Center,
     ) {
-        if (entry?.avatarFileName != null) {
+        if (avatarFileName != null) {
             AsyncImage(
                 model = ImageRequest.Builder(context)
-                    .data(AvatarStorage.getFile(context, entry.avatarFileName))
+                    .data(AvatarStorage.getFile(context, avatarFileName))
                     .build(),
-                contentDescription = entry.name,
+                contentDescription = name,
                 modifier = Modifier
                     .size(size.dp)
                     .clip(CircleShape),
@@ -762,8 +793,12 @@ private fun MessageBubble(
     }
 
     val isUser = message.role == ChatMessage.Role.USER
-    val entry = if (isUser) persona else character
-    val name = entry?.name ?: if (isUser) "You" else "Assistant"
+    val name = message.senderName
+        ?: if (isUser) persona?.name ?: "You"
+        else character?.name ?: "Assistant"
+    val avatarFileName = message.senderAvatarFileName
+        ?: if (isUser) persona?.avatarFileName
+        else character?.avatarFileName
     val canInteract = !isStreaming && !isGenerating
     var showActions by remember { mutableStateOf(false) }
 
@@ -790,7 +825,8 @@ private fun MessageBubble(
         ) {
             if (!isUser) {
                 SmallAvatar(
-                    entry = entry,
+                    name = name,
+                    avatarFileName = avatarFileName,
                     fallbackIcon = Icons.Filled.SmartToy,
                     size = 32,
                 )
@@ -880,7 +916,8 @@ private fun MessageBubble(
             if (isUser) {
                 Spacer(Modifier.width(8.dp))
                 SmallAvatar(
-                    entry = entry,
+                    name = name,
+                    avatarFileName = avatarFileName,
                     fallbackIcon = Icons.Filled.Person,
                     size = 32,
                 )
