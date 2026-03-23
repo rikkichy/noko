@@ -4,14 +4,9 @@ import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.expandVertically
 import androidx.compose.animation.shrinkVertically
 import androidx.compose.animation.core.Animatable
-import androidx.compose.animation.core.RepeatMode
-import androidx.compose.animation.core.animateFloat
-import androidx.compose.animation.core.infiniteRepeatable
-import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
-import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
@@ -42,7 +37,10 @@ import androidx.compose.material.icons.filled.VisibilityOff
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.AssistChip
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.FilledIconButton
+import androidx.compose.material3.IconButtonShapes
+import androidx.compose.material3.LoadingIndicator
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -139,7 +137,7 @@ private val rpFormats = listOf(
     RpFormat("~Whisper~", "~", "~"),
 )
 
-@OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class, ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 fun ChatScreen(
     pendingAction: ChatAction? = null,
@@ -627,6 +625,10 @@ fun ChatScreen(
                         startStreaming()
                     }
                 },
+                shapes = IconButtonShapes(
+                    shape = CircleShape,
+                    pressedShape = RoundedCornerShape(8.dp),
+                ),
             ) {
                 if (isGenerating && hasStreamedContent) {
                     Icon(Icons.Filled.Stop, contentDescription = "Stop")
@@ -711,33 +713,14 @@ internal fun SmallAvatar(
     }
 }
 
+@OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 private fun TypingIndicator(characterName: String) {
-    val transition = rememberInfiniteTransition(label = "typing")
     Row(
         verticalAlignment = Alignment.CenterVertically,
         modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp),
     ) {
-        repeat(3) { index ->
-            val offsetY by transition.animateFloat(
-                initialValue = 0f,
-                targetValue = -4f,
-                animationSpec = infiniteRepeatable(
-                    animation = tween(durationMillis = 400),
-                    repeatMode = RepeatMode.Reverse,
-                    initialStartOffset = androidx.compose.animation.core.StartOffset(index * 150),
-                ),
-                label = "dot$index",
-            )
-            Box(
-                modifier = Modifier
-                    .size(5.dp)
-                    .offset(y = offsetY.dp)
-                    .clip(CircleShape)
-                    .background(MaterialTheme.colorScheme.onSurfaceVariant),
-            )
-            if (index < 2) Spacer(Modifier.width(3.dp))
-        }
+        LoadingIndicator(modifier = Modifier.size(16.dp))
         Spacer(Modifier.width(8.dp))
         Text(
             text = "$characterName is typing…",

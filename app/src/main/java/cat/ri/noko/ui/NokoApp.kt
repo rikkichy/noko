@@ -11,10 +11,11 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ChatBubble
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Settings
+import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.Icon
-import androidx.compose.material3.NavigationBar
-import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.ShortNavigationBar
+import androidx.compose.material3.ShortNavigationBarItem
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
@@ -33,6 +34,7 @@ import cat.ri.noko.ui.screens.OnboardingScreen
 import cat.ri.noko.ui.screens.SettingsNavHost
 import cat.ri.noko.ui.theme.NokoTheme
 
+@OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 fun NokoApp() {
     NokoTheme {
@@ -56,20 +58,20 @@ fun NokoApp() {
         Scaffold(
             contentWindowInsets = WindowInsets(0),
             bottomBar = {
-                NavigationBar {
-                    NavigationBarItem(
+                ShortNavigationBar {
+                    ShortNavigationBarItem(
                         selected = selectedTab == 0,
                         onClick = { selectedTab = 0 },
                         icon = { Icon(Icons.Filled.Home, contentDescription = "Home") },
                         label = { Text("Home") },
                     )
-                    NavigationBarItem(
+                    ShortNavigationBarItem(
                         selected = selectedTab == 1,
                         onClick = { selectedTab = 1 },
                         icon = { Icon(Icons.Filled.ChatBubble, contentDescription = "Chat") },
                         label = { Text("Chat") },
                     )
-                    NavigationBarItem(
+                    ShortNavigationBarItem(
                         selected = selectedTab == 2,
                         onClick = { selectedTab = 2 },
                         icon = { Icon(Icons.Filled.Settings, contentDescription = "Settings") },
