@@ -589,8 +589,8 @@ fun OnboardingScreen(onComplete: () -> Unit) {
                             title = { Text("Are you sure?") },
                             text = {
                                 Text(
-                                    "A greeting message helps set the tone and makes it much easier " +
-                                        "to immerse yourself in the conversation — both for you and the AI.",
+                                    "A greeting message helps set the style and makes it much easier " +
+                                        "to immerse yourself in the RP, both for you and your AI character.",
                                 )
                             },
                             confirmButton = {
@@ -598,12 +598,12 @@ fun OnboardingScreen(onComplete: () -> Unit) {
                                     showGreetingWarning = false
                                     finishOnboarding()
                                 }) {
-                                    Text("Continue anyway")
+                                    Text("Skip")
                                 }
                             },
                             dismissButton = {
                                 TextButton(onClick = { showGreetingWarning = false }) {
-                                    Text("Take me back")
+                                    Text("Go back")
                                 }
                             },
                         )
