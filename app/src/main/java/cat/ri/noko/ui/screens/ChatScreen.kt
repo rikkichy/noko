@@ -246,8 +246,8 @@ fun ChatScreen(
                     messages = apiMessages,
                     stream = true,
                 )
-                var lastHapticTime = 0L
                 var lastUiUpdate = 0L
+                var wordCount = 0
                 OpenRouterClient.streamChat(request).collect { token ->
                     buffer.append(token)
                     val now = System.currentTimeMillis()
@@ -258,10 +258,9 @@ fun ChatScreen(
                             content = buffer.toString(),
                         )
                     }
-
-                    if (now - lastHapticTime >= 2_000) {
-                        lastHapticTime = now
-                        haptics.tick()
+                    if (token.contains(' ') || token.contains('\n')) {
+                        wordCount++
+                        if (wordCount % 2 == 0) haptics.tick()
                     }
                 }
 
