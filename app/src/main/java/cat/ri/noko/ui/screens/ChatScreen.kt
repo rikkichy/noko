@@ -7,6 +7,7 @@ import androidx.compose.animation.shrinkVertically
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.spring
+import androidx.compose.animation.core.withFrameMillis
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
@@ -95,7 +96,6 @@ import cat.ri.noko.ui.util.parseMarkdown
 import cat.ri.noko.ui.util.rememberNokoHaptics
 import coil3.compose.AsyncImage
 import coil3.request.ImageRequest
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import java.util.UUID
 
@@ -899,20 +899,28 @@ private fun StreamingText(
     var displayed by remember { mutableStateOf("") }
 
     LaunchedEffect(Unit) {
+        var lastFrameMs = 0L
         while (true) {
-            val target = targetText
-            if (displayed.length < target.length) {
-                val behind = target.length - displayed.length
-                val chunk = when {
-                    behind > 200 -> 30
-                    behind > 100 -> 15
-                    behind > 50 -> 8
-                    behind > 20 -> 4
-                    else -> 1
+            withFrameMillis { frameMs ->
+                val target = targetText
+                if (displayed.length < target.length) {
+                    val behind = target.length - displayed.length
+                    // Scale chunk size by elapsed time so reveal speed is
+                    // consistent across refresh rates (60 Hz, 120 Hz, etc.)
+                    val dt = if (lastFrameMs == 0L) 16f else (frameMs - lastFrameMs).toFloat()
+                    val scale = dt / 16f
+                    val baseChunk = when {
+                        behind > 200 -> 30
+                        behind > 100 -> 15
+                        behind > 50 -> 8
+                        behind > 20 -> 4
+                        else -> 1
+                    }
+                    val chunk = (baseChunk * scale).toInt().coerceAtLeast(1)
+                    displayed = target.substring(0, (displayed.length + chunk).coerceAtMost(target.length))
                 }
-                displayed = target.substring(0, (displayed.length + chunk).coerceAtMost(target.length))
+                lastFrameMs = frameMs
             }
-            delay(16)
         }
     }
 
