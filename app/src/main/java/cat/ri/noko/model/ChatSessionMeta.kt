@@ -11,4 +11,8 @@ data class ChatSessionMeta(
     val lastMessagePreview: String,
     val lastMessageRole: String,
     val updatedAt: Long,
+    val messageCount: Int = 0,
+    val personaName: String? = null,
+    val personaAvatarFileName: String? = null,
+    val pinned: Boolean = false,
 )
