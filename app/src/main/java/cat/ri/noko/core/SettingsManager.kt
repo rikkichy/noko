@@ -32,6 +32,10 @@ object SettingsManager {
 
     private val ONBOARDING_COMPLETE = booleanPreferencesKey("onboarding_complete")
     private val AMOLED_MODE = booleanPreferencesKey("amoled_mode")
+    private val NOKO_GUARD = booleanPreferencesKey("noko_guard")
+    private val NOKO_POLKIT = booleanPreferencesKey("noko_polkit")
+    private val NOKO_POLKIT_TRIM_EMOJIS = booleanPreferencesKey("noko_polkit_trim_emojis")
+    private val NOKO_POLKIT_STRUCTURE_ACTIONS = booleanPreferencesKey("noko_polkit_structure_actions")
     private val PERSONAS_JSON = stringPreferencesKey("personas_json")
     private val SELECTED_PERSONA_ID = stringPreferencesKey("selected_persona_id")
     private val SELECTED_CHARACTER_ID = stringPreferencesKey("selected_character_id")
@@ -86,6 +90,34 @@ object SettingsManager {
 
     suspend fun setAmoledMode(enabled: Boolean) {
         appContext.dataStore.edit { it[AMOLED_MODE] = enabled }
+    }
+
+    val nokoGuard: Flow<Boolean>
+        get() = appContext.dataStore.data.map { it[NOKO_GUARD] ?: true }
+
+    suspend fun setNokoGuard(enabled: Boolean) {
+        appContext.dataStore.edit { it[NOKO_GUARD] = enabled }
+    }
+
+    val nokoPolkit: Flow<Boolean>
+        get() = appContext.dataStore.data.map { it[NOKO_POLKIT] ?: true }
+
+    suspend fun setNokoPolkit(enabled: Boolean) {
+        appContext.dataStore.edit { it[NOKO_POLKIT] = enabled }
+    }
+
+    val nokoPolkitTrimEmojis: Flow<Boolean>
+        get() = appContext.dataStore.data.map { it[NOKO_POLKIT_TRIM_EMOJIS] ?: true }
+
+    suspend fun setNokoPolkitTrimEmojis(enabled: Boolean) {
+        appContext.dataStore.edit { it[NOKO_POLKIT_TRIM_EMOJIS] = enabled }
+    }
+
+    val nokoPolkitStructureActions: Flow<Boolean>
+        get() = appContext.dataStore.data.map { it[NOKO_POLKIT_STRUCTURE_ACTIONS] ?: true }
+
+    suspend fun setNokoPolkitStructureActions(enabled: Boolean) {
+        appContext.dataStore.edit { it[NOKO_POLKIT_STRUCTURE_ACTIONS] = enabled }
     }
 
     val allEntries: Flow<List<PersonaEntry>>
