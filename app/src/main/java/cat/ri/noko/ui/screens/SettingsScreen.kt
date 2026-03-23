@@ -22,6 +22,7 @@ import androidx.compose.material.icons.rounded.Brush
 import androidx.compose.material.icons.rounded.Cloud
 import androidx.compose.material.icons.rounded.Description
 import androidx.compose.material.icons.rounded.People
+import androidx.compose.material.icons.rounded.Shield
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -66,6 +67,7 @@ fun SettingsScreen(navController: NavController) {
     val scope = rememberCoroutineScope()
     val haptics = rememberNokoHaptics()
     val amoled by SettingsManager.amoledMode.collectAsState(initial = false)
+    val nokoGuard by SettingsManager.nokoGuard.collectAsState(initial = true)
     val apiKey by SettingsManager.apiKey.collectAsState(initial = if (SettingsManager.hasApiKey()) "placeholder" else "")
     val hasKey = apiKey.isNotBlank()
     val modelName by SettingsManager.selectedModelName.collectAsState(initial = "")
@@ -403,6 +405,74 @@ fun SettingsScreen(navController: NavController) {
                 }
             }
 
+
+            Card(
+                colors = CardDefaults.cardColors(
+                    containerColor = MaterialTheme.colorScheme.surfaceContainer,
+                ),
+            ) {
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(16.dp),
+                    verticalArrangement = Arrangement.spacedBy(12.dp),
+                ) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Icon(Icons.Rounded.Shield, contentDescription = null)
+                        Spacer(Modifier.size(8.dp))
+                        Text("Advanced", style = MaterialTheme.typography.titleMedium)
+                    }
+
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                    ) {
+                        Column(modifier = Modifier.weight(1f)) {
+                            Text("NokoGuard")
+                            Text(
+                                "Interrupt AI responses that impersonate your persona, use excessive emojis, or switch languages.",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            )
+                        }
+                        Spacer(Modifier.size(12.dp))
+                        Switch(
+                            checked = nokoGuard,
+                            onCheckedChange = { enabled ->
+                                if (enabled) haptics.toggleOn() else haptics.toggleOff()
+                                scope.launch { SettingsManager.setNokoGuard(enabled) }
+                            },
+                        )
+                    }
+
+                    HorizontalDivider()
+
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clickable {
+                                haptics.tap()
+                                navController.navigate("noko_polkit")
+                            },
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        Column(modifier = Modifier.weight(1f)) {
+                            Text("NokoPolkit")
+                            Text(
+                                "Post-process AI responses to clean up unwanted patterns.",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            )
+                        }
+                        Icon(
+                            Icons.AutoMirrored.Rounded.KeyboardArrowRight,
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    }
+                }
+            }
 
             Column(
                 modifier = Modifier

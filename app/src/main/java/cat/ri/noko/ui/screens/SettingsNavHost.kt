@@ -49,5 +49,8 @@ fun SettingsNavHost() {
         composable("prompt_builder") {
             PromptBuilderScreen(onBack = { navController.popBackStack() })
         }
+        composable("noko_polkit") {
+            NokoPolkitScreen(onBack = { navController.popBackStack() })
+        }
     }
 }
