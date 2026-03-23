@@ -1,6 +1,6 @@
 <p align="center">
   <img
-    src="playstore-icon.png"
+    src="app/src/main/res/mipmap-xxxhdpi/ic_launcher_round.png"
     alt="Noko logo"
     width="160"
     style="border-radius:50%;"
