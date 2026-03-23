@@ -30,6 +30,7 @@ import androidx.compose.material.icons.automirrored.rounded.ArrowForward
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.SmartToy
 import androidx.compose.material.icons.rounded.OpenInNew
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -40,6 +41,7 @@ import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -108,6 +110,7 @@ fun OnboardingScreen(onComplete: () -> Unit) {
     val charNameShake = remember { Animatable(0f) }
     val charDescShake = remember { Animatable(0f) }
 
+    var showGreetingWarning by remember { mutableStateOf(false) }
     var cropForCharacter by remember { mutableStateOf(false) }
 
     val photoPicker = rememberLauncherForActivityResult(
@@ -532,6 +535,23 @@ fun OnboardingScreen(onComplete: () -> Unit) {
                         maxLines = 4,
                     )
 
+                    fun finishOnboarding() {
+                        scope.launch {
+                            val entry = PersonaEntry(
+                                id = charId,
+                                type = PersonaType.CHARACTER,
+                                name = charName.trim(),
+                                description = charDescription.trim(),
+                                greetingMessage = charGreeting.trim().ifBlank { null },
+                                avatarFileName = charAvatarFileName,
+                            )
+                            SettingsManager.saveEntry(entry)
+                            SettingsManager.setSelectedCharacterId(entry.id)
+                            SettingsManager.setOnboardingComplete()
+                            onComplete()
+                        }
+                    }
+
                     Button(
                         onClick = {
                             haptics.tap()
@@ -551,24 +571,42 @@ fun OnboardingScreen(onComplete: () -> Unit) {
                                 return@Button
                             }
 
-                            scope.launch {
-                                val entry = PersonaEntry(
-                                    id = charId,
-                                    type = PersonaType.CHARACTER,
-                                    name = charName.trim(),
-                                    description = charDescription.trim(),
-                                    greetingMessage = charGreeting.trim().ifBlank { null },
-                                    avatarFileName = charAvatarFileName,
-                                )
-                                SettingsManager.saveEntry(entry)
-                                SettingsManager.setSelectedCharacterId(entry.id)
-                                SettingsManager.setOnboardingComplete()
-                                onComplete()
+                            if (charGreeting.isBlank()) {
+                                showGreetingWarning = true
+                                return@Button
                             }
+
+                            finishOnboarding()
                         },
                         modifier = Modifier.fillMaxWidth(),
                     ) {
                         Text("Get started")
+                    }
+
+                    if (showGreetingWarning) {
+                        AlertDialog(
+                            onDismissRequest = { showGreetingWarning = false },
+                            title = { Text("Are you sure?") },
+                            text = {
+                                Text(
+                                    "A greeting message helps set the tone and makes it much easier " +
+                                        "to immerse yourself in the conversation — both for you and the AI.",
+                                )
+                            },
+                            confirmButton = {
+                                TextButton(onClick = {
+                                    showGreetingWarning = false
+                                    finishOnboarding()
+                                }) {
+                                    Text("Continue anyway")
+                                }
+                            },
+                            dismissButton = {
+                                TextButton(onClick = { showGreetingWarning = false }) {
+                                    Text("Take me back")
+                                }
+                            },
+                        )
                     }
                 }
             }
