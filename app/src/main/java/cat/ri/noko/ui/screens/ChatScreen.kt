@@ -37,7 +37,9 @@ import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.SmartToy
 import androidx.compose.material.icons.filled.Stop
+import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.VisibilityOff
+import androidx.compose.material.icons.rounded.Warning
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.AssistChip
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -76,12 +78,14 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.TextRange
 import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import cat.ri.noko.core.AvatarStorage
 import cat.ri.noko.core.ChatStorage
+import cat.ri.noko.core.HallucinationDetector
 import cat.ri.noko.core.PromptBuilder
 import cat.ri.noko.core.SettingsManager
 import cat.ri.noko.core.api.OpenRouterClient
@@ -180,6 +184,10 @@ fun ChatScreen(
     var hasStreamedContent by remember { mutableStateOf(false) }
     var streamJob by remember { mutableStateOf<kotlinx.coroutines.Job?>(null) }
 
+    val nokoGuard by SettingsManager.nokoGuard.collectAsState(initial = true)
+    val nokoPolkit by SettingsManager.nokoPolkit.collectAsState(initial = true)
+    val nokoPolkitTrimEmojis by SettingsManager.nokoPolkitTrimEmojis.collectAsState(initial = true)
+    val nokoPolkitStructureActions by SettingsManager.nokoPolkitStructureActions.collectAsState(initial = true)
     val apiKey by SettingsManager.apiKey.collectAsState(initial = "")
     val modelId by SettingsManager.selectedModelId.collectAsState(initial = "")
     val presets by SettingsManager.promptPresets.collectAsState(initial = listOf(defaultPromptPreset()))
@@ -253,8 +261,30 @@ fun ChatScreen(
                 )
                 var lastUiUpdate = 0L
                 var wordCount = 0
+                var tokenCount = 0
+                var lastGuardCheck = 0
                 OpenRouterClient.streamChat(request).collect { token ->
                     buffer.append(token)
+                    tokenCount++
+
+                    if (nokoGuard && tokenCount >= 50 && tokenCount - lastGuardCheck >= 50) {
+                        lastGuardCheck = tokenCount
+                        val violation = HallucinationDetector.scan(
+                            content = buffer.toString(),
+                            userName = activePersona?.name,
+                            previousMessages = messages.subList(0, assistantIdx),
+                        )
+                        if (violation != null) {
+                            messages[assistantIdx] = messages[assistantIdx].copy(
+                                content = buffer.toString(),
+                                guardBlocked = true,
+                                guardReason = "${violation.label} [${violation.code}]",
+                            )
+                            haptics.reject()
+                            throw kotlinx.coroutines.CancellationException("NokoGuard")
+                        }
+                    }
+
                     val now = System.currentTimeMillis()
                     if (now - lastUiUpdate > 32) {
                         lastUiUpdate = now
@@ -269,12 +299,50 @@ fun ChatScreen(
                     }
                 }
 
+                val finalContent = buffer.toString()
+                if (nokoGuard) {
+                    val violation = HallucinationDetector.scan(
+                        content = finalContent,
+                        userName = activePersona?.name,
+                        previousMessages = messages.subList(0, assistantIdx),
+                    )
+                    if (violation != null) {
+                        messages[assistantIdx] = messages[assistantIdx].copy(
+                            content = finalContent,
+                            guardBlocked = true,
+                            guardReason = "${violation.label} [${violation.code}]",
+                        )
+                        haptics.reject()
+                        return@launch
+                    }
+                }
+                var processed = finalContent
+                var emojisTrimmed = false
+                var actionsStructured = false
+                if (nokoPolkit) {
+                    if (nokoPolkitTrimEmojis) {
+                        val trimmed = stripEmojis(processed)
+                        if (trimmed != processed) {
+                            processed = trimmed
+                            emojisTrimmed = true
+                        }
+                    }
+                    if (nokoPolkitStructureActions) {
+                        val structured = structureActions(processed)
+                        if (structured != processed) {
+                            processed = structured
+                            actionsStructured = true
+                        }
+                    }
+                }
                 messages[assistantIdx] = messages[assistantIdx].copy(
-                    content = buffer.toString(),
+                    content = processed,
+                    emojisTrimmed = emojisTrimmed,
+                    actionsStructured = actionsStructured,
                 )
                 haptics.confirm()
             } catch (e: kotlinx.coroutines.CancellationException) {
-                if (assistantIdx < messages.size) {
+                if (assistantIdx < messages.size && !messages[assistantIdx].guardBlocked) {
                     messages[assistantIdx] = messages[assistantIdx].copy(
                         content = buffer.toString(),
                         stoppedByUser = true,
@@ -792,6 +860,51 @@ private fun MessageBubble(
         return
     }
 
+    if (message.guardBlocked) {
+        Surface(
+            shape = RoundedCornerShape(16.dp),
+            color = MaterialTheme.colorScheme.errorContainer,
+            modifier = Modifier.fillMaxWidth(),
+        ) {
+            Row(
+                modifier = Modifier.padding(16.dp),
+                horizontalArrangement = Arrangement.spacedBy(12.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Icon(
+                    Icons.Rounded.Warning,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.error,
+                )
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(
+                        text = "NokoGuard interrupted this response.",
+                        style = MaterialTheme.typography.bodyMedium,
+                        fontWeight = FontWeight.SemiBold,
+                        color = MaterialTheme.colorScheme.onErrorContainer,
+                    )
+                    if (message.guardReason != null) {
+                        Text(
+                            text = "Reason: ${message.guardReason}",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onErrorContainer.copy(alpha = 0.7f),
+                        )
+                    }
+                }
+                if (onRegenerate != null) {
+                    IconButton(onClick = onRegenerate) {
+                        Icon(
+                            Icons.Filled.Refresh,
+                            contentDescription = "Regenerate",
+                            tint = MaterialTheme.colorScheme.onErrorContainer,
+                        )
+                    }
+                }
+            }
+        }
+        return
+    }
+
     val isUser = message.role == ChatMessage.Role.USER
     val name = message.senderName
         ?: if (isUser) persona?.name ?: "You"
@@ -906,6 +1019,22 @@ private fun MessageBubble(
                 if (message.stoppedByUser) {
                     Text(
                         text = "Stopped by you",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f),
+                        modifier = Modifier.padding(horizontal = 4.dp, vertical = 2.dp),
+                    )
+                }
+                if (message.emojisTrimmed) {
+                    Text(
+                        text = "Emojis trimmed",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f),
+                        modifier = Modifier.padding(horizontal = 4.dp, vertical = 2.dp),
+                    )
+                }
+                if (message.actionsStructured) {
+                    Text(
+                        text = "Actions structured",
                         style = MaterialTheme.typography.labelSmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f),
                         modifier = Modifier.padding(horizontal = 4.dp, vertical = 2.dp),
@@ -1064,4 +1193,35 @@ private fun PersonaPickerSheet(
             }
         }
     }
+}
+
+private fun stripEmojis(text: String): String {
+    val sb = StringBuilder()
+    var prevWasSpace = false
+    text.codePoints().forEach { cp ->
+        if (!HallucinationDetector.isEmoji(cp)) {
+            val ch = String(Character.toChars(cp))
+            if (ch.isBlank()) {
+                if (!prevWasSpace) {
+                    sb.append(ch)
+                    prevWasSpace = true
+                }
+            } else {
+                sb.append(ch)
+                prevWasSpace = false
+            }
+        }
+    }
+    return sb.toString().trim()
+}
+
+private val actionPattern = Regex("(?<!\\*)\\*(?!\\*)((?:(?!\\*).)+?)\\*(?!\\*)")
+
+private fun structureActions(text: String): String {
+    val result = actionPattern.replace(text) { match ->
+        val before = if (match.range.first > 0 && text[match.range.first - 1] != '\n') "\n" else ""
+        val after = if (match.range.last < text.lastIndex && text[match.range.last + 1] != '\n') "\n" else ""
+        "$before${match.value}$after"
+    }
+    return result.replace(Regex("\n{3,}"), "\n\n").trim()
 }
