@@ -1,5 +1,7 @@
 package cat.ri.noko.ui.screens
 
+import androidx.compose.animation.EnterTransition
+import androidx.compose.animation.ExitTransition
 import androidx.compose.runtime.Composable
 import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
@@ -12,7 +14,14 @@ import cat.ri.noko.model.PersonaType
 fun SettingsNavHost() {
     val navController = rememberNavController()
 
-    NavHost(navController = navController, startDestination = "settings") {
+    NavHost(
+        navController = navController,
+        startDestination = "settings",
+        enterTransition = { EnterTransition.None },
+        exitTransition = { ExitTransition.None },
+        popEnterTransition = { EnterTransition.None },
+        popExitTransition = { ExitTransition.None },
+    ) {
         composable("settings") {
             SettingsScreen(navController = navController)
         }
