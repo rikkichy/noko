@@ -1,6 +1,9 @@
 package cat.ri.noko.ui.screens
 
+import androidx.compose.foundation.ExperimentalFoundationApi
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -13,90 +16,163 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Clear
+import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Lock
+import androidx.compose.material.icons.filled.Person
+import androidx.compose.material.icons.filled.PushPin
+import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.SmartToy
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.AssistChip
+import androidx.compose.material3.AssistChipDefaults
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.TopAppBarDefaults
+import androidx.compose.ui.graphics.Color
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import cat.ri.noko.core.AvatarStorage
 import cat.ri.noko.core.ChatStorage
+import cat.ri.noko.core.SettingsManager
 import cat.ri.noko.model.ChatSessionMeta
+import cat.ri.noko.model.PersonaEntry
+import cat.ri.noko.ui.util.rememberNokoHaptics
 import coil3.compose.AsyncImage
 import coil3.request.ImageRequest
 import java.util.Calendar
+import kotlinx.coroutines.launch
+
+private val triviaFacts = listOf(
+    "Internet RP appeared in the early 1990s, where people used to chat with each other. Things have changed.. yeah.",
+    "If your response is long and structured, AI is less prone to impersonate you.",
+    "Adding a detailed persona description helps the AI understand your writing style.",
+    "Using *action blocks* in your messages helps AI distinguish narration from dialogue.",
+    "NokoGuard detects AI hallucinations really well.",
+    "Secret chats aren't saved to history. Just saying..",
+    "Shorter system prompts often lead to more creative AI responses.",
+    "The term 'roleplay' in online contexts dates back to IRC channels in the early 90s.",
+)
 
 private fun timeGreeting(): String {
     val hour = Calendar.getInstance().get(Calendar.HOUR_OF_DAY)
     val greetings = when {
         hour in 5..11 -> listOf(
-            "Woke up and roleplaying already?",
-            "Morning! Your characters missed you",
+            "Good morning~",
             "Rise and roleplay",
-            "Characters don't sleep, but you should've",
+            "We missed you..",
         )
         hour in 12..16 -> listOf(
-            "Afternoon adventures await",
-            "Plot twists are best served after lunch",
-            "Your characters have been waiting",
-            "Perfect time for a new story arc",
+            "Good afternoon~",
+            "Adventures await",
+            "New story arc?",
         )
         hour in 17..20 -> listOf(
-            "Evening vibes, perfect for roleplay",
-            "Cozy up with a character",
-            "The plot thickens this evening",
-            "Golden hour, golden stories",
+            "Evening vibes~",
+            "Cozy hours",
+            "Golden stories",
         )
         else -> listOf(
-            "Late night roleplay hits different",
-            "Can't sleep? Your characters can't either",
-            "The best stories are written at night",
-            "Shh... the world sleeps, but your characters don't",
+            "Late night~",
+            "Can't sleep?",
+            "*sleeps*",
+            "Shh..",
         )
     }
     return greetings.random()
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class)
 @Composable
 fun HomeScreen(
+    refreshKey: Int = 0,
     onNewChat: () -> Unit,
     onNewSecretChat: () -> Unit,
     onOpenRecentChat: (ChatSessionMeta) -> Unit,
 ) {
-    val greeting = remember { timeGreeting() }
+    val context = LocalContext.current
+    val focusManager = LocalFocusManager.current
+    val scope = rememberCoroutineScope()
+    val haptics = rememberNokoHaptics()
+    val greeting = remember(refreshKey) { timeGreeting() }
     val recentChats by ChatStorage.recentChats.collectAsState()
+    val allEntries by SettingsManager.allEntries.collectAsState(initial = emptyList())
+    val entryMap = remember(allEntries) { allEntries.associateBy { it.id } }
+
+    var searchQuery by remember { mutableStateOf("") }
+    var selectedCharacterId by remember { mutableStateOf<String?>(null) }
+    var expandedChatId by remember { mutableStateOf<String?>(null) }
+    var deleteTarget by remember { mutableStateOf<ChatSessionMeta?>(null) }
+
+    val uniqueCharacters = remember(recentChats) {
+        recentChats.distinctBy { it.characterId }.map {
+            Triple(it.characterId, it.characterName, it.characterAvatarFileName)
+        }
+    }
+
+    val isFiltering = searchQuery.isNotBlank() || selectedCharacterId != null
+    val filteredChats = remember(recentChats, searchQuery, selectedCharacterId) {
+        val base = if (!isFiltering) recentChats
+        else recentChats.filter { meta ->
+            val matchesQuery = searchQuery.isBlank() ||
+                meta.characterName.contains(searchQuery, ignoreCase = true) ||
+                meta.lastMessagePreview.contains(searchQuery, ignoreCase = true)
+            val matchesCharacter = selectedCharacterId == null ||
+                meta.characterId == selectedCharacterId
+            matchesQuery && matchesCharacter
+        }
+        base.sortedWith(compareByDescending<ChatSessionMeta> { it.pinned }.thenByDescending { it.updatedAt })
+    }
 
     Scaffold(
         topBar = {
             TopAppBar(
                 title = {
-                    Text(
-                        "Noko",
-                        style = MaterialTheme.typography.titleLarge,
-                    )
+                    Column {
+                        Text(
+                            "Noko",
+                            style = MaterialTheme.typography.titleLarge,
+                        )
+                        Text(
+                            greeting,
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
+                        )
+                    }
                 },
+                colors = TopAppBarDefaults.topAppBarColors(containerColor = Color.Transparent),
             )
         },
     ) { padding ->
@@ -106,14 +182,9 @@ fun HomeScreen(
                 .padding(padding)
                 .padding(horizontal = 16.dp, vertical = 8.dp),
         ) {
-            Text(
-                greeting,
-                style = MaterialTheme.typography.titleMedium,
-                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f),
-            )
+            DidYouKnowCard(recentChats, entryMap, refreshKey)
 
             Spacer(Modifier.height(16.dp))
-
 
             Row(
                 modifier = Modifier.fillMaxWidth(),
@@ -144,54 +215,413 @@ fun HomeScreen(
             }
 
             if (recentChats.isNotEmpty()) {
-                Spacer(Modifier.height(24.dp))
+                Spacer(Modifier.height(20.dp))
+
+                OutlinedTextField(
+                    value = searchQuery,
+                    onValueChange = { searchQuery = it },
+                    placeholder = { Text("Search chats..") },
+                    leadingIcon = {
+                        Icon(
+                            Icons.Filled.Search,
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    },
+                    trailingIcon = {
+                        if (searchQuery.isNotEmpty()) {
+                            IconButton(onClick = {
+                                searchQuery = ""
+                                focusManager.clearFocus()
+                            }) {
+                                Icon(
+                                    Icons.Filled.Clear,
+                                    contentDescription = "Clear",
+                                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                                )
+                            }
+                        }
+                    },
+                    singleLine = true,
+                    shape = RoundedCornerShape(20.dp),
+                    modifier = Modifier.fillMaxWidth(),
+                )
+
+                if (uniqueCharacters.size >= 2) {
+                    Spacer(Modifier.height(12.dp))
+                    LazyRow(
+                        horizontalArrangement = Arrangement.spacedBy(12.dp),
+                    ) {
+                        items(uniqueCharacters, key = { it.first }) { (charId, charName, metaAvatar) ->
+                            val isSelected = selectedCharacterId == charId
+                            val liveAvatar = entryMap[charId]?.avatarFileName ?: metaAvatar
+                            Column(
+                                horizontalAlignment = Alignment.CenterHorizontally,
+                                modifier = Modifier
+                                    .width(56.dp)
+                                    .clickable {
+                                        selectedCharacterId = if (isSelected) null else charId
+                                    },
+                            ) {
+                                val borderMod = if (isSelected) {
+                                    Modifier.border(2.dp, MaterialTheme.colorScheme.primary, CircleShape)
+                                } else Modifier
+                                Box(
+                                    modifier = Modifier
+                                        .size(40.dp)
+                                        .clip(CircleShape)
+                                        .then(borderMod),
+                                    contentAlignment = Alignment.Center,
+                                ) {
+                                    if (liveAvatar != null) {
+                                        AsyncImage(
+                                            model = ImageRequest.Builder(context)
+                                                .data(AvatarStorage.getFile(context, liveAvatar))
+                                                .build(),
+                                            contentDescription = charName,
+                                            modifier = Modifier
+                                                .size(40.dp)
+                                                .clip(CircleShape),
+                                            contentScale = ContentScale.Crop,
+                                        )
+                                    } else {
+                                        Surface(
+                                            shape = CircleShape,
+                                            color = MaterialTheme.colorScheme.surfaceContainerHigh,
+                                            modifier = Modifier.size(40.dp),
+                                        ) {
+                                            Box(contentAlignment = Alignment.Center) {
+                                                Icon(
+                                                    Icons.Filled.SmartToy,
+                                                    contentDescription = null,
+                                                    modifier = Modifier.size(20.dp),
+                                                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                                                )
+                                            }
+                                        }
+                                    }
+                                }
+                                Spacer(Modifier.height(4.dp))
+                                Text(
+                                    charName,
+                                    style = MaterialTheme.typography.labelSmall,
+                                    color = if (isSelected) MaterialTheme.colorScheme.primary
+                                    else MaterialTheme.colorScheme.onSurfaceVariant,
+                                    maxLines = 1,
+                                    overflow = TextOverflow.Ellipsis,
+                                )
+                            }
+                        }
+                    }
+                }
+
+                Spacer(Modifier.height(16.dp))
 
                 Text(
-                    "Recent",
+                    if (isFiltering) "${filteredChats.size} result${if (filteredChats.size != 1) "s" else ""}"
+                    else "Recent",
                     style = MaterialTheme.typography.labelLarge,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier.padding(bottom = 8.dp),
                 )
 
-                LazyColumn(
-                    verticalArrangement = Arrangement.spacedBy(4.dp),
-                ) {
-                    items(recentChats, key = { it.id }) { meta ->
-                        Surface(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .clickable { onOpenRecentChat(meta) },
-                            shape = RoundedCornerShape(12.dp),
-                            color = MaterialTheme.colorScheme.surfaceContainerLow,
-                        ) {
-                            Row(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .padding(horizontal = 12.dp, vertical = 10.dp),
-                                verticalAlignment = Alignment.CenterVertically,
-                            ) {
-                                RecentChatAvatar(
-                                    avatarFileName = meta.characterAvatarFileName,
-                                    name = meta.characterName,
-                                )
-                                Spacer(Modifier.width(12.dp))
-                                Column(modifier = Modifier.weight(1f)) {
-                                    Text(
-                                        meta.characterName,
-                                        style = MaterialTheme.typography.bodyLarge,
-                                        maxLines = 1,
-                                        overflow = TextOverflow.Ellipsis,
-                                    )
-                                    Text(
-                                        meta.lastMessagePreview,
-                                        style = MaterialTheme.typography.bodySmall,
-                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                        maxLines = 1,
-                                        overflow = TextOverflow.Ellipsis,
-                                    )
+                if (filteredChats.isEmpty()) {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(vertical = 32.dp),
+                        contentAlignment = Alignment.Center,
+                    ) {
+                        Text(
+                            "No chats found",
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f),
+                        )
+                    }
+                } else {
+                    LazyColumn(
+                        verticalArrangement = Arrangement.spacedBy(4.dp),
+                    ) {
+                        items(filteredChats, key = { it.id }) { meta ->
+                            Column {
+                                Surface(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .combinedClickable(
+                                            onClick = {
+                                                if (expandedChatId == meta.id) {
+                                                    expandedChatId = null
+                                                } else {
+                                                    onOpenRecentChat(meta)
+                                                }
+                                            },
+                                            onLongClick = {
+                                                haptics.tap()
+                                                expandedChatId = if (expandedChatId == meta.id) null else meta.id
+                                            },
+                                        ),
+                                    shape = RoundedCornerShape(20.dp),
+                                    color = MaterialTheme.colorScheme.surfaceContainerLow,
+                                ) {
+                                    Row(
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .padding(horizontal = 12.dp, vertical = 10.dp),
+                                        verticalAlignment = Alignment.CenterVertically,
+                                    ) {
+                                        RecentChatAvatar(
+                                            avatarFileName = entryMap[meta.characterId]?.avatarFileName
+                                                ?: meta.characterAvatarFileName,
+                                            name = meta.characterName,
+                                        )
+                                        Spacer(Modifier.width(12.dp))
+                                        Column(modifier = Modifier.weight(1f)) {
+                                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                                if (meta.pinned) {
+                                                    Icon(
+                                                        Icons.Filled.PushPin,
+                                                        contentDescription = null,
+                                                        modifier = Modifier.size(14.dp),
+                                                        tint = MaterialTheme.colorScheme.primary,
+                                                    )
+                                                    Spacer(Modifier.width(4.dp))
+                                                }
+                                                Text(
+                                                    meta.characterName,
+                                                    style = MaterialTheme.typography.bodyLarge,
+                                                    maxLines = 1,
+                                                    overflow = TextOverflow.Ellipsis,
+                                                )
+                                            }
+                                            Text(
+                                                meta.lastMessagePreview,
+                                                style = MaterialTheme.typography.bodySmall,
+                                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                                maxLines = 1,
+                                                overflow = TextOverflow.Ellipsis,
+                                            )
+                                        }
+                                    }
+                                }
+                                if (expandedChatId == meta.id) {
+                                    Row(
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .padding(horizontal = 8.dp, vertical = 4.dp),
+                                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                                    ) {
+                                        AssistChip(
+                                            onClick = {
+                                                haptics.tap()
+                                                scope.launch { ChatStorage.togglePin(meta.id) }
+                                                expandedChatId = null
+                                            },
+                                            label = { Text(if (meta.pinned) "Unpin" else "Pin") },
+                                            leadingIcon = {
+                                                Icon(
+                                                    Icons.Filled.PushPin,
+                                                    contentDescription = null,
+                                                    modifier = Modifier.size(18.dp),
+                                                )
+                                            },
+                                        )
+                                        AssistChip(
+                                            onClick = {
+                                                haptics.tap()
+                                                deleteTarget = meta
+                                            },
+                                            label = { Text("Delete") },
+                                            leadingIcon = {
+                                                Icon(
+                                                    Icons.Filled.Delete,
+                                                    contentDescription = null,
+                                                    modifier = Modifier.size(18.dp),
+                                                )
+                                            },
+                                            colors = AssistChipDefaults.assistChipColors(
+                                                labelColor = MaterialTheme.colorScheme.error,
+                                                leadingIconContentColor = MaterialTheme.colorScheme.error,
+                                            ),
+                                        )
+                                    }
                                 }
                             }
                         }
+                    }
+                }
+            }
+        }
+    }
+
+    if (deleteTarget != null) {
+        AlertDialog(
+            onDismissRequest = { deleteTarget = null },
+            title = { Text("Delete chat?") },
+            text = {
+                Text("Chat with ${deleteTarget!!.characterName} will be permanently deleted.")
+            },
+            confirmButton = {
+                TextButton(onClick = {
+                    val id = deleteTarget!!.id
+                    deleteTarget = null
+                    expandedChatId = null
+                    haptics.reject()
+                    scope.launch { ChatStorage.deleteChat(id) }
+                }) {
+                    Text("Delete", color = MaterialTheme.colorScheme.error)
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { deleteTarget = null }) {
+                    Text("Cancel")
+                }
+            },
+        )
+    }
+}
+
+private sealed class CardItem {
+    data class Fact(val text: String) : CardItem()
+    data class CharacterStat(val name: String, val count: Int, val avatarFileName: String?) : CardItem()
+    data class PersonaStat(val name: String, val messageCount: Int, val avatarFileName: String?) : CardItem()
+}
+
+@Composable
+private fun DidYouKnowCard(
+    recentChats: List<ChatSessionMeta>,
+    entryMap: Map<String, PersonaEntry>,
+    refreshKey: Int = 0,
+) {
+    val titles = listOf("Did you know?", "Interesting fact..", "Fun fact!", "By the way..", "Hmm..")
+
+    val items = remember(recentChats, entryMap, refreshKey) {
+        val pool = mutableListOf<CardItem>()
+        pool.addAll(triviaFacts.map { CardItem.Fact(it) })
+
+        val charGroups = recentChats
+            .filter { it.messageCount > 0 }
+            .groupBy { it.characterId }
+        for ((charId, chats) in charGroups) {
+            val name = chats.first().characterName
+            val avatar = entryMap[charId]?.avatarFileName
+                ?: chats.firstOrNull { it.characterAvatarFileName != null }?.characterAvatarFileName
+            pool.add(CardItem.CharacterStat(name, chats.size, avatar))
+        }
+
+        val personaGroups = recentChats
+            .filter { it.personaName != null && it.messageCount > 0 }
+            .groupBy { it.personaName!! }
+        for ((name, chats) in personaGroups) {
+            val personaEntry = entryMap.values.find { it.name == name }
+            val avatar = personaEntry?.avatarFileName
+                ?: chats.firstOrNull { it.personaAvatarFileName != null }?.personaAvatarFileName
+            pool.add(CardItem.PersonaStat(name, chats.sumOf { it.messageCount }, avatar))
+        }
+
+        pool.random()
+    }
+
+    val title = remember(refreshKey) { titles.random() }
+    val context = LocalContext.current
+
+    Card(
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surfaceContainerLow,
+        ),
+        shape = RoundedCornerShape(16.dp),
+        modifier = Modifier.fillMaxWidth(),
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(20.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp),
+        ) {
+            Text(
+                title,
+                style = MaterialTheme.typography.titleMedium,
+                color = MaterialTheme.colorScheme.onSurface,
+            )
+
+            when (items) {
+                is CardItem.Fact -> {
+                    Row(
+                        verticalAlignment = Alignment.Top,
+                        horizontalArrangement = Arrangement.spacedBy(10.dp),
+                    ) {
+                        Icon(
+                            Icons.Filled.Info,
+                            contentDescription = null,
+                            modifier = Modifier.size(28.dp),
+                            tint = MaterialTheme.colorScheme.primary,
+                        )
+                        Text(
+                            items.text,
+                            style = MaterialTheme.typography.bodyLarge,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    }
+                }
+                is CardItem.CharacterStat -> {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(10.dp),
+                    ) {
+                        if (items.avatarFileName != null) {
+                            AsyncImage(
+                                model = ImageRequest.Builder(context)
+                                    .data(AvatarStorage.getFile(context, items.avatarFileName))
+                                    .build(),
+                                contentDescription = items.name,
+                                modifier = Modifier
+                                    .size(36.dp)
+                                    .clip(CircleShape),
+                                contentScale = ContentScale.Crop,
+                            )
+                        } else {
+                            Icon(
+                                Icons.Filled.SmartToy,
+                                contentDescription = null,
+                                modifier = Modifier.size(28.dp),
+                                tint = MaterialTheme.colorScheme.primary,
+                            )
+                        }
+                        Text(
+                            "You have ${items.count} chat${if (items.count != 1) "s" else ""} with ${items.name}",
+                            style = MaterialTheme.typography.bodyLarge,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    }
+                }
+                is CardItem.PersonaStat -> {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(10.dp),
+                    ) {
+                        if (items.avatarFileName != null) {
+                            AsyncImage(
+                                model = ImageRequest.Builder(context)
+                                    .data(AvatarStorage.getFile(context, items.avatarFileName))
+                                    .build(),
+                                contentDescription = items.name,
+                                modifier = Modifier
+                                    .size(36.dp)
+                                    .clip(CircleShape),
+                                contentScale = ContentScale.Crop,
+                            )
+                        } else {
+                            Icon(
+                                Icons.Filled.Person,
+                                contentDescription = null,
+                                modifier = Modifier.size(28.dp),
+                                tint = MaterialTheme.colorScheme.primary,
+                            )
+                        }
+                        Text(
+                            "You've sent ${items.messageCount} message${if (items.messageCount != 1) "s" else ""} as ${items.name}",
+                            style = MaterialTheme.typography.bodyLarge,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
                     }
                 }
             }
