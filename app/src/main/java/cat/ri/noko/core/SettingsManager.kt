@@ -12,12 +12,14 @@ import cat.ri.noko.model.PersonaEntry
 import cat.ri.noko.model.PersonaType
 import cat.ri.noko.model.PromptPreset
 import cat.ri.noko.model.defaultPromptPreset
-import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.GlobalScope
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.runBlocking
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 
@@ -47,6 +49,7 @@ object SettingsManager {
     private lateinit var appContext: Context
     private lateinit var securePrefs: SharedPreferences
     private val _apiKeyFlow = MutableStateFlow("")
+    private var _amoledCached = false
 
     fun init(context: Context) {
         appContext = context.applicationContext
@@ -59,6 +62,9 @@ object SettingsManager {
             EncryptedSharedPreferences.PrefValueEncryptionScheme.AES256_GCM,
         )
         _apiKeyFlow.value = securePrefs.getString(KEY_API_KEY, "") ?: ""
+        runBlocking {
+            appContext.dataStore.data.first().let { _amoledCached = it[AMOLED_MODE] ?: false }
+        }
         migrateApiKeyFromDataStore()
     }
 
@@ -88,7 +94,10 @@ object SettingsManager {
     val amoledMode: Flow<Boolean>
         get() = appContext.dataStore.data.map { it[AMOLED_MODE] ?: false }
 
+    fun isAmoled(): Boolean = _amoledCached
+
     suspend fun setAmoledMode(enabled: Boolean) {
+        _amoledCached = enabled
         appContext.dataStore.edit { it[AMOLED_MODE] = enabled }
     }
 
