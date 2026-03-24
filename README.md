@@ -10,7 +10,7 @@
 
 <h1 align="center">Noko</h1>
 
-<h3 align="center">Android AI RP chat client.</h3>
+<h3 align="center">The best RP frontend for Android.</h3>
 
 <p align="center">
 <img alt="GitHub Downloads (all assets, all releases)" src="https://img.shields.io/github/downloads/rikkichy/noko/total?style=for-the-badge&labelColor=2D3142&color=B0D7FF">
