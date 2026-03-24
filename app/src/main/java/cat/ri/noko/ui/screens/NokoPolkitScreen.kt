@@ -10,6 +10,8 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.rounded.SendTimeExtension
+import androidx.compose.material.icons.rounded.DisabledVisible
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -77,7 +79,11 @@ fun NokoPolkitScreen(onBack: () -> Unit) {
                         .padding(16.dp),
                     verticalArrangement = Arrangement.spacedBy(12.dp),
                 ) {
-                    Text("Chat Policies", style = MaterialTheme.typography.titleMedium)
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Icon(Icons.Rounded.SendTimeExtension, contentDescription = null)
+                        Spacer(Modifier.size(8.dp))
+                        Text("Chat Policies", style = MaterialTheme.typography.titleMedium)
+                    }
 
                     Row(
                         modifier = Modifier.fillMaxWidth(),
@@ -140,7 +146,11 @@ fun NokoPolkitScreen(onBack: () -> Unit) {
                         .padding(16.dp),
                     verticalArrangement = Arrangement.spacedBy(12.dp),
                 ) {
-                    Text("App Policies", style = MaterialTheme.typography.titleMedium)
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Icon(Icons.Rounded.DisabledVisible, contentDescription = null)
+                        Spacer(Modifier.size(8.dp))
+                        Text("App Policies", style = MaterialTheme.typography.titleMedium)
+                    }
 
                     Row(
                         modifier = Modifier.fillMaxWidth(),
