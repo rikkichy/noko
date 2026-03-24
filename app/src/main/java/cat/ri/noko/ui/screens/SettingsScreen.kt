@@ -53,6 +53,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.navigation.NavController
 import cat.ri.noko.BuildConfig
 import cat.ri.noko.core.SettingsManager
@@ -113,17 +114,24 @@ fun SettingsScreen(navController: NavController) {
                         Text("Appearance", style = MaterialTheme.typography.titleMedium)
                     }
 
+                    val isDarkTheme = isSystemInDarkTheme()
                     Row(
                         modifier = Modifier.fillMaxWidth(),
                         verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.SpaceBetween,
                     ) {
                         Column(modifier = Modifier.weight(1f)) {
-                            Text("AMOLED mode")
                             Text(
-                                "Use pure black background in dark theme.",
+                                "AMOLED mode",
+                                color = if (isDarkTheme) MaterialTheme.colorScheme.onSurface
+                                else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.38f),
+                            )
+                            Text(
+                                if (isDarkTheme) "Use pure black background in dark theme."
+                                else "Available only on dark theme.",
                                 style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                color = if (isDarkTheme) MaterialTheme.colorScheme.onSurfaceVariant
+                                else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.38f),
                             )
                         }
                         Spacer(Modifier.size(12.dp))
@@ -133,6 +141,7 @@ fun SettingsScreen(navController: NavController) {
                                 if (enabled) haptics.toggleOn() else haptics.toggleOff()
                                 scope.launch { SettingsManager.setAmoledMode(enabled) }
                             },
+                            enabled = isDarkTheme,
                         )
                     }
                 }
