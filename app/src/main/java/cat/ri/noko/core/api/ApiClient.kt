@@ -23,14 +23,9 @@ import retrofit2.http.POST
 import retrofit2.http.Streaming
 import java.util.concurrent.TimeUnit
 
-private const val BASE_URL = "https://openrouter.ai/api/v1/"
-
-private interface OpenRouterApi {
+private interface ChatApi {
     @GET("models")
     suspend fun getModels(): ModelsResponse
-
-    @GET("key")
-    suspend fun validateKey(): ResponseBody
 
     @POST("chat/completions")
     suspend fun chatCompletion(@Body request: ChatRequest): cat.ri.noko.model.api.ChatResponse
@@ -45,22 +40,29 @@ private val json = Json {
     explicitNulls = false
 }
 
-object OpenRouterClient {
+object ApiClient {
 
     private var apiKey: String = ""
-    private var api: OpenRouterApi? = null
+    private var currentBaseUrl: String = ""
+    private var currentProviderId: String = ""
+    private var api: ChatApi? = null
 
-    fun configure(key: String) {
-        if (key == apiKey && api != null) return
+    fun configure(key: String, baseUrl: String, providerId: String) {
+        if (key == apiKey && baseUrl == currentBaseUrl && api != null) return
         apiKey = key
+        currentBaseUrl = baseUrl
+        currentProviderId = providerId
 
         val okHttpClient = OkHttpClient.Builder()
             .addInterceptor { chain ->
-                val req = chain.request().newBuilder()
-                    .addHeader("Authorization", "Bearer $apiKey")
-                    .addHeader("X-Title", "Noko")
-                    .build()
-                chain.proceed(req)
+                val builder = chain.request().newBuilder()
+                if (apiKey.isNotBlank()) {
+                    builder.addHeader("Authorization", "Bearer $apiKey")
+                }
+                if (providerId == "openrouter") {
+                    builder.addHeader("X-Title", "Noko")
+                }
+                chain.proceed(builder.build())
             }
             .addInterceptor(HttpLoggingInterceptor().apply {
                 level = if (BuildConfig.DEBUG) HttpLoggingInterceptor.Level.BASIC
@@ -72,24 +74,23 @@ object OpenRouterClient {
             .build()
 
         api = Retrofit.Builder()
-            .baseUrl(BASE_URL)
+            .baseUrl(baseUrl)
             .client(okHttpClient)
             .addConverterFactory(json.asConverterFactory("application/json".toMediaType()))
             .build()
-            .create(OpenRouterApi::class.java)
+            .create(ChatApi::class.java)
     }
 
-    val isConfigured: Boolean get() = apiKey.isNotBlank() && api != null
+    val isConfigured: Boolean get() = currentBaseUrl.isNotBlank() && api != null
 
     suspend fun getModels(): ModelsResponse {
         requireConfigured()
         return api!!.getModels()
     }
 
-
-    suspend fun validateKey() {
+    suspend fun validateConnection() {
         requireConfigured()
-        api!!.validateKey()
+        api!!.getModels()
     }
 
     fun streamChat(request: ChatRequest): Flow<String> = callbackFlow {
@@ -102,13 +103,13 @@ object OpenRouterClient {
             try {
                 val response = call.execute()
                 if (!response.isSuccessful) {
-                    close(OpenRouterException(humanizeHttpError(response.code())))
+                    close(ApiException(humanizeHttpError(response.code())))
                     return@launch
                 }
 
                 val body = response.body()
                 if (body == null) {
-                    close(OpenRouterException("No response from server"))
+                    close(ApiException("No response from server"))
                     return@launch
                 }
 
@@ -124,14 +125,14 @@ object OpenRouterClient {
                         try {
                             val chunk = json.decodeFromString<StreamChunk>(data)
                             chunk.error?.let { error ->
-                                close(OpenRouterException(humanizeApiError(error.code, error.message)))
+                                close(ApiException(humanizeApiError(error.code, error.message)))
                                 return@launch
                             }
                             val content = chunk.choices.firstOrNull()?.delta?.content
                             if (content != null) {
                                 trySend(content)
                             }
-                        } catch (e: OpenRouterException) {
+                        } catch (e: ApiException) {
                             close(e)
                             return@launch
                         } catch (_: Exception) {
@@ -152,17 +153,17 @@ object OpenRouterClient {
     }
 
     private fun requireConfigured() {
-        check(isConfigured) { "OpenRouterClient not configured. Set API key first." }
+        check(isConfigured) { "ApiClient not configured. Select a provider first." }
     }
 }
 
 private fun humanizeHttpError(code: Int): String = when (code) {
     401 -> "Invalid API key"
-    402 -> "Insufficient credits on OpenRouter"
-    403 -> "Access denied by OpenRouter"
+    402 -> "Insufficient credits"
+    403 -> "Access denied"
     408 -> "Request timed out"
     429 -> "Too many requests — slow down"
-    500, 502, 503 -> "OpenRouter is having issues, try again later"
+    500, 502, 503 -> "Server is having issues, try again later"
     in 400..499 -> "Request error ($code)"
     in 500..599 -> "Server error ($code)"
     else -> "Unexpected error ($code)"
@@ -170,21 +171,21 @@ private fun humanizeHttpError(code: Int): String = when (code) {
 
 private fun humanizeApiError(code: Int?, message: String?): String = when {
     code == 401 || message?.contains("key", ignoreCase = true) == true -> "Invalid API key"
-    code == 402 || message?.contains("credit", ignoreCase = true) == true -> "Insufficient credits on OpenRouter"
+    code == 402 || message?.contains("credit", ignoreCase = true) == true -> "Insufficient credits"
     code == 429 || message?.contains("rate", ignoreCase = true) == true -> "Too many requests — slow down"
     message?.contains("context", ignoreCase = true) == true -> "Message too long for this model"
     message?.contains("moderation", ignoreCase = true) == true -> "Content was flagged by moderation"
-    else -> "OpenRouter error"
+    else -> "API error"
 }
 
 fun humanizeException(e: Throwable): String = when (e) {
-    is OpenRouterException -> e.message ?: "OpenRouter error"
+    is ApiException -> e.message ?: "API error"
     is java.net.UnknownHostException -> "No internet connection"
-    is java.net.ConnectException -> "Could not reach OpenRouter"
+    is java.net.ConnectException -> "Could not reach server"
     is java.net.SocketTimeoutException -> "Connection timed out"
     is javax.net.ssl.SSLException -> "Secure connection failed"
     is java.io.IOException -> "Network error"
     else -> "Something went wrong"
 }
 
-class OpenRouterException(message: String) : Exception(message)
+class ApiException(message: String) : Exception(message)

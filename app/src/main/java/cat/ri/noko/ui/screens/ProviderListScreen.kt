@@ -1,0 +1,245 @@
+package cat.ri.noko.ui.screens
+
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.Check
+import androidx.compose.material.icons.rounded.Computer
+import androidx.compose.material.icons.rounded.Cloud
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Switch
+import androidx.compose.material3.Text
+import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.TopAppBarDefaults
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.unit.dp
+import cat.ri.noko.core.SettingsManager
+import cat.ri.noko.model.ApiProvider
+import cat.ri.noko.model.builtInProviders
+import cat.ri.noko.ui.util.rememberNokoHaptics
+import kotlinx.coroutines.launch
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun ProviderListScreen(onBack: () -> Unit) {
+    val scope = rememberCoroutineScope()
+    val haptics = rememberNokoHaptics()
+    val selectedProviderId by SettingsManager.selectedProviderId.collectAsState(initial = SettingsManager.getSelectedProviderId())
+    val customUrl by SettingsManager.customProviderUrl.collectAsState(initial = "")
+    val customAuth by SettingsManager.customProviderAuth.collectAsState(initial = false)
+
+    var customUrlInput by remember(customUrl) { mutableStateOf(customUrl) }
+    var customAuthInput by remember(customAuth) { mutableStateOf(customAuth) }
+
+    Scaffold(
+        topBar = {
+            TopAppBar(
+                title = { Text("API Provider") },
+                navigationIcon = {
+                    IconButton(onClick = onBack) {
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
+                    }
+                },
+                colors = TopAppBarDefaults.topAppBarColors(containerColor = Color.Transparent),
+            )
+        },
+    ) { padding ->
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(padding)
+                .verticalScroll(rememberScrollState())
+                .padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp),
+        ) {
+            Text(
+                "Select where your AI models are hosted.",
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+
+            Card(
+                colors = CardDefaults.cardColors(
+                    containerColor = if (selectedProviderId == "custom")
+                        MaterialTheme.colorScheme.primaryContainer
+                    else MaterialTheme.colorScheme.surfaceContainer,
+                ),
+                shape = RoundedCornerShape(20.dp),
+            ) {
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clickable {
+                            haptics.confirm()
+                            scope.launch {
+                                SettingsManager.setSelectedProvider("custom")
+                            }
+                        }
+                        .padding(16.dp),
+                    verticalArrangement = Arrangement.spacedBy(8.dp),
+                ) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        Column(modifier = Modifier.weight(1f)) {
+                            Text("Custom", style = MaterialTheme.typography.titleMedium)
+                            Text(
+                                "Enter your own OpenAI-compatible endpoint.",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = if (selectedProviderId == "custom")
+                                    MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.7f)
+                                else MaterialTheme.colorScheme.onSurfaceVariant,
+                            )
+                        }
+                        if (selectedProviderId == "custom") {
+                            Icon(
+                                Icons.Filled.Check,
+                                contentDescription = "Selected",
+                                tint = MaterialTheme.colorScheme.primary,
+                            )
+                        }
+                    }
+
+                    AnimatedVisibility(visible = selectedProviderId == "custom") {
+                        Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                            OutlinedTextField(
+                                value = customUrlInput,
+                                onValueChange = {
+                                    customUrlInput = it
+                                    scope.launch { SettingsManager.setCustomProviderUrl(it) }
+                                },
+                                label = { Text("Base URL") },
+                                placeholder = { Text("https://api.example.com/v1/") },
+                                singleLine = true,
+                                shape = RoundedCornerShape(20.dp),
+                                modifier = Modifier.fillMaxWidth(),
+                            )
+
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                            ) {
+                                Text(
+                                    "Requires API key",
+                                    style = MaterialTheme.typography.bodyMedium,
+                                )
+                                Switch(
+                                    checked = customAuthInput,
+                                    onCheckedChange = { value ->
+                                        customAuthInput = value
+                                        if (value) haptics.toggleOn() else haptics.toggleOff()
+                                        scope.launch { SettingsManager.setCustomProviderAuth(value) }
+                                    },
+                                )
+                            }
+                        }
+                    }
+                }
+            }
+
+            builtInProviders.forEach { provider ->
+                ProviderCard(
+                    provider = provider,
+                    isSelected = selectedProviderId == provider.id,
+                    onClick = {
+                        haptics.confirm()
+                        scope.launch {
+                            SettingsManager.setSelectedProvider(provider.id)
+                        }
+                        onBack()
+                    },
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun ProviderCard(
+    provider: ApiProvider,
+    isSelected: Boolean,
+    onClick: () -> Unit,
+) {
+    Card(
+        colors = CardDefaults.cardColors(
+            containerColor = if (isSelected)
+                MaterialTheme.colorScheme.primaryContainer
+            else MaterialTheme.colorScheme.surfaceContainer,
+        ),
+        shape = RoundedCornerShape(20.dp),
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .clickable(onClick = onClick)
+                .padding(16.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Icon(
+                if (provider.isLocal) Icons.Rounded.Computer else Icons.Rounded.Cloud,
+                contentDescription = null,
+                modifier = Modifier.size(24.dp),
+            )
+            Spacer(Modifier.size(12.dp))
+            Column(modifier = Modifier.weight(1f)) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                ) {
+                    Text(provider.name, style = MaterialTheme.typography.titleMedium)
+                    if (provider.id == "openrouter") {
+                        Text(
+                            "Recommended",
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.primary,
+                        )
+                    }
+                }
+                Text(
+                    provider.baseUrl,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = if (isSelected)
+                        MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.7f)
+                    else MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+            if (isSelected) {
+                Icon(
+                    Icons.Filled.Check,
+                    contentDescription = "Selected",
+                    tint = MaterialTheme.colorScheme.primary,
+                )
+            }
+        }
+    }
+}

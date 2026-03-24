@@ -93,7 +93,8 @@ import cat.ri.noko.core.ChatStorage
 import cat.ri.noko.core.HallucinationDetector
 import cat.ri.noko.core.PromptBuilder
 import cat.ri.noko.core.SettingsManager
-import cat.ri.noko.core.api.OpenRouterClient
+import cat.ri.noko.core.api.ApiClient
+import cat.ri.noko.model.getProviderById
 import cat.ri.noko.model.defaultPromptPreset
 import cat.ri.noko.model.ChatMessage
 import cat.ri.noko.model.ChatSessionMeta
@@ -202,6 +203,12 @@ fun ChatScreen(
     val modelId by SettingsManager.selectedModelId.collectAsState(initial = "")
     val presets by SettingsManager.promptPresets.collectAsState(initial = listOf(defaultPromptPreset()))
     val selectedPresetId by SettingsManager.selectedPresetId.collectAsState(initial = "default")
+    val providerId by SettingsManager.selectedProviderId.collectAsState(initial = SettingsManager.getSelectedProviderId())
+    val customUrl by SettingsManager.customProviderUrl.collectAsState(initial = "")
+    val customAuth by SettingsManager.customProviderAuth.collectAsState(initial = false)
+    val provider = remember(providerId) { getProviderById(providerId) }
+    val providerRequiresAuth = provider?.requiresAuth ?: customAuth
+    val providerBaseUrl = provider?.baseUrl ?: customUrl
     val activePreset = remember(presets, selectedPresetId) {
         presets.find { it.id == selectedPresetId } ?: presets.first()
     }
@@ -246,7 +253,7 @@ fun ChatScreen(
 
 
     fun startStreaming() {
-        if (apiKey.isBlank() || modelId.isBlank()) return
+        if ((providerRequiresAuth && apiKey.isBlank()) || modelId.isBlank() || providerBaseUrl.isBlank()) return
         isGenerating = true
         hasStreamedContent = false
         val assistantIdx = messages.size
@@ -260,7 +267,7 @@ fun ChatScreen(
         streamJob = scope.launch {
             val buffer = StringBuilder()
             try {
-                OpenRouterClient.configure(apiKey)
+                ApiClient.configure(apiKey, providerBaseUrl, providerId)
                 val apiMessages = PromptBuilder.buildMessages(
                     preset = activePreset,
                     persona = activePersona,
@@ -276,7 +283,7 @@ fun ChatScreen(
                 var wordCount = 0
                 var tokenCount = 0
                 var lastGuardCheck = 0
-                OpenRouterClient.streamChat(request).collect { token ->
+                ApiClient.streamChat(request).collect { token ->
                     buffer.append(token)
                     tokenCount++
 

@@ -57,8 +57,9 @@ import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.navigation.NavController
 import cat.ri.noko.BuildConfig
 import cat.ri.noko.core.SettingsManager
-import cat.ri.noko.core.api.OpenRouterClient
+import cat.ri.noko.core.api.ApiClient
 import cat.ri.noko.model.PersonaType
+import cat.ri.noko.model.getProviderById
 import cat.ri.noko.ui.util.rememberNokoHaptics
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -74,6 +75,13 @@ fun SettingsScreen(navController: NavController) {
     val apiKey by SettingsManager.apiKey.collectAsState(initial = if (SettingsManager.hasApiKey()) "placeholder" else "")
     val hasKey = apiKey.isNotBlank()
     val modelName by SettingsManager.selectedModelName.collectAsState(initial = "")
+    val providerId by SettingsManager.selectedProviderId.collectAsState(initial = SettingsManager.getSelectedProviderId())
+    val customUrl by SettingsManager.customProviderUrl.collectAsState(initial = "")
+    val customAuth by SettingsManager.customProviderAuth.collectAsState(initial = false)
+    val provider = remember(providerId) { getProviderById(providerId) }
+    val providerName = provider?.name ?: "Custom"
+    val providerRequiresAuth = provider?.requiresAuth ?: customAuth
+    val providerBaseUrl = provider?.baseUrl ?: customUrl
     var apiKeyInput by remember(apiKey) { mutableStateOf("") }
     var isChangingKey by remember { mutableStateOf(false) }
     var isTestingKey by remember { mutableStateOf(false) }
@@ -162,115 +170,148 @@ fun SettingsScreen(navController: NavController) {
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Icon(Icons.Rounded.Cloud, contentDescription = null)
                         Spacer(Modifier.size(8.dp))
-                        Text("OpenRouter", style = MaterialTheme.typography.titleMedium)
+                        Text(providerName, style = MaterialTheme.typography.titleMedium)
                     }
 
-                    if (hasKey && !isChangingKey) {
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.SpaceBetween,
-                        ) {
-                            Text("API Key", modifier = Modifier.weight(1f))
-                            Spacer(Modifier.size(12.dp))
-                            TextButton(
-                                onClick = {
-                                    haptics.tap()
-                                    isChangingKey = true
-                                    apiKeyInput = ""
-                                    keyError = null
-                                },
-                            ) { Text("Use another key") }
-                        }
-                    } else {
-                        OutlinedTextField(
-                            value = apiKeyInput,
-                            onValueChange = {
-                                apiKeyInput = it
-                                if (keyError != null) keyError = null
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clickable {
+                                haptics.tap()
+                                navController.navigate("providers")
                             },
-                            label = { Text("API Key") },
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .offset { IntOffset(shakeOffset.value.toInt(), 0) },
-                            singleLine = true,
-                            visualTransformation = PasswordVisualTransformation(),
-                            placeholder = { Text("sk-or-v1-...") },
-                            isError = keyError != null,
-                            supportingText = if (keyError != null) {
-                                { Text(keyError!!) }
-                            } else null,
-                            shape = RoundedCornerShape(20.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        Column(modifier = Modifier.weight(1f)) {
+                            Text("Provider")
+                            Text(
+                                providerName,
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            )
+                        }
+                        Icon(
+                            Icons.AutoMirrored.Rounded.KeyboardArrowRight,
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant,
                         )
+                    }
 
-                        Row(
-                            horizontalArrangement = Arrangement.spacedBy(8.dp),
-                        ) {
-                            Button(
-                                enabled = !isTestingKey && apiKeyInput.isNotBlank(),
-                                onClick = {
-                                    haptics.tap()
-                                    isTestingKey = true
-                                    keyError = null
-                                    scope.launch {
-                                        runCatching {
-                                            OpenRouterClient.configure(apiKeyInput)
-                                            withContext(Dispatchers.IO) {
-                                                OpenRouterClient.validateKey()
-                                            }
-                                        }.onSuccess {
-                                            SettingsManager.setApiKey(apiKeyInput)
-                                            isChangingKey = false
-                                        }.onFailure { e ->
-                                            keyError = cat.ri.noko.core.api.humanizeException(e)
-                                            haptics.reject()
-                                            shakeOffset.animateTo(
-                                                targetValue = 0f,
-                                                animationSpec = keyframes {
-                                                    durationMillis = 400
-                                                    0f at 0
-                                                    (-18f) at 50
-                                                    18f at 100
-                                                    (-14f) at 150
-                                                    14f at 200
-                                                    (-8f) at 250
-                                                    8f at 300
-                                                    (-4f) at 350
-                                                    0f at 400
-                                                },
-                                            )
+                    if (providerRequiresAuth) {
+                        HorizontalDivider()
 
-                                            if (apiKey.isNotBlank()) {
-                                                OpenRouterClient.configure(apiKey)
-                                            }
-                                        }
-                                        isTestingKey = false
-                                    }
-                                },
-                                modifier = Modifier.weight(1f),
+                        if (hasKey && !isChangingKey) {
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.SpaceBetween,
                             ) {
-                                if (isTestingKey) {
-                                    CircularProgressIndicator(
-                                        modifier = Modifier.size(20.dp),
-                                        strokeWidth = 2.dp,
-                                        color = MaterialTheme.colorScheme.onPrimary,
-                                    )
-                                    Spacer(Modifier.width(8.dp))
-                                }
-                                Text(if (isTestingKey) "Testing..." else "Save")
-                            }
-                            if (isChangingKey && hasKey) {
+                                Text("API Key", modifier = Modifier.weight(1f))
+                                Spacer(Modifier.size(12.dp))
                                 TextButton(
                                     onClick = {
                                         haptics.tap()
-                                        isChangingKey = false
+                                        isChangingKey = true
+                                        apiKeyInput = ""
                                         keyError = null
+                                    },
+                                ) { Text("Use another key") }
+                            }
+                        } else {
+                            val placeholder = when (providerId) {
+                                "openrouter" -> "sk-or-v1-..."
+                                "openai" -> "sk-..."
+                                else -> "API key"
+                            }
+                            OutlinedTextField(
+                                value = apiKeyInput,
+                                onValueChange = {
+                                    apiKeyInput = it
+                                    if (keyError != null) keyError = null
+                                },
+                                label = { Text("API Key") },
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .offset { IntOffset(shakeOffset.value.toInt(), 0) },
+                                singleLine = true,
+                                visualTransformation = PasswordVisualTransformation(),
+                                placeholder = { Text(placeholder) },
+                                isError = keyError != null,
+                                supportingText = if (keyError != null) {
+                                    { Text(keyError!!) }
+                                } else null,
+                                shape = RoundedCornerShape(20.dp),
+                            )
 
-                                        if (apiKey.isNotBlank()) {
-                                            OpenRouterClient.configure(apiKey)
+                            Row(
+                                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                            ) {
+                                Button(
+                                    enabled = !isTestingKey && apiKeyInput.isNotBlank(),
+                                    onClick = {
+                                        haptics.tap()
+                                        isTestingKey = true
+                                        keyError = null
+                                        scope.launch {
+                                            runCatching {
+                                                ApiClient.configure(apiKeyInput, providerBaseUrl, providerId)
+                                                withContext(Dispatchers.IO) {
+                                                    ApiClient.validateConnection()
+                                                }
+                                            }.onSuccess {
+                                                SettingsManager.setApiKey(apiKeyInput)
+                                                isChangingKey = false
+                                            }.onFailure { e ->
+                                                keyError = cat.ri.noko.core.api.humanizeException(e)
+                                                haptics.reject()
+                                                shakeOffset.animateTo(
+                                                    targetValue = 0f,
+                                                    animationSpec = keyframes {
+                                                        durationMillis = 400
+                                                        0f at 0
+                                                        (-18f) at 50
+                                                        18f at 100
+                                                        (-14f) at 150
+                                                        14f at 200
+                                                        (-8f) at 250
+                                                        8f at 300
+                                                        (-4f) at 350
+                                                        0f at 400
+                                                    },
+                                                )
+
+                                                if (apiKey.isNotBlank()) {
+                                                    ApiClient.configure(apiKey, providerBaseUrl, providerId)
+                                                }
+                                            }
+                                            isTestingKey = false
                                         }
                                     },
-                                ) { Text("Cancel") }
+                                    modifier = Modifier.weight(1f),
+                                ) {
+                                    if (isTestingKey) {
+                                        CircularProgressIndicator(
+                                            modifier = Modifier.size(20.dp),
+                                            strokeWidth = 2.dp,
+                                            color = MaterialTheme.colorScheme.onPrimary,
+                                        )
+                                        Spacer(Modifier.width(8.dp))
+                                    }
+                                    Text(if (isTestingKey) "Testing..." else "Save")
+                                }
+                                if (isChangingKey && hasKey) {
+                                    TextButton(
+                                        onClick = {
+                                            haptics.tap()
+                                            isChangingKey = false
+                                            keyError = null
+
+                                            if (apiKey.isNotBlank()) {
+                                                ApiClient.configure(apiKey, providerBaseUrl, providerId)
+                                            }
+                                        },
+                                    ) { Text("Cancel") }
+                                }
                             }
                         }
                     }

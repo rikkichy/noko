@@ -61,5 +61,8 @@ fun SettingsNavHost() {
         composable("noko_polkit") {
             NokoPolkitScreen(onBack = { navController.popBackStack() })
         }
+        composable("providers") {
+            ProviderListScreen(onBack = { navController.popBackStack() })
+        }
     }
 }

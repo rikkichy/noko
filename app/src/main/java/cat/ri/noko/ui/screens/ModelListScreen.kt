@@ -46,9 +46,10 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import cat.ri.noko.core.SettingsManager
-import cat.ri.noko.core.api.OpenRouterClient
+import cat.ri.noko.core.api.ApiClient
 import cat.ri.noko.core.api.humanizeException
 import cat.ri.noko.model.api.ModelInfo
+import cat.ri.noko.model.getProviderById
 import cat.ri.noko.ui.util.rememberNokoHaptics
 import kotlinx.coroutines.launch
 
@@ -59,23 +60,34 @@ fun ModelListScreen(onBack: () -> Unit) {
     val haptics = rememberNokoHaptics()
     val apiKey by SettingsManager.apiKey.collectAsState(initial = "")
     val selectedModelId by SettingsManager.selectedModelId.collectAsState(initial = "")
+    val providerId by SettingsManager.selectedProviderId.collectAsState(initial = SettingsManager.getSelectedProviderId())
+    val customUrl by SettingsManager.customProviderUrl.collectAsState(initial = "")
+    val customAuth by SettingsManager.customProviderAuth.collectAsState(initial = false)
+    val provider = remember(providerId) { getProviderById(providerId) }
+    val providerRequiresAuth = provider?.requiresAuth ?: customAuth
+    val providerBaseUrl = provider?.baseUrl ?: customUrl
 
     var models by remember { mutableStateOf<List<ModelInfo>>(emptyList()) }
     var loading by remember { mutableStateOf(true) }
     var error by remember { mutableStateOf<String?>(null) }
     var search by remember { mutableStateOf("") }
 
-    LaunchedEffect(apiKey) {
-        if (apiKey.isBlank()) {
+    LaunchedEffect(apiKey, providerId, providerBaseUrl) {
+        if (providerRequiresAuth && apiKey.isBlank()) {
             error = "Set your API key first"
+            loading = false
+            return@LaunchedEffect
+        }
+        if (providerBaseUrl.isBlank()) {
+            error = "Set the provider URL first"
             loading = false
             return@LaunchedEffect
         }
         loading = true
         error = null
         try {
-            OpenRouterClient.configure(apiKey)
-            val response = OpenRouterClient.getModels()
+            ApiClient.configure(apiKey, providerBaseUrl, providerId)
+            val response = ApiClient.getModels()
             models = response.data.sortedBy { it.name.lowercase() }
         } catch (e: Exception) {
             error = humanizeException(e)
@@ -154,8 +166,8 @@ fun ModelListScreen(onBack: () -> Unit) {
                                     loading = true
                                     error = null
                                     try {
-                                        OpenRouterClient.configure(apiKey)
-                                        val response = OpenRouterClient.getModels()
+                                        ApiClient.configure(apiKey, providerBaseUrl, providerId)
+                                        val response = ApiClient.getModels()
                                         models = response.data.sortedBy { it.name.lowercase() }
                                     } catch (e: Exception) {
                                         error = humanizeException(e)

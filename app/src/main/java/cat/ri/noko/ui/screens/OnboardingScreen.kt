@@ -7,8 +7,10 @@ import androidx.activity.result.PickVisualMediaRequest
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.keyframes
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -24,6 +26,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.ArrowBack
 import androidx.compose.material.icons.automirrored.rounded.ArrowForward
+import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.SmartToy
 import androidx.compose.material.icons.automirrored.rounded.OpenInNew
@@ -56,10 +59,13 @@ import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import cat.ri.noko.core.AvatarStorage
 import cat.ri.noko.core.SettingsManager
-import cat.ri.noko.core.api.OpenRouterClient
+import cat.ri.noko.core.api.ApiClient
 import cat.ri.noko.core.api.humanizeException
+import cat.ri.noko.model.ApiProvider
 import cat.ri.noko.model.PersonaEntry
 import cat.ri.noko.model.PersonaType
+import cat.ri.noko.model.builtInProviders
+import cat.ri.noko.model.getProviderById
 import cat.ri.noko.ui.components.ImageCropOverlay
 import cat.ri.noko.ui.components.PersonaFormFields
 import cat.ri.noko.ui.util.rememberNokoHaptics
@@ -67,7 +73,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
-private enum class OnboardingStep { ApiKey, Persona, Character }
+private enum class OnboardingStep { Provider, ApiKey, Persona, Character }
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -76,8 +82,11 @@ fun OnboardingScreen(onComplete: () -> Unit) {
     val scope = rememberCoroutineScope()
     val haptics = rememberNokoHaptics()
 
-    var step by remember { mutableStateOf(OnboardingStep.ApiKey) }
+    var step by remember { mutableStateOf(OnboardingStep.Provider) }
 
+    var selectedProviderId by remember { mutableStateOf("openrouter") }
+    var customUrl by remember { mutableStateOf("") }
+    var customAuth by remember { mutableStateOf(false) }
 
     var apiKeyInput by remember { mutableStateOf("") }
     var keyError by remember { mutableStateOf<String?>(null) }
@@ -156,9 +165,23 @@ fun OnboardingScreen(onComplete: () -> Unit) {
     Scaffold(
         topBar = {
             when (step) {
-                OnboardingStep.ApiKey -> {
+                OnboardingStep.Provider -> {
                     TopAppBar(
                         title = { Text("Noko") },
+                        colors = TopAppBarDefaults.topAppBarColors(containerColor = Color.Transparent),
+                    )
+                }
+                OnboardingStep.ApiKey -> {
+                    TopAppBar(
+                        title = { Text("API Key") },
+                        navigationIcon = {
+                            IconButton(onClick = {
+                                haptics.tap()
+                                step = OnboardingStep.Provider
+                            }) {
+                                Icon(Icons.AutoMirrored.Rounded.ArrowBack, contentDescription = "Back")
+                            }
+                        },
                         colors = TopAppBarDefaults.topAppBarColors(containerColor = Color.Transparent),
                     )
                 }
@@ -168,7 +191,9 @@ fun OnboardingScreen(onComplete: () -> Unit) {
                         navigationIcon = {
                             IconButton(onClick = {
                                 haptics.tap()
-                                step = OnboardingStep.ApiKey
+                                val provider = getProviderById(selectedProviderId)
+                                val requiresAuth = provider?.requiresAuth ?: customAuth
+                                step = if (requiresAuth) OnboardingStep.ApiKey else OnboardingStep.Provider
                             }) {
                                 Icon(Icons.AutoMirrored.Rounded.ArrowBack, contentDescription = "Back")
                             }
@@ -203,7 +228,7 @@ fun OnboardingScreen(onComplete: () -> Unit) {
             verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
             when (step) {
-                OnboardingStep.ApiKey -> {
+                OnboardingStep.Provider -> {
                     Text(
                         "Welcome!",
                         style = MaterialTheme.typography.headlineMedium,
@@ -212,7 +237,97 @@ fun OnboardingScreen(onComplete: () -> Unit) {
                     Spacer(Modifier.height(4.dp))
 
                     Text(
-                        "Enter your OpenRouter API key to get started.",
+                        "Choose where your AI models are hosted.",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+
+                    Spacer(Modifier.height(4.dp))
+
+                    builtInProviders.forEach { provider ->
+                        androidx.compose.material3.Card(
+                            colors = androidx.compose.material3.CardDefaults.cardColors(
+                                containerColor = if (selectedProviderId == provider.id)
+                                    MaterialTheme.colorScheme.primaryContainer
+                                else MaterialTheme.colorScheme.surfaceContainer,
+                            ),
+                            shape = RoundedCornerShape(20.dp),
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clickable {
+                                    haptics.tap()
+                                    selectedProviderId = provider.id
+                                },
+                        ) {
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(16.dp),
+                                verticalAlignment = Alignment.CenterVertically,
+                            ) {
+                                Column(modifier = Modifier.weight(1f)) {
+                                    Row(
+                                        verticalAlignment = Alignment.CenterVertically,
+                                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                                    ) {
+                                        Text(provider.name, style = MaterialTheme.typography.titleMedium)
+                                        if (provider.id == "openrouter") {
+                                            Text(
+                                                "Recommended",
+                                                style = MaterialTheme.typography.labelSmall,
+                                                color = MaterialTheme.colorScheme.primary,
+                                            )
+                                        }
+                                    }
+                                    Text(
+                                        provider.baseUrl,
+                                        style = MaterialTheme.typography.bodySmall,
+                                        color = if (selectedProviderId == provider.id)
+                                            MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.7f)
+                                        else MaterialTheme.colorScheme.onSurfaceVariant,
+                                    )
+                                }
+                                if (selectedProviderId == provider.id) {
+                                    Icon(
+                                        Icons.Filled.Check,
+                                        contentDescription = "Selected",
+                                        tint = MaterialTheme.colorScheme.primary,
+                                    )
+                                }
+                            }
+                        }
+                    }
+
+                    Button(
+                        onClick = {
+                            haptics.tap()
+                            scope.launch {
+                                SettingsManager.setSelectedProvider(selectedProviderId)
+                                val provider = getProviderById(selectedProviderId)
+                                val requiresAuth = provider?.requiresAuth ?: customAuth
+                                step = if (requiresAuth) OnboardingStep.ApiKey else OnboardingStep.Persona
+                            }
+                        },
+                        modifier = Modifier.fillMaxWidth(),
+                    ) {
+                        Icon(Icons.AutoMirrored.Rounded.ArrowForward, contentDescription = null)
+                        Spacer(Modifier.width(8.dp))
+                        Text("Next")
+                    }
+                }
+
+                OnboardingStep.ApiKey -> {
+                    val provider = remember(selectedProviderId) { getProviderById(selectedProviderId) }
+                    val providerName = provider?.name ?: "Custom"
+                    val providerBaseUrl = provider?.baseUrl ?: customUrl
+                    val placeholder = when (selectedProviderId) {
+                        "openrouter" -> "sk-or-v1-..."
+                        "openai" -> "sk-..."
+                        else -> "API key"
+                    }
+
+                    Text(
+                        "Enter your $providerName API key to get started.",
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
@@ -226,7 +341,7 @@ fun OnboardingScreen(onComplete: () -> Unit) {
                             if (keyError != null) keyError = null
                         },
                         label = { Text("API Key") },
-                        placeholder = { Text("sk-or-v1-...") },
+                        placeholder = { Text(placeholder) },
                         singleLine = true,
                         isError = keyError != null,
                         supportingText = if (keyError != null) {
@@ -247,9 +362,9 @@ fun OnboardingScreen(onComplete: () -> Unit) {
                             keyError = null
                             scope.launch {
                                 runCatching {
-                                    OpenRouterClient.configure(apiKeyInput)
+                                    ApiClient.configure(apiKeyInput, providerBaseUrl, selectedProviderId)
                                     withContext(Dispatchers.IO) {
-                                        OpenRouterClient.validateKey()
+                                        ApiClient.validateConnection()
                                     }
                                 }.onSuccess {
                                     SettingsManager.setApiKey(apiKeyInput)
@@ -277,20 +392,22 @@ fun OnboardingScreen(onComplete: () -> Unit) {
                         Text(if (isTesting) "Checking..." else "Next")
                     }
 
-                    OutlinedButton(
-                        onClick = {
-                            haptics.tap()
-                            val intent = Intent(
-                                Intent.ACTION_VIEW,
-                                Uri.parse("https://openrouter.ai/workspaces/default/keys"),
-                            )
-                            context.startActivity(intent)
-                        },
-                        modifier = Modifier.fillMaxWidth(),
-                    ) {
-                        Icon(Icons.AutoMirrored.Rounded.OpenInNew, contentDescription = null)
-                        Spacer(Modifier.width(8.dp))
-                        Text("Create OpenRouter API Key")
+                    if (selectedProviderId == "openrouter") {
+                        OutlinedButton(
+                            onClick = {
+                                haptics.tap()
+                                val intent = Intent(
+                                    Intent.ACTION_VIEW,
+                                    Uri.parse("https://openrouter.ai/workspaces/default/keys"),
+                                )
+                                context.startActivity(intent)
+                            },
+                            modifier = Modifier.fillMaxWidth(),
+                        ) {
+                            Icon(Icons.AutoMirrored.Rounded.OpenInNew, contentDescription = null)
+                            Spacer(Modifier.width(8.dp))
+                            Text("Create OpenRouter API Key")
+                        }
                     }
                 }
 

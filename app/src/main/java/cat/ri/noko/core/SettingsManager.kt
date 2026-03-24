@@ -54,6 +54,10 @@ object SettingsManager {
 
     private val BIOMETRIC_AUTH = booleanPreferencesKey("biometric_auth")
 
+    private val SELECTED_PROVIDER_ID = stringPreferencesKey("selected_provider_id")
+    private val CUSTOM_PROVIDER_URL = stringPreferencesKey("custom_provider_url")
+    private val CUSTOM_PROVIDER_AUTH = booleanPreferencesKey("custom_provider_auth")
+
     private lateinit var appContext: Context
     private lateinit var securePrefs: SharedPreferences
     private val _apiKeyFlow = MutableStateFlow("")
@@ -79,13 +83,28 @@ object SettingsManager {
             EncryptedSharedPreferences.PrefKeyEncryptionScheme.AES256_SIV,
             EncryptedSharedPreferences.PrefValueEncryptionScheme.AES256_GCM,
         )
-        _apiKeyFlow.value = securePrefs.getString(KEY_API_KEY, "") ?: ""
+        migrateApiKeyToProvider()
+        val providerId = runBlocking {
+            appContext.dataStore.data.first()[SELECTED_PROVIDER_ID] ?: "openrouter"
+        }
+        _apiKeyFlow.value = securePrefs.getString("${KEY_API_KEY}_$providerId", "") ?: ""
         _personasFlow.value = loadEncryptedList(KEY_PERSONAS_JSON)
         _presetsFlow.value = loadEncryptedList<PromptPreset>(KEY_PRESETS_JSON)
             .ifEmpty { listOf(defaultPromptPreset()) }
         ChatStorage.init(appContext)
         migrateFromDataStore()
         _secureInitDone = true
+    }
+
+    private fun migrateApiKeyToProvider() {
+        val old = securePrefs.getString(KEY_API_KEY, null)
+        if (old != null && old.isNotBlank()) {
+            val providerKey = "${KEY_API_KEY}_openrouter"
+            if ((securePrefs.getString(providerKey, null) ?: "").isBlank()) {
+                securePrefs.edit().putString(providerKey, old).apply()
+            }
+            securePrefs.edit().remove(KEY_API_KEY).apply()
+        }
     }
 
     private inline fun <reified T> loadEncryptedList(key: String): List<T> {
@@ -254,14 +273,49 @@ object SettingsManager {
 
     fun hasApiKey(): Boolean = _apiKeyFlow.value.isNotBlank()
 
+    fun getApiKeyForProvider(providerId: String): String =
+        securePrefs.getString("${KEY_API_KEY}_$providerId", "") ?: ""
+
     suspend fun setApiKey(key: String) {
-        securePrefs.edit().putString(KEY_API_KEY, key).apply()
+        val providerId = appContext.dataStore.data.first()[SELECTED_PROVIDER_ID] ?: "openrouter"
+        securePrefs.edit().putString("${KEY_API_KEY}_$providerId", key).apply()
         _apiKeyFlow.value = key
     }
 
     suspend fun clearApiKey() {
-        securePrefs.edit().remove(KEY_API_KEY).apply()
+        val providerId = appContext.dataStore.data.first()[SELECTED_PROVIDER_ID] ?: "openrouter"
+        securePrefs.edit().remove("${KEY_API_KEY}_$providerId").apply()
         _apiKeyFlow.value = ""
+    }
+
+    val selectedProviderId: Flow<String>
+        get() = appContext.dataStore.data.map { it[SELECTED_PROVIDER_ID] ?: "openrouter" }
+
+    fun getSelectedProviderId(): String = runBlocking {
+        appContext.dataStore.data.first()[SELECTED_PROVIDER_ID] ?: "openrouter"
+    }
+
+    val customProviderUrl: Flow<String>
+        get() = appContext.dataStore.data.map { it[CUSTOM_PROVIDER_URL] ?: "" }
+
+    val customProviderAuth: Flow<Boolean>
+        get() = appContext.dataStore.data.map { it[CUSTOM_PROVIDER_AUTH] ?: false }
+
+    suspend fun setSelectedProvider(providerId: String) {
+        appContext.dataStore.edit { prefs ->
+            prefs[SELECTED_PROVIDER_ID] = providerId
+            prefs.remove(SELECTED_MODEL_ID)
+            prefs.remove(SELECTED_MODEL_NAME)
+        }
+        _apiKeyFlow.value = getApiKeyForProvider(providerId)
+    }
+
+    suspend fun setCustomProviderUrl(url: String) {
+        appContext.dataStore.edit { it[CUSTOM_PROVIDER_URL] = url }
+    }
+
+    suspend fun setCustomProviderAuth(requiresAuth: Boolean) {
+        appContext.dataStore.edit { it[CUSTOM_PROVIDER_AUTH] = requiresAuth }
     }
 
     val selectedModelId: Flow<String>
