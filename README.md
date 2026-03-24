@@ -10,7 +10,7 @@
 
 <h1 align="center">Noko</h1>
 
-<h3 align="center">A native Android AI roleplay chat client for <a href="https://openrouter.ai">OpenRouter</a>.</h3>
+<h3 align="center">Android AI RP chat client.</h3>
 
 <p align="center">
 <img alt="GitHub Downloads (all assets, all releases)" src="https://img.shields.io/github/downloads/rikkichy/noko/total?style=for-the-badge&labelColor=2D3142&color=B0D7FF">
