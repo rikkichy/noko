@@ -29,6 +29,8 @@ private val json = Json { ignoreUnknownKeys = true }
 
 private const val ENCRYPTED_PREFS_NAME = "noko_secure"
 private const val KEY_API_KEY = "api_key"
+private const val KEY_PERSONAS_JSON = "personas_json"
+private const val KEY_PRESETS_JSON = "prompt_presets_json"
 
 object SettingsManager {
 
@@ -50,13 +52,25 @@ object SettingsManager {
     private val PROMPT_PRESETS_JSON = stringPreferencesKey("prompt_presets_json")
     private val SELECTED_PRESET_ID = stringPreferencesKey("selected_preset_id")
 
+    private val BIOMETRIC_AUTH = booleanPreferencesKey("biometric_auth")
+
     private lateinit var appContext: Context
     private lateinit var securePrefs: SharedPreferences
     private val _apiKeyFlow = MutableStateFlow("")
+    private val _personasFlow = MutableStateFlow<List<PersonaEntry>>(emptyList())
+    private val _presetsFlow = MutableStateFlow<List<PromptPreset>>(listOf(defaultPromptPreset()))
     private var _amoledCached = false
+    private var _secureInitDone = false
 
-    fun init(context: Context) {
+    fun initBasic(context: Context) {
         appContext = context.applicationContext
+        runBlocking {
+            appContext.dataStore.data.first().let { _amoledCached = it[AMOLED_MODE] ?: false }
+        }
+    }
+
+    fun initSecure() {
+        if (_secureInitDone) return
         val masterKey = MasterKeys.getOrCreate(MasterKeys.AES256_GCM_SPEC)
         securePrefs = EncryptedSharedPreferences.create(
             ENCRYPTED_PREFS_NAME,
@@ -66,23 +80,47 @@ object SettingsManager {
             EncryptedSharedPreferences.PrefValueEncryptionScheme.AES256_GCM,
         )
         _apiKeyFlow.value = securePrefs.getString(KEY_API_KEY, "") ?: ""
-        runBlocking {
-            appContext.dataStore.data.first().let { _amoledCached = it[AMOLED_MODE] ?: false }
-        }
-        migrateApiKeyFromDataStore()
+        _personasFlow.value = loadEncryptedList(KEY_PERSONAS_JSON)
+        _presetsFlow.value = loadEncryptedList<PromptPreset>(KEY_PRESETS_JSON)
+            .ifEmpty { listOf(defaultPromptPreset()) }
+        ChatStorage.init(appContext)
+        migrateFromDataStore()
+        _secureInitDone = true
     }
 
+    private inline fun <reified T> loadEncryptedList(key: String): List<T> {
+        val raw = securePrefs.getString(key, null) ?: return emptyList()
+        return runCatching { json.decodeFromString<List<T>>(raw) }.getOrDefault(emptyList())
+    }
 
-    private fun migrateApiKeyFromDataStore() {
-        val legacyKey = stringPreferencesKey("api_key")
+    private fun migrateFromDataStore() {
         @Suppress("OPT_IN_USAGE")
         GlobalScope.launch(Dispatchers.IO) {
             appContext.dataStore.edit { prefs ->
-                val old = prefs[legacyKey]
-                if (!old.isNullOrBlank()) {
-                    securePrefs.edit().putString(KEY_API_KEY, old).apply()
-                    _apiKeyFlow.value = old
-                    prefs.remove(legacyKey)
+                val legacyApiKey = stringPreferencesKey("api_key")
+                prefs[legacyApiKey]?.let { old ->
+                    if (old.isNotBlank()) {
+                        securePrefs.edit().putString(KEY_API_KEY, old).apply()
+                        _apiKeyFlow.value = old
+                    }
+                    prefs.remove(legacyApiKey)
+                }
+
+                prefs[PERSONAS_JSON]?.let { old ->
+                    if (old.isNotBlank()) {
+                        securePrefs.edit().putString(KEY_PERSONAS_JSON, old).apply()
+                        _personasFlow.value = loadEncryptedList(KEY_PERSONAS_JSON)
+                    }
+                    prefs.remove(PERSONAS_JSON)
+                }
+
+                prefs[PROMPT_PRESETS_JSON]?.let { old ->
+                    if (old.isNotBlank()) {
+                        securePrefs.edit().putString(KEY_PRESETS_JSON, old).apply()
+                        _presetsFlow.value = loadEncryptedList<PromptPreset>(KEY_PRESETS_JSON)
+                            .ifEmpty { listOf(defaultPromptPreset()) }
+                    }
+                    prefs.remove(PROMPT_PRESETS_JSON)
                 }
             }
         }
@@ -161,12 +199,15 @@ object SettingsManager {
         appContext.dataStore.edit { it[HIDE_FROM_RECENTS] = enabled }
     }
 
+    val biometricAuth: Flow<Boolean>
+        get() = appContext.dataStore.data.map { it[BIOMETRIC_AUTH] ?: false }
+
+    suspend fun setBiometricAuth(enabled: Boolean) {
+        appContext.dataStore.edit { it[BIOMETRIC_AUTH] = enabled }
+    }
+
     val allEntries: Flow<List<PersonaEntry>>
-        get() = appContext.dataStore.data.map { prefs ->
-            prefs[PERSONAS_JSON]?.let { raw ->
-                runCatching { json.decodeFromString<List<PersonaEntry>>(raw) }.getOrDefault(emptyList())
-            } ?: emptyList()
-        }
+        get() = _personasFlow
 
     val personas: Flow<List<PersonaEntry>>
         get() = allEntries.map { it.filter { e -> e.type == PersonaType.PERSONA } }
@@ -175,22 +216,16 @@ object SettingsManager {
         get() = allEntries.map { it.filter { e -> e.type == PersonaType.CHARACTER } }
 
     suspend fun saveEntry(entry: PersonaEntry) {
-        appContext.dataStore.edit { prefs ->
-            val current = prefs[PERSONAS_JSON]?.let {
-                runCatching { json.decodeFromString<List<PersonaEntry>>(it) }.getOrDefault(emptyList())
-            } ?: emptyList()
-            val updated = current.filterNot { it.id == entry.id } + entry
-            prefs[PERSONAS_JSON] = json.encodeToString(updated)
-        }
+        val current = _personasFlow.value
+        val updated = current.filterNot { it.id == entry.id } + entry
+        securePrefs.edit().putString(KEY_PERSONAS_JSON, json.encodeToString(updated)).apply()
+        _personasFlow.value = updated
     }
 
     suspend fun deleteEntry(id: String) {
-        appContext.dataStore.edit { prefs ->
-            val current = prefs[PERSONAS_JSON]?.let {
-                runCatching { json.decodeFromString<List<PersonaEntry>>(it) }.getOrDefault(emptyList())
-            } ?: emptyList()
-            prefs[PERSONAS_JSON] = json.encodeToString(current.filterNot { it.id == id })
-        }
+        val updated = _personasFlow.value.filterNot { it.id == id }
+        securePrefs.edit().putString(KEY_PERSONAS_JSON, json.encodeToString(updated)).apply()
+        _personasFlow.value = updated
     }
 
     fun getEntry(entries: List<PersonaEntry>, id: String): PersonaEntry? =
@@ -243,25 +278,16 @@ object SettingsManager {
     }
 
     val promptPresets: Flow<List<PromptPreset>>
-        get() = appContext.dataStore.data.map { prefs ->
-            prefs[PROMPT_PRESETS_JSON]?.let { raw ->
-                runCatching { json.decodeFromString<List<PromptPreset>>(raw) }
-                    .getOrDefault(listOf(defaultPromptPreset()))
-            } ?: listOf(defaultPromptPreset())
-        }
+        get() = _presetsFlow
 
     val selectedPresetId: Flow<String>
         get() = appContext.dataStore.data.map { it[SELECTED_PRESET_ID] ?: "default" }
 
     suspend fun savePreset(preset: PromptPreset) {
-        appContext.dataStore.edit { prefs ->
-            val current = prefs[PROMPT_PRESETS_JSON]?.let {
-                runCatching { json.decodeFromString<List<PromptPreset>>(it) }
-                    .getOrDefault(listOf(defaultPromptPreset()))
-            } ?: listOf(defaultPromptPreset())
-            val updated = current.filterNot { it.id == preset.id } + preset
-            prefs[PROMPT_PRESETS_JSON] = json.encodeToString(updated)
-        }
+        val current = _presetsFlow.value
+        val updated = current.filterNot { it.id == preset.id } + preset
+        securePrefs.edit().putString(KEY_PRESETS_JSON, json.encodeToString(updated)).apply()
+        _presetsFlow.value = updated
     }
 
     suspend fun setSelectedPresetId(id: String) {

@@ -92,6 +92,7 @@ dependencies {
 
     implementation(libs.coil.compose)
     implementation(libs.androidx.security.crypto)
+    implementation(libs.androidx.biometric)
 
     implementation(libs.kotlinx.coroutines.android)
     implementation(libs.kotlinx.serialization.json)

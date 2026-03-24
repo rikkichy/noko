@@ -43,12 +43,15 @@ import androidx.lifecycle.LifecycleOwner
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.compose.ui.unit.dp
 import cat.ri.noko.core.SettingsManager
+import cat.ri.noko.ui.screens.BiometricAuthScreen
 import cat.ri.noko.ui.screens.ChatScreen
 import cat.ri.noko.ui.screens.HomeScreen
 import cat.ri.noko.ui.screens.OnboardingScreen
 import cat.ri.noko.ui.screens.SettingsNavHost
 import cat.ri.noko.ui.theme.NokoTheme
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.withContext
 
 @OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
@@ -60,8 +63,38 @@ fun NokoApp() {
             .map { it as Boolean? }
             .collectAsState(initial = null)
         var onboardingDismissed by remember { mutableStateOf(false) }
+        val biometricAuth by SettingsManager.biometricAuth.collectAsState(initial = false)
+        var needsAuth by remember { mutableStateOf(true) }
+        var secureReady by remember { mutableStateOf(false) }
+
+        val lifecycleOwner = LocalLifecycleOwner.current
+        val activity = LocalContext.current as? Activity
+
+        DisposableEffect(lifecycleOwner) {
+            val observer = object : DefaultLifecycleObserver {
+                override fun onStop(owner: LifecycleOwner) {
+                    if (biometricAuth) needsAuth = true
+                }
+            }
+            lifecycleOwner.lifecycle.addObserver(observer)
+            onDispose { lifecycleOwner.lifecycle.removeObserver(observer) }
+        }
 
         if (onboardingComplete == null) return@NokoTheme
+
+        if (biometricAuth && needsAuth && onboardingComplete == true) {
+            BiometricAuthScreen(onSuccess = { needsAuth = false })
+            return@NokoTheme
+        }
+
+        LaunchedEffect(needsAuth, biometricAuth, onboardingComplete) {
+            if (!secureReady && (!biometricAuth || !needsAuth || onboardingComplete == false)) {
+                withContext(Dispatchers.IO) { SettingsManager.initSecure() }
+                secureReady = true
+            }
+        }
+
+        if (!secureReady) return@NokoTheme
 
         if (!onboardingDismissed && onboardingComplete == false) {
             OnboardingScreen(onComplete = { onboardingDismissed = true })
@@ -71,7 +104,6 @@ fun NokoApp() {
         val screenSecurity by SettingsManager.screenSecurity.collectAsState(initial = false)
         val clearClipboard by SettingsManager.clearClipboard.collectAsState(initial = false)
         val hideFromRecents by SettingsManager.hideFromRecents.collectAsState(initial = false)
-        val activity = LocalContext.current as? Activity
         LaunchedEffect(screenSecurity) {
             if (screenSecurity) {
                 activity?.window?.setFlags(
@@ -83,7 +115,6 @@ fun NokoApp() {
             }
         }
 
-        val lifecycleOwner = LocalLifecycleOwner.current
         LaunchedEffect(hideFromRecents) {
             val am = activity?.getSystemService(Context.ACTIVITY_SERVICE) as? ActivityManager
             am?.appTasks?.firstOrNull()?.setExcludeFromRecents(hideFromRecents)

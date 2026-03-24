@@ -1,8 +1,10 @@
 package cat.ri.noko.core
 
 import android.content.Context
+import android.util.Log
 import androidx.security.crypto.EncryptedFile
 import androidx.security.crypto.MasterKeys
+import cat.ri.noko.BuildConfig
 import cat.ri.noko.model.ChatMessage
 import cat.ri.noko.model.ChatSessionMeta
 import kotlinx.coroutines.Dispatchers
@@ -13,6 +15,7 @@ import kotlinx.coroutines.withContext
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 import java.io.File
+import java.security.SecureRandom
 
 object ChatStorage {
 
@@ -46,7 +49,8 @@ object ChatStorage {
             if (bytes != null) {
                 json.decodeFromString<List<ChatSessionMeta>>(bytes.decodeToString())
             } else emptyList()
-        } catch (_: Exception) {
+        } catch (e: Exception) {
+            if (BuildConfig.DEBUG) Log.w("ChatStorage", "Failed to decrypt index", e)
             emptyList()
         }
     }
@@ -85,7 +89,8 @@ object ChatStorage {
             if (bytes != null) {
                 json.decodeFromString<List<ChatMessage>>(bytes.decodeToString())
             } else null
-        } catch (_: Exception) {
+        } catch (e: Exception) {
+            if (BuildConfig.DEBUG) Log.w("ChatStorage", "Failed to decrypt chat $chatId", e)
             null
         }
     }
@@ -99,7 +104,7 @@ object ChatStorage {
     }
 
     suspend fun deleteChat(chatId: String) = withContext(Dispatchers.IO) {
-        chatFile(chatId).delete()
+        secureDelete(chatFile(chatId))
         val updated = _recentChats.value.filterNot { it.id == chatId }
         saveIndex(updated)
         _recentChats.value = updated
@@ -115,9 +120,30 @@ object ChatStorage {
         ).build()
 
     private fun writeEncrypted(file: File, bytes: ByteArray) {
-
-        if (file.exists()) file.delete()
+        if (file.exists()) secureDelete(file)
         encryptedFile(file).openFileOutput().use { it.write(bytes) }
+    }
+
+    private fun secureDelete(file: File) {
+        if (!file.exists()) return
+        try {
+            val length = file.length()
+            if (length > 0) {
+                val random = SecureRandom()
+                file.outputStream().use { out ->
+                    val buf = ByteArray(4096)
+                    var remaining = length
+                    while (remaining > 0) {
+                        random.nextBytes(buf)
+                        val toWrite = minOf(buf.size.toLong(), remaining).toInt()
+                        out.write(buf, 0, toWrite)
+                        remaining -= toWrite
+                    }
+                }
+            }
+        } catch (_: Exception) {
+        }
+        file.delete()
     }
 
     private fun readEncrypted(file: File): ByteArray? {
