@@ -7,9 +7,7 @@ import androidx.activity.result.PickVisualMediaRequest
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.keyframes
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -21,7 +19,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
@@ -29,7 +26,7 @@ import androidx.compose.material.icons.automirrored.rounded.ArrowBack
 import androidx.compose.material.icons.automirrored.rounded.ArrowForward
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.SmartToy
-import androidx.compose.material.icons.rounded.OpenInNew
+import androidx.compose.material.icons.automirrored.rounded.OpenInNew
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
@@ -53,8 +50,6 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.draw.clip
-import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.IntOffset
@@ -66,9 +61,8 @@ import cat.ri.noko.core.api.humanizeException
 import cat.ri.noko.model.PersonaEntry
 import cat.ri.noko.model.PersonaType
 import cat.ri.noko.ui.components.ImageCropOverlay
+import cat.ri.noko.ui.components.PersonaFormFields
 import cat.ri.noko.ui.util.rememberNokoHaptics
-import coil3.compose.AsyncImage
-import coil3.request.ImageRequest
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -294,7 +288,7 @@ fun OnboardingScreen(onComplete: () -> Unit) {
                         },
                         modifier = Modifier.fillMaxWidth(),
                     ) {
-                        Icon(Icons.Rounded.OpenInNew, contentDescription = null)
+                        Icon(Icons.AutoMirrored.Rounded.OpenInNew, contentDescription = null)
                         Spacer(Modifier.width(8.dp))
                         Text("Create OpenRouter API Key")
                     }
@@ -309,90 +303,33 @@ fun OnboardingScreen(onComplete: () -> Unit) {
 
                     Spacer(Modifier.height(4.dp))
 
-                    Column(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalAlignment = Alignment.CenterHorizontally,
-                    ) {
-                        Box(
-                            modifier = Modifier
-                                .size(100.dp)
-                                .clip(CircleShape)
-                                .clickable {
-                                    haptics.tap()
-                                    cropForCharacter = false
-                                    photoPicker.launch(
-                                        PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly),
-                                    )
-                                },
-                            contentAlignment = Alignment.Center,
-                        ) {
-                            if (avatarFileName != null) {
-                                AsyncImage(
-                                    model = ImageRequest.Builder(context)
-                                        .data(AvatarStorage.getFile(context, avatarFileName!!))
-                                        .build(),
-                                    contentDescription = "Avatar",
-                                    modifier = Modifier
-                                        .fillMaxSize()
-                                        .clip(CircleShape),
-                                    contentScale = ContentScale.Crop,
-                                )
-                            } else {
-                                Icon(
-                                    Icons.Filled.Person,
-                                    contentDescription = "Add avatar",
-                                    modifier = Modifier.size(40.dp),
-                                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                                )
-                            }
-                        }
-                        Spacer(Modifier.height(4.dp))
-                        Text(
-                            "Tap to set avatar",
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        )
-                    }
-
-                    Spacer(Modifier.height(4.dp))
-
-                    OutlinedTextField(
-                        value = personaName,
-                        onValueChange = {
-                            if (it.length <= 100) personaName = it
+                    PersonaFormFields(
+                        type = PersonaType.PERSONA,
+                        avatarFileName = avatarFileName,
+                        onAvatarClick = {
+                            haptics.tap()
+                            cropForCharacter = false
+                            photoPicker.launch(
+                                PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly),
+                            )
+                        },
+                        name = personaName,
+                        onNameChange = {
+                            personaName = it
                             if (nameError) nameError = false
                         },
-                        label = { Text("Name") },
-                        placeholder = { Text("Your persona name...") },
-                        singleLine = true,
-                        isError = nameError,
-                        supportingText = if (nameError) {
-                            { Text("Name is required") }
-                        } else null,
-                        shape = RoundedCornerShape(20.dp),
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .offset { IntOffset(nameShake.value.toInt(), 0) },
-                    )
-
-                    OutlinedTextField(
-                        value = personaDescription,
-                        onValueChange = {
-                            if (it.length <= 2000) personaDescription = it
+                        nameError = nameError,
+                        nameShakeOffset = nameShake.value,
+                        description = personaDescription,
+                        onDescriptionChange = {
+                            personaDescription = it
                             if (descError) descError = false
                         },
-                        label = { Text("Description") },
-                        placeholder = { Text("Describe your persona...") },
-                        isError = descError,
-                        supportingText = if (descError) {
-                            { Text("Description is required") }
-                        } else null,
-                        shape = RoundedCornerShape(20.dp),
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(160.dp)
-                            .offset { IntOffset(descShake.value.toInt(), 0) },
-                        maxLines = 6,
+                        descError = descError,
+                        descShakeOffset = descShake.value,
+                        avatarSize = 100.dp,
+                        fallbackIcon = Icons.Filled.Person,
+                        namePlaceholder = "Your persona name...",
                     )
 
                     Button(
@@ -444,102 +381,34 @@ fun OnboardingScreen(onComplete: () -> Unit) {
 
                     Spacer(Modifier.height(4.dp))
 
-                    Column(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalAlignment = Alignment.CenterHorizontally,
-                    ) {
-                        Box(
-                            modifier = Modifier
-                                .size(100.dp)
-                                .clip(CircleShape)
-                                .clickable {
-                                    haptics.tap()
-                                    cropForCharacter = true
-                                    photoPicker.launch(
-                                        PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly),
-                                    )
-                                },
-                            contentAlignment = Alignment.Center,
-                        ) {
-                            if (charAvatarFileName != null) {
-                                AsyncImage(
-                                    model = ImageRequest.Builder(context)
-                                        .data(AvatarStorage.getFile(context, charAvatarFileName!!))
-                                        .build(),
-                                    contentDescription = "Avatar",
-                                    modifier = Modifier
-                                        .fillMaxSize()
-                                        .clip(CircleShape),
-                                    contentScale = ContentScale.Crop,
-                                )
-                            } else {
-                                Icon(
-                                    Icons.Filled.SmartToy,
-                                    contentDescription = "Add avatar",
-                                    modifier = Modifier.size(40.dp),
-                                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                                )
-                            }
-                        }
-                        Spacer(Modifier.height(4.dp))
-                        Text(
-                            "Tap to set avatar",
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        )
-                    }
-
-                    Spacer(Modifier.height(4.dp))
-
-                    OutlinedTextField(
-                        value = charName,
-                        onValueChange = {
-                            if (it.length <= 100) charName = it
+                    PersonaFormFields(
+                        type = PersonaType.CHARACTER,
+                        avatarFileName = charAvatarFileName,
+                        onAvatarClick = {
+                            haptics.tap()
+                            cropForCharacter = true
+                            photoPicker.launch(
+                                PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly),
+                            )
+                        },
+                        name = charName,
+                        onNameChange = {
+                            charName = it
                             if (charNameError) charNameError = false
                         },
-                        label = { Text("Name") },
-                        placeholder = { Text("Character name...") },
-                        singleLine = true,
-                        isError = charNameError,
-                        supportingText = if (charNameError) {
-                            { Text("Name is required") }
-                        } else null,
-                        shape = RoundedCornerShape(20.dp),
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .offset { IntOffset(charNameShake.value.toInt(), 0) },
-                    )
-
-                    OutlinedTextField(
-                        value = charDescription,
-                        onValueChange = {
-                            if (it.length <= 2000) charDescription = it
+                        nameError = charNameError,
+                        nameShakeOffset = charNameShake.value,
+                        description = charDescription,
+                        onDescriptionChange = {
+                            charDescription = it
                             if (charDescError) charDescError = false
                         },
-                        label = { Text("Description") },
-                        placeholder = { Text("Describe the character...") },
-                        isError = charDescError,
-                        supportingText = if (charDescError) {
-                            { Text("Description is required") }
-                        } else null,
-                        shape = RoundedCornerShape(20.dp),
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(160.dp)
-                            .offset { IntOffset(charDescShake.value.toInt(), 0) },
-                        maxLines = 6,
-                    )
-
-                    OutlinedTextField(
-                        value = charGreeting,
-                        onValueChange = { if (it.length <= 2000) charGreeting = it },
-                        label = { Text("Greeting Message") },
-                        placeholder = { Text("First message when starting a chat...") },
-                        shape = RoundedCornerShape(20.dp),
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(120.dp),
-                        maxLines = 4,
+                        descError = charDescError,
+                        descShakeOffset = charDescShake.value,
+                        greetingMessage = charGreeting,
+                        onGreetingChange = { charGreeting = it },
+                        avatarSize = 100.dp,
+                        fallbackIcon = Icons.Filled.SmartToy,
                     )
 
                     fun finishOnboarding() {

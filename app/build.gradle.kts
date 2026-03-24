@@ -12,7 +12,7 @@ android {
     defaultConfig {
         applicationId = "cat.ri.noko"
         minSdk = 26
-        targetSdk = 35
+        targetSdk = 36
         versionCode = 6
         versionName = "0.3.2"
 
@@ -86,8 +86,8 @@ dependencies {
     implementation("androidx.compose.ui:ui")
     implementation("androidx.compose.ui:ui-tooling-preview")
     implementation("androidx.compose.foundation:foundation")
-    
-    implementation("androidx.compose.material3:material3:1.5.0-alpha12")
+
+    implementation("androidx.compose.material3:material3:1.5.0-alpha15")
     implementation("androidx.compose.material:material-icons-extended")
 
     implementation(libs.coil.compose)

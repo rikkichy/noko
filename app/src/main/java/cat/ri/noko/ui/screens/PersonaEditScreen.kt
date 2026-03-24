@@ -4,29 +4,19 @@ import android.net.Uri
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.PickVisualMediaRequest
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Check
-import androidx.compose.material.icons.filled.Person
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
@@ -41,8 +31,6 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.draw.clip
-import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import cat.ri.noko.core.AvatarStorage
@@ -50,9 +38,8 @@ import cat.ri.noko.core.SettingsManager
 import cat.ri.noko.model.PersonaEntry
 import cat.ri.noko.model.PersonaType
 import cat.ri.noko.ui.components.ImageCropOverlay
+import cat.ri.noko.ui.components.PersonaFormFields
 import cat.ri.noko.ui.util.rememberNokoHaptics
-import coil3.compose.AsyncImage
-import coil3.request.ImageRequest
 import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -163,80 +150,22 @@ fun PersonaEditScreen(
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.spacedBy(16.dp),
         ) {
-            Box(
-                modifier = Modifier
-                    .size(128.dp)
-                    .clip(CircleShape)
-                    .clickable {
-                        haptics.tap()
-                        photoPicker.launch(
-                            PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly),
-                        )
-                    },
-                contentAlignment = Alignment.Center,
-            ) {
-                if (avatarFileName != null) {
-                    AsyncImage(
-                        model = ImageRequest.Builder(context)
-                            .data(AvatarStorage.getFile(context, avatarFileName!!))
-                            .build(),
-                        contentDescription = "Avatar",
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .clip(CircleShape),
-                        contentScale = ContentScale.Crop,
+            PersonaFormFields(
+                type = type,
+                avatarFileName = avatarFileName,
+                onAvatarClick = {
+                    haptics.tap()
+                    photoPicker.launch(
+                        PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly),
                     )
-                } else {
-                    Icon(
-                        Icons.Filled.Person,
-                        contentDescription = "Add avatar",
-                        modifier = Modifier.size(48.dp),
-                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
-                }
-            }
-            Text(
-                "Tap to set avatar",
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                },
+                name = name,
+                onNameChange = { name = it },
+                description = description,
+                onDescriptionChange = { description = it },
+                greetingMessage = greetingMessage,
+                onGreetingChange = { greetingMessage = it },
             )
-
-            Spacer(Modifier.size(8.dp))
-
-            OutlinedTextField(
-                value = name,
-                onValueChange = { if (it.length <= 100) name = it },
-                label = { Text("Name") },
-                placeholder = { Text(if (type == PersonaType.PERSONA) "Persona name..." else "Character name...") },
-                singleLine = true,
-                shape = RoundedCornerShape(20.dp),
-                modifier = Modifier.fillMaxWidth(),
-            )
-
-            OutlinedTextField(
-                value = description,
-                onValueChange = { if (it.length <= 2000) description = it },
-                label = { Text("Description") },
-                shape = RoundedCornerShape(20.dp),
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(160.dp),
-                maxLines = 6,
-            )
-
-            if (type == PersonaType.CHARACTER) {
-                OutlinedTextField(
-                    value = greetingMessage,
-                    onValueChange = { if (it.length <= 2000) greetingMessage = it },
-                    label = { Text("Greeting Message") },
-                    placeholder = { Text("First message when starting a chat...") },
-                    shape = RoundedCornerShape(20.dp),
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(120.dp),
-                    maxLines = 4,
-                )
-            }
         }
     }
 }
