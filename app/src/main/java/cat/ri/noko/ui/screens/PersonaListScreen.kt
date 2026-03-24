@@ -89,7 +89,7 @@ fun PersonaListScreen(
     val haptics = rememberNokoHaptics()
     val context = LocalContext.current
     var deleteTarget by remember { mutableStateOf<PersonaEntry?>(null) }
-    var exportTarget by remember { mutableStateOf<PersonaEntry?>(null) }
+    var exportTargets by remember { mutableStateOf<List<PersonaEntry>>(emptyList()) }
     var showPassphraseDialog by remember { mutableStateOf(false) }
     var exportPassphrase by remember { mutableStateOf("") }
     var exportPassphraseConfirm by remember { mutableStateOf("") }
@@ -105,37 +105,37 @@ fun PersonaListScreen(
     val exportLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.CreateDocument("application/octet-stream"),
     ) { uri ->
-        if (uri != null && exportTarget != null && exportPassphrase.isNotBlank()) {
+        if (uri != null && exportTargets.isNotEmpty() && exportPassphrase.isNotBlank()) {
             scope.launch {
                 withContext(Dispatchers.IO) {
-                    CharacterCodec.exportToNokc(context, exportTarget!!, exportPassphrase, uri)
+                    CharacterCodec.exportToNokc(context, exportTargets, exportPassphrase, uri)
                 }
                 haptics.confirm()
-                exportTarget = null
+                exportTargets = emptyList()
                 exportPassphrase = ""
                 exportPassphraseConfirm = ""
             }
         }
     }
 
-    fun startExport(entry: PersonaEntry) {
-        exportTarget = entry
+    fun startExport(targets: List<PersonaEntry>) {
+        exportTargets = targets
         exportPassphrase = ""
         exportPassphraseConfirm = ""
         passphraseError = null
         showPassphraseDialog = true
     }
 
-    fun requestExportWithBiometric(entry: PersonaEntry) {
+    fun requestExportWithBiometric(targets: List<PersonaEntry>) {
         if (!biometricAuth) {
-            startExport(entry)
+            startExport(targets)
             return
         }
         val activity = context as FragmentActivity
         val executor = ContextCompat.getMainExecutor(context)
         val callback = object : BiometricPrompt.AuthenticationCallback() {
             override fun onAuthenticationSucceeded(result: BiometricPrompt.AuthenticationResult) {
-                startExport(entry)
+                startExport(targets)
             }
 
             override fun onAuthenticationError(errorCode: Int, errString: CharSequence) {
@@ -148,7 +148,7 @@ fun PersonaListScreen(
         }
         val prompt = BiometricPrompt(activity, executor, callback)
         val info = BiometricPrompt.PromptInfo.Builder()
-            .setTitle("Export character")
+            .setTitle(if (targets.size == 1) "Export character" else "Export ${targets.size} characters")
             .setSubtitle("Verify your identity to export")
             .setNegativeButtonText("Cancel")
             .setAllowedAuthenticators(androidx.biometric.BiometricManager.Authenticators.BIOMETRIC_STRONG)
@@ -166,16 +166,29 @@ fun PersonaListScreen(
                     }
                 },
                 actions = {
-                    if (type == PersonaType.CHARACTER && onImport != null) {
-                        IconButton(
-                            onClick = {
-                                haptics.tap()
-                                importLauncher.launch(
-                                    arrayOf("image/png", "application/json", "application/octet-stream"),
-                                )
-                            },
-                        ) {
-                            Icon(Icons.Rounded.FileOpen, contentDescription = "Import")
+                    if (type == PersonaType.CHARACTER) {
+                        if (onImport != null) {
+                            IconButton(
+                                onClick = {
+                                    haptics.tap()
+                                    SettingsManager.suppressBiometricRelock = true
+                                    importLauncher.launch(
+                                        arrayOf("image/png", "application/json", "application/octet-stream"),
+                                    )
+                                },
+                            ) {
+                                Icon(Icons.Rounded.FileOpen, contentDescription = "Import")
+                            }
+                        }
+                        if (entries.size > 1) {
+                            IconButton(
+                                onClick = {
+                                    haptics.tap()
+                                    requestExportWithBiometric(entries)
+                                },
+                            ) {
+                                Icon(Icons.Rounded.IosShare, contentDescription = "Export all")
+                            }
                         }
                     }
                 },
@@ -283,7 +296,7 @@ fun PersonaListScreen(
                                 IconButton(
                                     onClick = {
                                         haptics.tap()
-                                        requestExportWithBiometric(entry)
+                                        requestExportWithBiometric(listOf(entry))
                                     },
                                 ) {
                                     Icon(
@@ -339,17 +352,24 @@ fun PersonaListScreen(
         )
     }
 
-    if (showPassphraseDialog && exportTarget != null) {
+    if (showPassphraseDialog && exportTargets.isNotEmpty()) {
+        val exportCount = exportTargets.size
         AlertDialog(
             onDismissRequest = {
                 showPassphraseDialog = false
-                exportTarget = null
+                exportTargets = emptyList()
             },
-            title = { Text("Export as .nokc") },
+            title = {
+                Text(
+                    if (exportCount == 1) "Export as .nokc"
+                    else "Export $exportCount characters as .nokc",
+                )
+            },
             text = {
                 Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                     Text(
-                        "Set a passphrase to encrypt this character.",
+                        if (exportCount == 1) "Set a passphrase to encrypt this character."
+                        else "Set a passphrase to encrypt ${exportCount} characters.",
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
@@ -434,9 +454,14 @@ fun PersonaListScreen(
                             }
                             else -> {
                                 showPassphraseDialog = false
-                                val safeName = exportTarget!!.name
-                                    .replace(Regex("[^a-zA-Z0-9._-]"), "_")
-                                    .take(50)
+                                SettingsManager.suppressBiometricRelock = true
+                                val safeName = if (exportCount == 1) {
+                                    exportTargets.first().name
+                                        .replace(Regex("[^a-zA-Z0-9._-]"), "_")
+                                        .take(50)
+                                } else {
+                                    "noko_characters_$exportCount"
+                                }
                                 exportLauncher.launch("$safeName.nokc")
                             }
                         }
@@ -449,7 +474,7 @@ fun PersonaListScreen(
                 TextButton(
                     onClick = {
                         showPassphraseDialog = false
-                        exportTarget = null
+                        exportTargets = emptyList()
                     },
                 ) {
                     Text("Cancel")
