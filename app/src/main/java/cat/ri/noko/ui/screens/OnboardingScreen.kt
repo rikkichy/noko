@@ -359,7 +359,7 @@ fun OnboardingScreen(onComplete: () -> Unit) {
                     OutlinedTextField(
                         value = personaName,
                         onValueChange = {
-                            personaName = it
+                            if (it.length <= 100) personaName = it
                             if (nameError) nameError = false
                         },
                         label = { Text("Name") },
@@ -378,7 +378,7 @@ fun OnboardingScreen(onComplete: () -> Unit) {
                     OutlinedTextField(
                         value = personaDescription,
                         onValueChange = {
-                            personaDescription = it
+                            if (it.length <= 2000) personaDescription = it
                             if (descError) descError = false
                         },
                         label = { Text("Description") },
@@ -494,7 +494,7 @@ fun OnboardingScreen(onComplete: () -> Unit) {
                     OutlinedTextField(
                         value = charName,
                         onValueChange = {
-                            charName = it
+                            if (it.length <= 100) charName = it
                             if (charNameError) charNameError = false
                         },
                         label = { Text("Name") },
@@ -513,7 +513,7 @@ fun OnboardingScreen(onComplete: () -> Unit) {
                     OutlinedTextField(
                         value = charDescription,
                         onValueChange = {
-                            charDescription = it
+                            if (it.length <= 2000) charDescription = it
                             if (charDescError) charDescError = false
                         },
                         label = { Text("Description") },
@@ -532,7 +532,7 @@ fun OnboardingScreen(onComplete: () -> Unit) {
 
                     OutlinedTextField(
                         value = charGreeting,
-                        onValueChange = { charGreeting = it },
+                        onValueChange = { if (it.length <= 2000) charGreeting = it },
                         label = { Text("Greeting Message") },
                         placeholder = { Text("First message when starting a chat...") },
                         shape = RoundedCornerShape(20.dp),
