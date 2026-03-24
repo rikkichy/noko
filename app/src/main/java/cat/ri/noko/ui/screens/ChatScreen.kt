@@ -81,7 +81,11 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.TextRange
+import androidx.compose.ui.text.input.ImeAction
+import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.text.input.PlatformImeOptions
 import androidx.compose.ui.text.input.TextFieldValue
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import cat.ri.noko.core.AvatarStorage
@@ -159,6 +163,12 @@ fun ChatScreen(
     val keyboard = LocalSoftwareKeyboardController.current
     val haptics = rememberNokoHaptics()
     val imeVisible = WindowInsets.isImeVisible
+    val incognitoKeyboard by SettingsManager.incognitoKeyboard.collectAsState(initial = false)
+    val incognitoKeyboardOptions = if (incognitoKeyboard) KeyboardOptions(
+        platformImeOptions = PlatformImeOptions(
+            privateImeOptions = "com.google.android.inputmethod.latin.noPersonalizedLearning",
+        ),
+    ) else KeyboardOptions.Default
 
 
     var currentChatId by remember { mutableStateOf(UUID.randomUUID().toString()) }
@@ -186,7 +196,6 @@ fun ChatScreen(
     var streamJob by remember { mutableStateOf<kotlinx.coroutines.Job?>(null) }
 
     val nokoGuard by SettingsManager.nokoGuard.collectAsState(initial = true)
-    val nokoPolkit by SettingsManager.nokoPolkit.collectAsState(initial = true)
     val nokoPolkitTrimEmojis by SettingsManager.nokoPolkitTrimEmojis.collectAsState(initial = true)
     val nokoPolkitStructureActions by SettingsManager.nokoPolkitStructureActions.collectAsState(initial = true)
     val apiKey by SettingsManager.apiKey.collectAsState(initial = "")
@@ -323,20 +332,18 @@ fun ChatScreen(
                 var processed = finalContent
                 var emojisTrimmed = false
                 var actionsStructured = false
-                if (nokoPolkit) {
-                    if (nokoPolkitTrimEmojis) {
-                        val trimmed = stripEmojis(processed)
-                        if (trimmed != processed) {
-                            processed = trimmed
-                            emojisTrimmed = true
-                        }
+                if (nokoPolkitTrimEmojis) {
+                    val trimmed = stripEmojis(processed)
+                    if (trimmed != processed) {
+                        processed = trimmed
+                        emojisTrimmed = true
                     }
-                    if (nokoPolkitStructureActions) {
-                        val structured = structureActions(processed)
-                        if (structured != processed) {
-                            processed = structured
-                            actionsStructured = true
-                        }
+                }
+                if (nokoPolkitStructureActions) {
+                    val structured = structureActions(processed)
+                    if (structured != processed) {
+                        processed = structured
+                        actionsStructured = true
                     }
                 }
                 messages[assistantIdx] = messages[assistantIdx].copy(
@@ -594,6 +601,7 @@ fun ChatScreen(
                         onValueChange = { editingText = it },
                         modifier = Modifier.fillMaxWidth(),
                         maxLines = 8,
+                        keyboardOptions = incognitoKeyboardOptions,
                     )
                 },
                 confirmButton = {
@@ -683,6 +691,7 @@ fun ChatScreen(
                 placeholder = { Text(placeholder) },
                 singleLine = false,
                 maxLines = 4,
+                keyboardOptions = incognitoKeyboardOptions,
                 shape = MaterialTheme.shapes.extraLarge,
                 colors = TextFieldDefaults.colors(
                     focusedContainerColor = MaterialTheme.colorScheme.surfaceContainerHigh,

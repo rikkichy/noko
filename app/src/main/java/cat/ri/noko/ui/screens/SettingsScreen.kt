@@ -465,7 +465,7 @@ fun SettingsScreen(navController: NavController) {
                         Column(modifier = Modifier.weight(1f)) {
                             Text("NokoPolkit")
                             Text(
-                                "Post-process AI responses to clean up unwanted patterns.",
+                                "Chat and app policies.",
                                 style = MaterialTheme.typography.bodySmall,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                             )

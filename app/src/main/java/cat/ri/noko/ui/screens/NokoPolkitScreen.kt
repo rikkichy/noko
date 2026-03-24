@@ -39,10 +39,12 @@ import kotlinx.coroutines.launch
 fun NokoPolkitScreen(onBack: () -> Unit) {
     val scope = rememberCoroutineScope()
     val haptics = rememberNokoHaptics()
-    val enabled by SettingsManager.nokoPolkit.collectAsState(initial = true)
     val trimEmojis by SettingsManager.nokoPolkitTrimEmojis.collectAsState(initial = true)
     val structureActions by SettingsManager.nokoPolkitStructureActions.collectAsState(initial = true)
     val screenSecurity by SettingsManager.screenSecurity.collectAsState(initial = false)
+    val incognitoKeyboard by SettingsManager.incognitoKeyboard.collectAsState(initial = false)
+    val clearClipboard by SettingsManager.clearClipboard.collectAsState(initial = false)
+    val hideFromRecents by SettingsManager.hideFromRecents.collectAsState(initial = false)
 
     Scaffold(
         topBar = {
@@ -64,29 +66,6 @@ fun NokoPolkitScreen(onBack: () -> Unit) {
                 .padding(horizontal = 16.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp),
         ) {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.SpaceBetween,
-            ) {
-                Column(modifier = Modifier.weight(1f)) {
-                    Text("Enable NokoPolkit", style = MaterialTheme.typography.titleMedium)
-                    Text(
-                        "Post-process AI responses to clean up unwanted patterns.",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
-                }
-                Spacer(Modifier.size(12.dp))
-                Switch(
-                    checked = enabled,
-                    onCheckedChange = { value ->
-                        if (value) haptics.toggleOn() else haptics.toggleOff()
-                        scope.launch { SettingsManager.setNokoPolkit(value) }
-                    },
-                )
-            }
-
             Card(
                 colors = CardDefaults.cardColors(
                     containerColor = MaterialTheme.colorScheme.surfaceContainer,
@@ -106,16 +85,11 @@ fun NokoPolkitScreen(onBack: () -> Unit) {
                         horizontalArrangement = Arrangement.SpaceBetween,
                     ) {
                         Column(modifier = Modifier.weight(1f)) {
-                            Text(
-                                "Trim emojis",
-                                color = if (enabled) MaterialTheme.colorScheme.onSurface
-                                else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.38f),
-                            )
+                            Text("Trim emojis")
                             Text(
                                 "Remove emojis from AI responses.",
                                 style = MaterialTheme.typography.bodySmall,
-                                color = if (enabled) MaterialTheme.colorScheme.onSurfaceVariant
-                                else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.38f),
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
                             )
                         }
                         Spacer(Modifier.size(12.dp))
@@ -125,7 +99,6 @@ fun NokoPolkitScreen(onBack: () -> Unit) {
                                 if (value) haptics.toggleOn() else haptics.toggleOff()
                                 scope.launch { SettingsManager.setNokoPolkitTrimEmojis(value) }
                             },
-                            enabled = enabled,
                         )
                     }
 
@@ -137,16 +110,11 @@ fun NokoPolkitScreen(onBack: () -> Unit) {
                         horizontalArrangement = Arrangement.SpaceBetween,
                     ) {
                         Column(modifier = Modifier.weight(1f)) {
-                            Text(
-                                "Structure actions",
-                                color = if (enabled) MaterialTheme.colorScheme.onSurface
-                                else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.38f),
-                            )
+                            Text("Structure actions")
                             Text(
                                 "Add newlines before and after *action* blocks.",
                                 style = MaterialTheme.typography.bodySmall,
-                                color = if (enabled) MaterialTheme.colorScheme.onSurfaceVariant
-                                else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.38f),
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
                             )
                         }
                         Spacer(Modifier.size(12.dp))
@@ -156,7 +124,6 @@ fun NokoPolkitScreen(onBack: () -> Unit) {
                                 if (value) haptics.toggleOn() else haptics.toggleOff()
                                 scope.launch { SettingsManager.setNokoPolkitStructureActions(value) }
                             },
-                            enabled = enabled,
                         )
                     }
                 }
@@ -194,6 +161,81 @@ fun NokoPolkitScreen(onBack: () -> Unit) {
                             onCheckedChange = { value ->
                                 if (value) haptics.toggleOn() else haptics.toggleOff()
                                 scope.launch { SettingsManager.setScreenSecurity(value) }
+                            },
+                        )
+                    }
+
+                    HorizontalDivider()
+
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                    ) {
+                        Column(modifier = Modifier.weight(1f)) {
+                            Text("Incognito keyboard")
+                            Text(
+                                "Ask keyboards to disable learning and suggestions.",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            )
+                        }
+                        Spacer(Modifier.size(12.dp))
+                        Switch(
+                            checked = incognitoKeyboard,
+                            onCheckedChange = { value ->
+                                if (value) haptics.toggleOn() else haptics.toggleOff()
+                                scope.launch { SettingsManager.setIncognitoKeyboard(value) }
+                            },
+                        )
+                    }
+
+                    HorizontalDivider()
+
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                    ) {
+                        Column(modifier = Modifier.weight(1f)) {
+                            Text("Clear clipboard on exit")
+                            Text(
+                                "Wipe clipboard when the app goes to background.",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            )
+                        }
+                        Spacer(Modifier.size(12.dp))
+                        Switch(
+                            checked = clearClipboard,
+                            onCheckedChange = { value ->
+                                if (value) haptics.toggleOn() else haptics.toggleOff()
+                                scope.launch { SettingsManager.setClearClipboard(value) }
+                            },
+                        )
+                    }
+
+                    HorizontalDivider()
+
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                    ) {
+                        Column(modifier = Modifier.weight(1f)) {
+                            Text("Hide from recents")
+                            Text(
+                                "Exclude the app from the recent apps list.",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            )
+                        }
+                        Spacer(Modifier.size(12.dp))
+                        Switch(
+                            checked = hideFromRecents,
+                            onCheckedChange = { value ->
+                                if (value) haptics.toggleOn() else haptics.toggleOff()
+                                scope.launch { SettingsManager.setHideFromRecents(value) }
                             },
                         )
                     }

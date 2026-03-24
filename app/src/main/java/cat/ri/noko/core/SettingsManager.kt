@@ -39,6 +39,9 @@ object SettingsManager {
     private val NOKO_POLKIT_TRIM_EMOJIS = booleanPreferencesKey("noko_polkit_trim_emojis")
     private val NOKO_POLKIT_STRUCTURE_ACTIONS = booleanPreferencesKey("noko_polkit_structure_actions")
     private val SCREEN_SECURITY = booleanPreferencesKey("screen_security")
+    private val INCOGNITO_KEYBOARD = booleanPreferencesKey("incognito_keyboard")
+    private val CLEAR_CLIPBOARD = booleanPreferencesKey("clear_clipboard")
+    private val HIDE_FROM_RECENTS = booleanPreferencesKey("hide_from_recents")
     private val PERSONAS_JSON = stringPreferencesKey("personas_json")
     private val SELECTED_PERSONA_ID = stringPreferencesKey("selected_persona_id")
     private val SELECTED_CHARACTER_ID = stringPreferencesKey("selected_character_id")
@@ -135,6 +138,27 @@ object SettingsManager {
 
     suspend fun setScreenSecurity(enabled: Boolean) {
         appContext.dataStore.edit { it[SCREEN_SECURITY] = enabled }
+    }
+
+    val incognitoKeyboard: Flow<Boolean>
+        get() = appContext.dataStore.data.map { it[INCOGNITO_KEYBOARD] ?: false }
+
+    suspend fun setIncognitoKeyboard(enabled: Boolean) {
+        appContext.dataStore.edit { it[INCOGNITO_KEYBOARD] = enabled }
+    }
+
+    val clearClipboard: Flow<Boolean>
+        get() = appContext.dataStore.data.map { it[CLEAR_CLIPBOARD] ?: false }
+
+    suspend fun setClearClipboard(enabled: Boolean) {
+        appContext.dataStore.edit { it[CLEAR_CLIPBOARD] = enabled }
+    }
+
+    val hideFromRecents: Flow<Boolean>
+        get() = appContext.dataStore.data.map { it[HIDE_FROM_RECENTS] ?: false }
+
+    suspend fun setHideFromRecents(enabled: Boolean) {
+        appContext.dataStore.edit { it[HIDE_FROM_RECENTS] = enabled }
     }
 
     val allEntries: Flow<List<PersonaEntry>>

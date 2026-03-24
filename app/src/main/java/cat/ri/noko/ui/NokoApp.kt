@@ -20,8 +20,13 @@ import androidx.compose.material3.ShortNavigationBar
 import androidx.compose.material3.ShortNavigationBarItem
 import androidx.compose.material3.Text
 import android.app.Activity
+import android.app.ActivityManager
+import android.content.ClipData
+import android.content.ClipboardManager
+import android.content.Context
 import android.view.WindowManager
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -33,6 +38,9 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
+import androidx.lifecycle.DefaultLifecycleObserver
+import androidx.lifecycle.LifecycleOwner
+import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.compose.ui.unit.dp
 import cat.ri.noko.core.SettingsManager
 import cat.ri.noko.ui.screens.ChatScreen
@@ -61,6 +69,8 @@ fun NokoApp() {
         }
 
         val screenSecurity by SettingsManager.screenSecurity.collectAsState(initial = false)
+        val clearClipboard by SettingsManager.clearClipboard.collectAsState(initial = false)
+        val hideFromRecents by SettingsManager.hideFromRecents.collectAsState(initial = false)
         val activity = LocalContext.current as? Activity
         LaunchedEffect(screenSecurity) {
             if (screenSecurity) {
@@ -71,6 +81,25 @@ fun NokoApp() {
             } else {
                 activity?.window?.clearFlags(WindowManager.LayoutParams.FLAG_SECURE)
             }
+        }
+
+        val lifecycleOwner = LocalLifecycleOwner.current
+        LaunchedEffect(hideFromRecents) {
+            val am = activity?.getSystemService(Context.ACTIVITY_SERVICE) as? ActivityManager
+            am?.appTasks?.firstOrNull()?.setExcludeFromRecents(hideFromRecents)
+        }
+
+        DisposableEffect(lifecycleOwner, clearClipboard) {
+            val observer = object : DefaultLifecycleObserver {
+                override fun onStop(owner: LifecycleOwner) {
+                    if (clearClipboard) {
+                        val clipboard = activity?.getSystemService(Context.CLIPBOARD_SERVICE) as? ClipboardManager
+                        clipboard?.setPrimaryClip(ClipData.newPlainText("", ""))
+                    }
+                }
+            }
+            lifecycleOwner.lifecycle.addObserver(observer)
+            onDispose { lifecycleOwner.lifecycle.removeObserver(observer) }
         }
 
         var selectedTab by rememberSaveable { mutableIntStateOf(0) }
