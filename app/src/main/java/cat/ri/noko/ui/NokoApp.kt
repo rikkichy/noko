@@ -73,7 +73,10 @@ fun NokoApp() {
         DisposableEffect(lifecycleOwner) {
             val observer = object : DefaultLifecycleObserver {
                 override fun onStop(owner: LifecycleOwner) {
-                    if (biometricAuth) needsAuth = true
+                    if (biometricAuth && !SettingsManager.suppressBiometricRelock) {
+                        needsAuth = true
+                    }
+                    SettingsManager.suppressBiometricRelock = false
                 }
             }
             lifecycleOwner.lifecycle.addObserver(observer)
