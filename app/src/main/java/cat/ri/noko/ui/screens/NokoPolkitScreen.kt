@@ -42,6 +42,7 @@ fun NokoPolkitScreen(onBack: () -> Unit) {
     val enabled by SettingsManager.nokoPolkit.collectAsState(initial = true)
     val trimEmojis by SettingsManager.nokoPolkitTrimEmojis.collectAsState(initial = true)
     val structureActions by SettingsManager.nokoPolkitStructureActions.collectAsState(initial = true)
+    val screenSecurity by SettingsManager.screenSecurity.collectAsState(initial = false)
 
     Scaffold(
         topBar = {
@@ -97,7 +98,7 @@ fun NokoPolkitScreen(onBack: () -> Unit) {
                         .padding(16.dp),
                     verticalArrangement = Arrangement.spacedBy(12.dp),
                 ) {
-                    Text("Policies", style = MaterialTheme.typography.titleMedium)
+                    Text("Chat Policies", style = MaterialTheme.typography.titleMedium)
 
                     Row(
                         modifier = Modifier.fillMaxWidth(),
@@ -156,6 +157,44 @@ fun NokoPolkitScreen(onBack: () -> Unit) {
                                 scope.launch { SettingsManager.setNokoPolkitStructureActions(value) }
                             },
                             enabled = enabled,
+                        )
+                    }
+                }
+            }
+
+            Card(
+                colors = CardDefaults.cardColors(
+                    containerColor = MaterialTheme.colorScheme.surfaceContainer,
+                ),
+            ) {
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(16.dp),
+                    verticalArrangement = Arrangement.spacedBy(12.dp),
+                ) {
+                    Text("App Policies", style = MaterialTheme.typography.titleMedium)
+
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                    ) {
+                        Column(modifier = Modifier.weight(1f)) {
+                            Text("Screen security")
+                            Text(
+                                "Prevent screenshots and screen recording.",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            )
+                        }
+                        Spacer(Modifier.size(12.dp))
+                        Switch(
+                            checked = screenSecurity,
+                            onCheckedChange = { value ->
+                                if (value) haptics.toggleOn() else haptics.toggleOff()
+                                scope.launch { SettingsManager.setScreenSecurity(value) }
+                            },
                         )
                     }
                 }
