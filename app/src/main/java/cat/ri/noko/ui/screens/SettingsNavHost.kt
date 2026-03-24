@@ -1,5 +1,6 @@
 package cat.ri.noko.ui.screens
 
+import android.net.Uri
 import androidx.compose.animation.EnterTransition
 import androidx.compose.animation.ExitTransition
 import androidx.compose.runtime.Composable
@@ -35,6 +36,9 @@ fun SettingsNavHost() {
                 onBack = { navController.popBackStack() },
                 onEdit = { id -> navController.navigate("persona_edit/${type.name}?id=$id") },
                 onCreate = { navController.navigate("persona_edit/${type.name}") },
+                onImport = if (type == PersonaType.CHARACTER) { uri ->
+                    navController.navigate("character_import?uri=${Uri.encode(uri.toString())}")
+                } else null,
             )
         }
         composable(
@@ -63,6 +67,16 @@ fun SettingsNavHost() {
         }
         composable("providers") {
             ProviderListScreen(onBack = { navController.popBackStack() })
+        }
+        composable(
+            route = "character_import?uri={uri}",
+            arguments = listOf(navArgument("uri") { type = NavType.StringType }),
+        ) { backStack ->
+            val uri = Uri.parse(backStack.arguments!!.getString("uri")!!)
+            CharacterImportScreen(
+                uri = uri,
+                onBack = { navController.popBackStack() },
+            )
         }
     }
 }

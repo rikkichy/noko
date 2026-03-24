@@ -1,5 +1,11 @@
 package cat.ri.noko.ui.screens
 
+import android.net.Uri
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.biometric.BiometricPrompt
+import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.core.keyframes
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -8,16 +14,20 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Person
+import androidx.compose.material.icons.rounded.FileOpen
+import androidx.compose.material.icons.rounded.IosShare
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -26,6 +36,7 @@ import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -40,19 +51,26 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.input.PasswordVisualTransformation
+import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
+import androidx.core.content.ContextCompat
+import androidx.fragment.app.FragmentActivity
 import cat.ri.noko.core.AvatarStorage
+import cat.ri.noko.core.CharacterCodec
 import cat.ri.noko.core.SettingsManager
 import cat.ri.noko.model.PersonaEntry
 import cat.ri.noko.model.PersonaType
 import cat.ri.noko.ui.util.rememberNokoHaptics
 import coil3.compose.AsyncImage
 import coil3.request.ImageRequest
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -61,14 +79,82 @@ fun PersonaListScreen(
     onBack: () -> Unit,
     onEdit: (String) -> Unit,
     onCreate: () -> Unit,
+    onImport: ((Uri) -> Unit)? = null,
 ) {
     val title = if (type == PersonaType.PERSONA) "Personas" else "Characters"
     val entries by (if (type == PersonaType.PERSONA) SettingsManager.personas else SettingsManager.characters)
         .collectAsState(initial = emptyList())
+    val biometricAuth by SettingsManager.biometricAuth.collectAsState(initial = false)
     val scope = rememberCoroutineScope()
     val haptics = rememberNokoHaptics()
     val context = LocalContext.current
     var deleteTarget by remember { mutableStateOf<PersonaEntry?>(null) }
+    var exportTarget by remember { mutableStateOf<PersonaEntry?>(null) }
+    var showPassphraseDialog by remember { mutableStateOf(false) }
+    var exportPassphrase by remember { mutableStateOf("") }
+    var exportPassphraseConfirm by remember { mutableStateOf("") }
+    var passphraseError by remember { mutableStateOf<String?>(null) }
+    val passphraseShakeOffset = remember { Animatable(0f) }
+
+    val importLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.OpenDocument(),
+    ) { uri ->
+        if (uri != null) onImport?.invoke(uri)
+    }
+
+    val exportLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.CreateDocument("application/octet-stream"),
+    ) { uri ->
+        if (uri != null && exportTarget != null && exportPassphrase.isNotBlank()) {
+            scope.launch {
+                withContext(Dispatchers.IO) {
+                    CharacterCodec.exportToNokc(context, exportTarget!!, exportPassphrase, uri)
+                }
+                haptics.confirm()
+                exportTarget = null
+                exportPassphrase = ""
+                exportPassphraseConfirm = ""
+            }
+        }
+    }
+
+    fun startExport(entry: PersonaEntry) {
+        exportTarget = entry
+        exportPassphrase = ""
+        exportPassphraseConfirm = ""
+        passphraseError = null
+        showPassphraseDialog = true
+    }
+
+    fun requestExportWithBiometric(entry: PersonaEntry) {
+        if (!biometricAuth) {
+            startExport(entry)
+            return
+        }
+        val activity = context as FragmentActivity
+        val executor = ContextCompat.getMainExecutor(context)
+        val callback = object : BiometricPrompt.AuthenticationCallback() {
+            override fun onAuthenticationSucceeded(result: BiometricPrompt.AuthenticationResult) {
+                startExport(entry)
+            }
+
+            override fun onAuthenticationError(errorCode: Int, errString: CharSequence) {
+                haptics.reject()
+            }
+
+            override fun onAuthenticationFailed() {
+                haptics.reject()
+            }
+        }
+        val prompt = BiometricPrompt(activity, executor, callback)
+        val info = BiometricPrompt.PromptInfo.Builder()
+            .setTitle("Export character")
+            .setSubtitle("Verify your identity to export")
+            .setNegativeButtonText("Cancel")
+            .setAllowedAuthenticators(androidx.biometric.BiometricManager.Authenticators.BIOMETRIC_STRONG)
+            .build()
+        prompt.authenticate(info)
+    }
 
     Scaffold(
         topBar = {
@@ -77,6 +163,20 @@ fun PersonaListScreen(
                 navigationIcon = {
                     IconButton(onClick = onBack) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
+                    }
+                },
+                actions = {
+                    if (type == PersonaType.CHARACTER && onImport != null) {
+                        IconButton(
+                            onClick = {
+                                haptics.tap()
+                                importLauncher.launch(
+                                    arrayOf("image/png", "application/json", "application/octet-stream"),
+                                )
+                            },
+                        ) {
+                            Icon(Icons.Rounded.FileOpen, contentDescription = "Import")
+                        }
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(containerColor = Color.Transparent),
@@ -179,6 +279,20 @@ fun PersonaListScreen(
                                     )
                                 }
                             }
+                            if (type == PersonaType.CHARACTER) {
+                                IconButton(
+                                    onClick = {
+                                        haptics.tap()
+                                        requestExportWithBiometric(entry)
+                                    },
+                                ) {
+                                    Icon(
+                                        Icons.Rounded.IosShare,
+                                        contentDescription = "Export",
+                                        tint = MaterialTheme.colorScheme.primary,
+                                    )
+                                }
+                            }
                             IconButton(
                                 onClick = {
                                     haptics.tap()
@@ -219,6 +333,125 @@ fun PersonaListScreen(
             },
             dismissButton = {
                 TextButton(onClick = { deleteTarget = null }) {
+                    Text("Cancel")
+                }
+            },
+        )
+    }
+
+    if (showPassphraseDialog && exportTarget != null) {
+        AlertDialog(
+            onDismissRequest = {
+                showPassphraseDialog = false
+                exportTarget = null
+            },
+            title = { Text("Export as .nokc") },
+            text = {
+                Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                    Text(
+                        "Set a passphrase to encrypt this character.",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                    OutlinedTextField(
+                        value = exportPassphrase,
+                        onValueChange = {
+                            exportPassphrase = it
+                            passphraseError = null
+                        },
+                        label = { Text("Passphrase") },
+                        visualTransformation = PasswordVisualTransformation(),
+                        singleLine = true,
+                        isError = passphraseError != null,
+                        shape = RoundedCornerShape(20.dp),
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .offset { IntOffset(passphraseShakeOffset.value.toInt(), 0) },
+                    )
+                    OutlinedTextField(
+                        value = exportPassphraseConfirm,
+                        onValueChange = {
+                            exportPassphraseConfirm = it
+                            passphraseError = null
+                        },
+                        label = { Text("Confirm passphrase") },
+                        visualTransformation = PasswordVisualTransformation(),
+                        singleLine = true,
+                        isError = passphraseError != null,
+                        supportingText = passphraseError?.let { err -> { Text(err) } },
+                        shape = RoundedCornerShape(20.dp),
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .offset { IntOffset(passphraseShakeOffset.value.toInt(), 0) },
+                    )
+                }
+            },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        when {
+                            exportPassphrase.length < 8 -> {
+                                passphraseError = "At least 8 characters"
+                                scope.launch {
+                                    haptics.reject()
+                                    passphraseShakeOffset.animateTo(
+                                        targetValue = 0f,
+                                        animationSpec = keyframes {
+                                            durationMillis = 400
+                                            0f at 0
+                                            (-18f) at 50
+                                            18f at 100
+                                            (-14f) at 150
+                                            14f at 200
+                                            (-8f) at 250
+                                            8f at 300
+                                            (-4f) at 350
+                                            0f at 400
+                                        },
+                                    )
+                                }
+                            }
+                            exportPassphrase != exportPassphraseConfirm -> {
+                                passphraseError = "Passphrases don't match"
+                                scope.launch {
+                                    haptics.reject()
+                                    passphraseShakeOffset.animateTo(
+                                        targetValue = 0f,
+                                        animationSpec = keyframes {
+                                            durationMillis = 400
+                                            0f at 0
+                                            (-18f) at 50
+                                            18f at 100
+                                            (-14f) at 150
+                                            14f at 200
+                                            (-8f) at 250
+                                            8f at 300
+                                            (-4f) at 350
+                                            0f at 400
+                                        },
+                                    )
+                                }
+                            }
+                            else -> {
+                                showPassphraseDialog = false
+                                val safeName = exportTarget!!.name
+                                    .replace(Regex("[^a-zA-Z0-9._-]"), "_")
+                                    .take(50)
+                                exportLauncher.launch("$safeName.nokc")
+                            }
+                        }
+                    },
+                ) {
+                    Text("Export")
+                }
+            },
+            dismissButton = {
+                TextButton(
+                    onClick = {
+                        showPassphraseDialog = false
+                        exportTarget = null
+                    },
+                ) {
                     Text("Cancel")
                 }
             },
