@@ -3,7 +3,9 @@ package cat.ri.noko.core
 import android.content.Context
 import android.net.Uri
 import android.util.Base64
+import cat.ri.noko.model.NokcCharacter
 import cat.ri.noko.model.NokcPayload
+import cat.ri.noko.model.NokcPayloadLegacy
 import cat.ri.noko.model.PersonaEntry
 import cat.ri.noko.model.PersonaType
 import kotlinx.serialization.encodeToString
@@ -11,7 +13,6 @@ import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
-import java.io.ByteArrayOutputStream
 import java.io.DataInputStream
 import java.security.SecureRandom
 import javax.crypto.Cipher
@@ -37,14 +38,15 @@ object CharacterCodec {
 
     enum class CharacterFormat { TAVERN_PNG, CHARACTER_AI_JSON, NOKC, UNKNOWN }
 
-    sealed class ImportResult {
-        data class Success(
-            val name: String,
-            val description: String,
-            val greetingMessage: String?,
-            val avatarBytes: ByteArray?,
-        ) : ImportResult()
+    data class ImportedCharacter(
+        val name: String,
+        val description: String,
+        val greetingMessage: String?,
+        val avatarBytes: ByteArray?,
+    )
 
+    sealed class ImportResult {
+        data class Success(val characters: List<ImportedCharacter>) : ImportResult()
         data class Error(val message: String) : ImportResult()
     }
 
@@ -90,12 +92,13 @@ object CharacterCodec {
                 root["data"] is JsonObject &&
                 root["data"]!!.jsonObject.containsKey("name")
 
-            if (isV2) {
-                val data = root["data"]!!.jsonObject
-                parseTavernData(data, allBytes)
+            val char = if (isV2) {
+                parseTavernData(root["data"]!!.jsonObject, allBytes)
             } else {
                 parseTavernData(root, allBytes)
-            }
+            } ?: return ImportResult.Error("Character card has no name")
+
+            ImportResult.Success(listOf(char))
         } catch (e: Exception) {
             ImportResult.Error("Failed to parse PNG card: ${e.message}")
         }
@@ -119,10 +122,14 @@ object CharacterCodec {
             }
 
             ImportResult.Success(
-                name = name,
-                description = parts.joinToString("\n\n"),
-                greetingMessage = obj.str("greeting"),
-                avatarBytes = null,
+                listOf(
+                    ImportedCharacter(
+                        name = name,
+                        description = parts.joinToString("\n\n"),
+                        greetingMessage = obj.str("greeting"),
+                        avatarBytes = null,
+                    ),
+                ),
             )
         } catch (e: Exception) {
             ImportResult.Error("Failed to parse Character.AI JSON: ${e.message}")
@@ -155,31 +162,25 @@ object CharacterCodec {
                 return ImportResult.Error("Wrong passphrase")
             }
 
-            val payload = json.decodeFromString<NokcPayload>(decrypted.decodeToString())
+            val jsonString = decrypted.decodeToString()
+            val characters = parseNokcPayload(jsonString)
 
-            val avatarBytes = payload.avatarBase64?.let {
-                Base64.decode(it, Base64.NO_WRAP)
-            }
-
-            ImportResult.Success(
-                name = payload.entry.name,
-                description = payload.entry.description,
-                greetingMessage = payload.entry.greetingMessage,
-                avatarBytes = avatarBytes,
-            )
+            ImportResult.Success(characters)
         } catch (e: Exception) {
             ImportResult.Error("Failed to import .nokc file: ${e.message}")
         }
     }
 
-    fun exportToNokc(context: Context, entry: PersonaEntry, passphrase: String, outputUri: Uri) {
-        val avatarBase64 = entry.avatarFileName?.let { fileName ->
-            val file = AvatarStorage.getFile(context, fileName)
-            if (file.exists()) Base64.encodeToString(file.readBytes(), Base64.NO_WRAP) else null
+    fun exportToNokc(context: Context, entries: List<PersonaEntry>, passphrase: String, outputUri: Uri) {
+        val characters = entries.map { entry ->
+            val avatarBase64 = entry.avatarFileName?.let { fileName ->
+                val file = AvatarStorage.getFile(context, fileName)
+                if (file.exists()) Base64.encodeToString(file.readBytes(), Base64.NO_WRAP) else null
+            }
+            NokcCharacter(entry = entry.copy(avatarFileName = null), avatarBase64 = avatarBase64)
         }
 
-        val exportEntry = entry.copy(avatarFileName = null)
-        val payload = NokcPayload(entry = exportEntry, avatarBase64 = avatarBase64)
+        val payload = NokcPayload(characters = characters)
         val plaintext = json.encodeToString(payload).toByteArray()
 
         val random = SecureRandom()
@@ -197,9 +198,32 @@ object CharacterCodec {
         }
     }
 
-    private fun parseTavernData(data: JsonObject, pngBytes: ByteArray): ImportResult {
-        val name = data.str("name")
-            ?: return ImportResult.Error("Character card has no name")
+    private fun parseNokcPayload(jsonString: String): List<ImportedCharacter> {
+        return try {
+            val payload = json.decodeFromString<NokcPayload>(jsonString)
+            payload.characters.map { it.toImportedCharacter() }
+        } catch (_: Exception) {
+            val legacy = json.decodeFromString<NokcPayloadLegacy>(jsonString)
+            listOf(
+                ImportedCharacter(
+                    name = legacy.entry.name,
+                    description = legacy.entry.description,
+                    greetingMessage = legacy.entry.greetingMessage,
+                    avatarBytes = legacy.avatarBase64?.let { Base64.decode(it, Base64.NO_WRAP) },
+                ),
+            )
+        }
+    }
+
+    private fun NokcCharacter.toImportedCharacter() = ImportedCharacter(
+        name = entry.name,
+        description = entry.description,
+        greetingMessage = entry.greetingMessage,
+        avatarBytes = avatarBase64?.let { Base64.decode(it, Base64.NO_WRAP) },
+    )
+
+    private fun parseTavernData(data: JsonObject, pngBytes: ByteArray): ImportedCharacter? {
+        val name = data.str("name") ?: return null
 
         val parts = mutableListOf<String>()
         data.str("description")?.takeIf { it.isNotBlank() }?.let { parts.add(it) }
@@ -210,7 +234,7 @@ object CharacterCodec {
             parts.add("Scenario: $it")
         }
 
-        return ImportResult.Success(
+        return ImportedCharacter(
             name = name,
             description = parts.joinToString("\n\n"),
             greetingMessage = data.str("first_mes"),
