@@ -7,16 +7,17 @@ import androidx.compose.animation.core.keyframes
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Check
@@ -24,6 +25,7 @@ import androidx.compose.material.icons.filled.Person
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.Checkbox
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
@@ -37,6 +39,7 @@ import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
@@ -45,8 +48,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.ImageBitmap
-import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.input.PasswordVisualTransformation
@@ -79,20 +80,23 @@ fun CharacterImportScreen(
 
     var state by remember { mutableStateOf(ImportState.DETECTING) }
     var format by remember { mutableStateOf(CharacterCodec.CharacterFormat.UNKNOWN) }
-    var result by remember { mutableStateOf<CharacterCodec.ImportResult?>(null) }
+    var characters by remember { mutableStateOf<List<CharacterCodec.ImportedCharacter>>(emptyList()) }
+    val selected = remember { mutableStateListOf<Int>() }
     var errorMessage by remember { mutableStateOf("") }
     var passphrase by remember { mutableStateOf("") }
     var passphraseError by remember { mutableStateOf<String?>(null) }
     val shakeOffset = remember { Animatable(0f) }
 
-    fun doImport(importResult: CharacterCodec.ImportResult) {
-        when (importResult) {
+    fun handleResult(result: CharacterCodec.ImportResult) {
+        when (result) {
             is CharacterCodec.ImportResult.Success -> {
-                result = importResult
+                characters = result.characters
+                selected.clear()
+                selected.addAll(result.characters.indices)
                 state = ImportState.PREVIEW
             }
             is CharacterCodec.ImportResult.Error -> {
-                errorMessage = importResult.message
+                errorMessage = result.message
                 state = ImportState.ERROR
             }
         }
@@ -103,10 +107,10 @@ fun CharacterImportScreen(
             format = CharacterCodec.detectFormat(context, uri)
             when (format) {
                 CharacterCodec.CharacterFormat.TAVERN_PNG -> {
-                    doImport(CharacterCodec.importFromPng(context, uri))
+                    handleResult(CharacterCodec.importFromPng(context, uri))
                 }
                 CharacterCodec.CharacterFormat.CHARACTER_AI_JSON -> {
-                    doImport(CharacterCodec.importFromCharacterAiJson(context, uri))
+                    handleResult(CharacterCodec.importFromCharacterAiJson(context, uri))
                 }
                 CharacterCodec.CharacterFormat.NOKC -> {
                     state = ImportState.PASSPHRASE
@@ -119,6 +123,9 @@ fun CharacterImportScreen(
         }
     }
 
+    val selectedCount = selected.size
+    val totalCount = characters.size
+
     Scaffold(
         topBar = {
             TopAppBar(
@@ -126,8 +133,11 @@ fun CharacterImportScreen(
                     Text(
                         when (state) {
                             ImportState.DETECTING -> "Detecting..."
-                            ImportState.PASSPHRASE -> "Decrypt character"
-                            ImportState.PREVIEW, ImportState.IMPORTING -> "Import character"
+                            ImportState.PASSPHRASE -> "Decrypt characters"
+                            ImportState.PREVIEW, ImportState.IMPORTING -> {
+                                if (totalCount == 1) "Import character"
+                                else "Import characters ($selectedCount/$totalCount)"
+                            }
                             ImportState.ERROR -> "Import failed"
                         },
                     )
@@ -162,7 +172,7 @@ fun CharacterImportScreen(
                     verticalArrangement = Arrangement.spacedBy(16.dp),
                 ) {
                     Text(
-                        "Enter the passphrase to decrypt this character.",
+                        "Enter the passphrase to decrypt this file.",
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
@@ -210,11 +220,11 @@ fun CharacterImportScreen(
                             }
                             state = ImportState.DETECTING
                             scope.launch {
-                                val importResult = withContext(Dispatchers.IO) {
+                                val result = withContext(Dispatchers.IO) {
                                     CharacterCodec.importFromNokc(context, uri, passphrase)
                                 }
-                                if (importResult is CharacterCodec.ImportResult.Error &&
-                                    importResult.message == "Wrong passphrase"
+                                if (result is CharacterCodec.ImportResult.Error &&
+                                    result.message == "Wrong passphrase"
                                 ) {
                                     state = ImportState.PASSPHRASE
                                     passphraseError = "Wrong passphrase"
@@ -235,7 +245,7 @@ fun CharacterImportScreen(
                                         },
                                     )
                                 } else {
-                                    doImport(importResult)
+                                    handleResult(result)
                                 }
                             }
                         },
@@ -248,56 +258,11 @@ fun CharacterImportScreen(
             }
 
             ImportState.PREVIEW -> {
-                val success = result as? CharacterCodec.ImportResult.Success ?: return@Scaffold
-
                 Column(
                     modifier = Modifier
                         .fillMaxSize()
-                        .padding(padding)
-                        .verticalScroll(rememberScrollState())
-                        .padding(16.dp),
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                    verticalArrangement = Arrangement.spacedBy(16.dp),
+                        .padding(padding),
                 ) {
-                    if (success.avatarBytes != null) {
-                        val bitmap = remember(success.avatarBytes) {
-                            BitmapFactory.decodeByteArray(
-                                success.avatarBytes, 0, success.avatarBytes.size,
-                            )
-                        }
-                        if (bitmap != null) {
-                            AsyncImage(
-                                model = ImageRequest.Builder(context)
-                                    .data(bitmap)
-                                    .build(),
-                                contentDescription = null,
-                                modifier = Modifier
-                                    .size(96.dp)
-                                    .clip(CircleShape),
-                                contentScale = ContentScale.Crop,
-                            )
-                        }
-                    } else {
-                        Box(
-                            modifier = Modifier
-                                .size(96.dp)
-                                .clip(CircleShape),
-                            contentAlignment = Alignment.Center,
-                        ) {
-                            Icon(
-                                Icons.Filled.Person,
-                                contentDescription = null,
-                                modifier = Modifier.size(48.dp),
-                                tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                            )
-                        }
-                    }
-
-                    Text(
-                        success.name,
-                        style = MaterialTheme.typography.headlineSmall,
-                    )
-
                     val formatLabel = when (format) {
                         CharacterCodec.CharacterFormat.TAVERN_PNG -> "TavernAI Card"
                         CharacterCodec.CharacterFormat.CHARACTER_AI_JSON -> "Character.AI"
@@ -308,87 +273,134 @@ fun CharacterImportScreen(
                         formatLabel,
                         style = MaterialTheme.typography.labelMedium,
                         color = MaterialTheme.colorScheme.primary,
+                        modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
                     )
 
-                    if (success.description.isNotBlank()) {
-                        Card(
-                            colors = CardDefaults.cardColors(
-                                containerColor = MaterialTheme.colorScheme.surfaceContainer,
-                            ),
-                            shape = RoundedCornerShape(20.dp),
-                            modifier = Modifier.fillMaxWidth(),
-                        ) {
-                            Column(modifier = Modifier.padding(16.dp)) {
-                                Text(
-                                    "Description",
-                                    style = MaterialTheme.typography.labelMedium,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                )
-                                Spacer(Modifier.size(4.dp))
-                                Text(
-                                    success.description.take(500) +
-                                        if (success.description.length > 500) "..." else "",
-                                    style = MaterialTheme.typography.bodySmall,
-                                )
+                    LazyColumn(
+                        modifier = Modifier
+                            .weight(1f)
+                            .padding(horizontal = 16.dp),
+                        verticalArrangement = Arrangement.spacedBy(8.dp),
+                    ) {
+                        itemsIndexed(characters) { index, char ->
+                            val isSelected = index in selected
+                            Card(
+                                colors = CardDefaults.cardColors(
+                                    containerColor = MaterialTheme.colorScheme.surfaceContainer,
+                                ),
+                                shape = RoundedCornerShape(20.dp),
+                            ) {
+                                Row(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .padding(12.dp),
+                                    verticalAlignment = Alignment.CenterVertically,
+                                ) {
+                                    if (totalCount > 1) {
+                                        Checkbox(
+                                            checked = isSelected,
+                                            onCheckedChange = { checked ->
+                                                if (checked) selected.add(index) else selected.remove(index)
+                                            },
+                                        )
+                                    }
+                                    if (char.avatarBytes != null) {
+                                        val bitmap = remember(char.avatarBytes) {
+                                            BitmapFactory.decodeByteArray(
+                                                char.avatarBytes, 0, char.avatarBytes.size,
+                                            )
+                                        }
+                                        if (bitmap != null) {
+                                            AsyncImage(
+                                                model = ImageRequest.Builder(context)
+                                                    .data(bitmap)
+                                                    .build(),
+                                                contentDescription = null,
+                                                modifier = Modifier
+                                                    .size(48.dp)
+                                                    .clip(CircleShape),
+                                                contentScale = ContentScale.Crop,
+                                            )
+                                        }
+                                    } else {
+                                        Box(
+                                            modifier = Modifier
+                                                .size(48.dp)
+                                                .clip(CircleShape),
+                                            contentAlignment = Alignment.Center,
+                                        ) {
+                                            Icon(
+                                                Icons.Filled.Person,
+                                                contentDescription = null,
+                                                modifier = Modifier.size(24.dp),
+                                                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                                            )
+                                        }
+                                    }
+                                    Spacer(Modifier.size(12.dp))
+                                    Column(modifier = Modifier.weight(1f)) {
+                                        Text(char.name, style = MaterialTheme.typography.titleSmall)
+                                        if (char.description.isNotBlank()) {
+                                            Text(
+                                                char.description.take(100) +
+                                                    if (char.description.length > 100) "..." else "",
+                                                style = MaterialTheme.typography.bodySmall,
+                                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                                maxLines = 2,
+                                            )
+                                        }
+                                        if (!char.greetingMessage.isNullOrBlank()) {
+                                            Text(
+                                                "Has greeting message",
+                                                style = MaterialTheme.typography.labelSmall,
+                                                color = MaterialTheme.colorScheme.primary,
+                                            )
+                                        }
+                                    }
+                                }
                             }
                         }
                     }
-
-                    if (!success.greetingMessage.isNullOrBlank()) {
-                        Card(
-                            colors = CardDefaults.cardColors(
-                                containerColor = MaterialTheme.colorScheme.surfaceContainer,
-                            ),
-                            shape = RoundedCornerShape(20.dp),
-                            modifier = Modifier.fillMaxWidth(),
-                        ) {
-                            Column(modifier = Modifier.padding(16.dp)) {
-                                Text(
-                                    "Greeting",
-                                    style = MaterialTheme.typography.labelMedium,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                )
-                                Spacer(Modifier.size(4.dp))
-                                Text(
-                                    success.greetingMessage.take(300) +
-                                        if (success.greetingMessage.length > 300) "..." else "",
-                                    style = MaterialTheme.typography.bodySmall,
-                                )
-                            }
-                        }
-                    }
-
-                    Spacer(Modifier.size(8.dp))
 
                     Button(
                         onClick = {
+                            if (selected.isEmpty()) return@Button
                             state = ImportState.IMPORTING
                             scope.launch {
-                                val id = UUID.randomUUID().toString()
-                                val avatarFileName = success.avatarBytes?.let { bytes ->
-                                    withContext(Dispatchers.IO) {
-                                        AvatarStorage.saveBytes(context, bytes, id)
+                                val toImport = selected.sorted().map { characters[it] }
+                                withContext(Dispatchers.IO) {
+                                    toImport.forEach { char ->
+                                        val id = UUID.randomUUID().toString()
+                                        val avatarFileName = char.avatarBytes?.let { bytes ->
+                                            AvatarStorage.saveBytes(context, bytes, id)
+                                        }
+                                        val entry = PersonaEntry(
+                                            id = id,
+                                            type = PersonaType.CHARACTER,
+                                            name = char.name,
+                                            description = char.description,
+                                            greetingMessage = char.greetingMessage,
+                                            avatarFileName = avatarFileName,
+                                        )
+                                        SettingsManager.saveEntry(entry)
                                     }
                                 }
-                                val entry = PersonaEntry(
-                                    id = id,
-                                    type = PersonaType.CHARACTER,
-                                    name = success.name,
-                                    description = success.description,
-                                    greetingMessage = success.greetingMessage,
-                                    avatarFileName = avatarFileName,
-                                )
-                                SettingsManager.saveEntry(entry)
                                 haptics.confirm()
                                 onBack()
                             }
                         },
-                        modifier = Modifier.fillMaxWidth(),
+                        enabled = selected.isNotEmpty(),
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(16.dp),
                         shape = RoundedCornerShape(20.dp),
                     ) {
                         Icon(Icons.Filled.Check, contentDescription = null)
                         Spacer(Modifier.size(8.dp))
-                        Text("Import")
+                        Text(
+                            if (selectedCount == 1) "Import 1 character"
+                            else "Import $selectedCount characters",
+                        )
                     }
                 }
             }
