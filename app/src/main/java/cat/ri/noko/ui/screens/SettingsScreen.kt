@@ -81,7 +81,8 @@ fun SettingsScreen(navController: NavController) {
     val provider = remember(providerId) { getProviderById(providerId) }
     val providerName = provider?.name ?: "Custom"
     val providerRequiresAuth = provider?.requiresAuth ?: customAuth
-    val providerBaseUrl = provider?.baseUrl ?: customUrl
+    val urlOverride by SettingsManager.getProviderUrlOverride(providerId).collectAsState(initial = "")
+    val providerBaseUrl = if (provider != null) urlOverride.ifBlank { provider.baseUrl } else customUrl
     var apiKeyInput by remember(apiKey) { mutableStateOf("") }
     var isChangingKey by remember { mutableStateOf(false) }
     var isTestingKey by remember { mutableStateOf(false) }

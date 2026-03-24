@@ -88,9 +88,7 @@ fun ProviderListScreen(onBack: () -> Unit) {
 
             Card(
                 colors = CardDefaults.cardColors(
-                    containerColor = if (selectedProviderId == "custom")
-                        MaterialTheme.colorScheme.primaryContainer
-                    else MaterialTheme.colorScheme.surfaceContainer,
+                    containerColor = MaterialTheme.colorScheme.surfaceContainer,
                 ),
                 shape = RoundedCornerShape(20.dp),
             ) {
@@ -98,7 +96,7 @@ fun ProviderListScreen(onBack: () -> Unit) {
                     modifier = Modifier
                         .fillMaxWidth()
                         .clickable {
-                            haptics.confirm()
+                            haptics.tap()
                             scope.launch {
                                 SettingsManager.setSelectedProvider("custom")
                             }
@@ -115,9 +113,7 @@ fun ProviderListScreen(onBack: () -> Unit) {
                             Text(
                                 "Enter your own OpenAI-compatible endpoint.",
                                 style = MaterialTheme.typography.bodySmall,
-                                color = if (selectedProviderId == "custom")
-                                    MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.7f)
-                                else MaterialTheme.colorScheme.onSurfaceVariant,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
                             )
                         }
                         if (selectedProviderId == "custom") {
@@ -171,12 +167,11 @@ fun ProviderListScreen(onBack: () -> Unit) {
                 ProviderCard(
                     provider = provider,
                     isSelected = selectedProviderId == provider.id,
-                    onClick = {
-                        haptics.confirm()
+                    onSelect = {
+                        haptics.tap()
                         scope.launch {
                             SettingsManager.setSelectedProvider(provider.id)
                         }
-                        onBack()
                     },
                 )
             }
@@ -188,56 +183,82 @@ fun ProviderListScreen(onBack: () -> Unit) {
 private fun ProviderCard(
     provider: ApiProvider,
     isSelected: Boolean,
-    onClick: () -> Unit,
+    onSelect: () -> Unit,
 ) {
+    val scope = rememberCoroutineScope()
+    val haptics = rememberNokoHaptics()
+    val urlOverride by SettingsManager.getProviderUrlOverride(provider.id).collectAsState(initial = "")
+    var urlInput by remember(urlOverride, provider.id) {
+        mutableStateOf(urlOverride.ifBlank { provider.baseUrl })
+    }
+
     Card(
         colors = CardDefaults.cardColors(
-            containerColor = if (isSelected)
-                MaterialTheme.colorScheme.primaryContainer
-            else MaterialTheme.colorScheme.surfaceContainer,
+            containerColor = MaterialTheme.colorScheme.surfaceContainer,
         ),
         shape = RoundedCornerShape(20.dp),
     ) {
-        Row(
+        Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .clickable(onClick = onClick)
+                .clickable(onClick = onSelect)
                 .padding(16.dp),
-            verticalAlignment = Alignment.CenterVertically,
+            verticalArrangement = Arrangement.spacedBy(8.dp),
         ) {
-            Icon(
-                if (provider.isLocal) Icons.Rounded.Computer else Icons.Rounded.Cloud,
-                contentDescription = null,
-                modifier = Modifier.size(24.dp),
-            )
-            Spacer(Modifier.size(12.dp))
-            Column(modifier = Modifier.weight(1f)) {
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(8.dp),
-                ) {
-                    Text(provider.name, style = MaterialTheme.typography.titleMedium)
-                    if (provider.id == "openrouter") {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Icon(
+                    if (provider.isLocal) Icons.Rounded.Computer else Icons.Rounded.Cloud,
+                    contentDescription = null,
+                    modifier = Modifier.size(24.dp),
+                )
+                Spacer(Modifier.size(12.dp))
+                Column(modifier = Modifier.weight(1f)) {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    ) {
+                        Text(provider.name, style = MaterialTheme.typography.titleMedium)
+                        if (provider.id == "openrouter") {
+                            Text(
+                                "Recommended",
+                                style = MaterialTheme.typography.labelSmall,
+                                color = MaterialTheme.colorScheme.primary,
+                            )
+                        }
+                    }
+                    if (!isSelected) {
                         Text(
-                            "Recommended",
-                            style = MaterialTheme.typography.labelSmall,
-                            color = MaterialTheme.colorScheme.primary,
+                            if (urlOverride.isNotBlank()) urlOverride else provider.baseUrl,
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
                         )
                     }
                 }
-                Text(
-                    provider.baseUrl,
-                    style = MaterialTheme.typography.bodySmall,
-                    color = if (isSelected)
-                        MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.7f)
-                    else MaterialTheme.colorScheme.onSurfaceVariant,
-                )
+                if (isSelected) {
+                    Icon(
+                        Icons.Filled.Check,
+                        contentDescription = "Selected",
+                        tint = MaterialTheme.colorScheme.primary,
+                    )
+                }
             }
-            if (isSelected) {
-                Icon(
-                    Icons.Filled.Check,
-                    contentDescription = "Selected",
-                    tint = MaterialTheme.colorScheme.primary,
+
+            AnimatedVisibility(visible = isSelected) {
+                OutlinedTextField(
+                    value = urlInput,
+                    onValueChange = {
+                        urlInput = it
+                        val override = if (it == provider.baseUrl) "" else it
+                        scope.launch { SettingsManager.setProviderUrlOverride(provider.id, override) }
+                    },
+                    label = { Text("Base URL") },
+                    placeholder = { Text(provider.baseUrl) },
+                    singleLine = true,
+                    shape = RoundedCornerShape(20.dp),
+                    modifier = Modifier.fillMaxWidth(),
                 )
             }
         }

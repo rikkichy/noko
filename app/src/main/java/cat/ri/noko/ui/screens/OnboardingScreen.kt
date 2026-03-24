@@ -45,6 +45,7 @@ import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -319,7 +320,8 @@ fun OnboardingScreen(onComplete: () -> Unit) {
                 OnboardingStep.ApiKey -> {
                     val provider = remember(selectedProviderId) { getProviderById(selectedProviderId) }
                     val providerName = provider?.name ?: "Custom"
-                    val providerBaseUrl = provider?.baseUrl ?: customUrl
+                    val onboardingUrlOverride by SettingsManager.getProviderUrlOverride(selectedProviderId).collectAsState(initial = "")
+                    val providerBaseUrl = if (provider != null) onboardingUrlOverride.ifBlank { provider.baseUrl } else customUrl
                     val placeholder = when (selectedProviderId) {
                         "openrouter" -> "sk-or-v1-..."
                         "openai" -> "sk-..."

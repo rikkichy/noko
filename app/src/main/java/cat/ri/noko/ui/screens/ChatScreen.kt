@@ -208,7 +208,8 @@ fun ChatScreen(
     val customAuth by SettingsManager.customProviderAuth.collectAsState(initial = false)
     val provider = remember(providerId) { getProviderById(providerId) }
     val providerRequiresAuth = provider?.requiresAuth ?: customAuth
-    val providerBaseUrl = provider?.baseUrl ?: customUrl
+    val urlOverride by SettingsManager.getProviderUrlOverride(providerId).collectAsState(initial = "")
+    val providerBaseUrl = if (provider != null) urlOverride.ifBlank { provider.baseUrl } else customUrl
     val activePreset = remember(presets, selectedPresetId) {
         presets.find { it.id == selectedPresetId } ?: presets.first()
     }

@@ -57,6 +57,7 @@ object SettingsManager {
     private val SELECTED_PROVIDER_ID = stringPreferencesKey("selected_provider_id")
     private val CUSTOM_PROVIDER_URL = stringPreferencesKey("custom_provider_url")
     private val CUSTOM_PROVIDER_AUTH = booleanPreferencesKey("custom_provider_auth")
+    private val PROVIDER_URL_OVERRIDE_PREFIX = "provider_url_"
 
     private lateinit var appContext: Context
     private lateinit var securePrefs: SharedPreferences
@@ -316,6 +317,21 @@ object SettingsManager {
 
     suspend fun setCustomProviderAuth(requiresAuth: Boolean) {
         appContext.dataStore.edit { it[CUSTOM_PROVIDER_AUTH] = requiresAuth }
+    }
+
+    fun getProviderUrlOverride(providerId: String): Flow<String> {
+        val key = stringPreferencesKey("${PROVIDER_URL_OVERRIDE_PREFIX}$providerId")
+        return appContext.dataStore.data.map { it[key] ?: "" }
+    }
+
+    fun getProviderUrlOverrideSync(providerId: String): String = runBlocking {
+        val key = stringPreferencesKey("${PROVIDER_URL_OVERRIDE_PREFIX}$providerId")
+        appContext.dataStore.data.first()[key] ?: ""
+    }
+
+    suspend fun setProviderUrlOverride(providerId: String, url: String) {
+        val key = stringPreferencesKey("${PROVIDER_URL_OVERRIDE_PREFIX}$providerId")
+        appContext.dataStore.edit { it[key] = url }
     }
 
     val selectedModelId: Flow<String>
