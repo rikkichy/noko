@@ -205,7 +205,7 @@ fun PersonaEditScreen(
 
             OutlinedTextField(
                 value = name,
-                onValueChange = { name = it },
+                onValueChange = { if (it.length <= 100) name = it },
                 label = { Text("Name") },
                 placeholder = { Text(if (type == PersonaType.PERSONA) "Persona name..." else "Character name...") },
                 singleLine = true,
@@ -215,7 +215,7 @@ fun PersonaEditScreen(
 
             OutlinedTextField(
                 value = description,
-                onValueChange = { description = it },
+                onValueChange = { if (it.length <= 2000) description = it },
                 label = { Text("Description") },
                 shape = RoundedCornerShape(20.dp),
                 modifier = Modifier
@@ -227,7 +227,7 @@ fun PersonaEditScreen(
             if (type == PersonaType.CHARACTER) {
                 OutlinedTextField(
                     value = greetingMessage,
-                    onValueChange = { greetingMessage = it },
+                    onValueChange = { if (it.length <= 2000) greetingMessage = it },
                     label = { Text("Greeting Message") },
                     placeholder = { Text("First message when starting a chat...") },
                     shape = RoundedCornerShape(20.dp),
