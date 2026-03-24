@@ -219,6 +219,9 @@ object SettingsManager {
         appContext.dataStore.edit { it[HIDE_FROM_RECENTS] = enabled }
     }
 
+    @Volatile
+    var suppressBiometricRelock = false
+
     val biometricAuth: Flow<Boolean>
         get() = appContext.dataStore.data.map { it[BIOMETRIC_AUTH] ?: false }
 
