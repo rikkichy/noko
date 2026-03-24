@@ -19,7 +19,10 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.ShortNavigationBar
 import androidx.compose.material3.ShortNavigationBarItem
 import androidx.compose.material3.Text
+import android.app.Activity
+import android.view.WindowManager
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
@@ -29,6 +32,7 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import cat.ri.noko.core.SettingsManager
 import cat.ri.noko.ui.screens.ChatScreen
@@ -54,6 +58,19 @@ fun NokoApp() {
         if (!onboardingDismissed && onboardingComplete == false) {
             OnboardingScreen(onComplete = { onboardingDismissed = true })
             return@NokoTheme
+        }
+
+        val screenSecurity by SettingsManager.screenSecurity.collectAsState(initial = false)
+        val activity = LocalContext.current as? Activity
+        LaunchedEffect(screenSecurity) {
+            if (screenSecurity) {
+                activity?.window?.setFlags(
+                    WindowManager.LayoutParams.FLAG_SECURE,
+                    WindowManager.LayoutParams.FLAG_SECURE,
+                )
+            } else {
+                activity?.window?.clearFlags(WindowManager.LayoutParams.FLAG_SECURE)
+            }
         }
 
         var selectedTab by rememberSaveable { mutableIntStateOf(0) }
