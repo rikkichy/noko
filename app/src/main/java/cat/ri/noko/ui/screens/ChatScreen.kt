@@ -1039,10 +1039,11 @@ private fun MessageBubble(
                     enter = fadeIn(tween(150)) + expandVertically(tween(150)),
                     exit = fadeOut(tween(100)) + shrinkVertically(tween(100)),
                 ) {
-                    FlowRow(
+                    Row(
                         horizontalArrangement = Arrangement.spacedBy(6.dp),
-                        verticalArrangement = Arrangement.spacedBy(4.dp),
-                        modifier = Modifier.padding(top = 4.dp),
+                        modifier = Modifier
+                            .padding(top = 4.dp)
+                            .horizontalScroll(rememberScrollState()),
                     ) {
                         if (!isUser && onRegenerate != null) {
                             AssistChip(
