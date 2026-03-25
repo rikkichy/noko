@@ -69,6 +69,7 @@ import cat.ri.noko.model.builtInProviders
 import cat.ri.noko.model.getProviderById
 import cat.ri.noko.ui.components.ImageCropOverlay
 import cat.ri.noko.ui.components.PersonaFormFields
+import cat.ri.noko.ui.components.ProviderCard
 import cat.ri.noko.ui.util.rememberNokoHaptics
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -246,57 +247,15 @@ fun OnboardingScreen(onComplete: () -> Unit) {
                     Spacer(Modifier.height(4.dp))
 
                     builtInProviders.forEach { provider ->
-                        androidx.compose.material3.Card(
-                            colors = androidx.compose.material3.CardDefaults.cardColors(
-                                containerColor = if (selectedProviderId == provider.id)
-                                    MaterialTheme.colorScheme.primaryContainer
-                                else MaterialTheme.colorScheme.surfaceContainer,
-                            ),
-                            shape = RoundedCornerShape(20.dp),
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .clickable {
-                                    haptics.tap()
-                                    selectedProviderId = provider.id
-                                },
-                        ) {
-                            Row(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .padding(16.dp),
-                                verticalAlignment = Alignment.CenterVertically,
-                            ) {
-                                Column(modifier = Modifier.weight(1f)) {
-                                    Row(
-                                        verticalAlignment = Alignment.CenterVertically,
-                                        horizontalArrangement = Arrangement.spacedBy(8.dp),
-                                    ) {
-                                        Text(provider.name, style = MaterialTheme.typography.titleMedium)
-                                        if (provider.id == "openrouter") {
-                                            Text(
-                                                "Recommended",
-                                                style = MaterialTheme.typography.labelSmall,
-                                                color = MaterialTheme.colorScheme.primary,
-                                            )
-                                        }
-                                    }
-                                    Text(
-                                        provider.baseUrl,
-                                        style = MaterialTheme.typography.bodySmall,
-                                        color = if (selectedProviderId == provider.id)
-                                            MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.7f)
-                                        else MaterialTheme.colorScheme.onSurfaceVariant,
-                                    )
-                                }
-                                if (selectedProviderId == provider.id) {
-                                    Icon(
-                                        Icons.Filled.Check,
-                                        contentDescription = "Selected",
-                                        tint = MaterialTheme.colorScheme.primary,
-                                    )
-                                }
-                            }
-                        }
+                        ProviderCard(
+                            provider = provider,
+                            isSelected = selectedProviderId == provider.id,
+                            onSelect = {
+                                haptics.tap()
+                                selectedProviderId = provider.id
+                            },
+                            showUrlEditor = false,
+                        )
                     }
 
                     Button(
