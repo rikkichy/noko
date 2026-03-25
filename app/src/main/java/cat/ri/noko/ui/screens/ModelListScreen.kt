@@ -56,6 +56,32 @@ import kotlinx.coroutines.launch
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 fun ModelListScreen(onBack: () -> Unit) {
+    Scaffold(
+        topBar = {
+            TopAppBar(
+                title = { Text("Select Model") },
+                navigationIcon = {
+                    IconButton(onClick = onBack) {
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
+                    }
+                },
+                colors = TopAppBarDefaults.topAppBarColors(containerColor = Color.Transparent),
+            )
+        },
+    ) { padding ->
+        ModelListContent(
+            onModelSelected = { onBack() },
+            modifier = Modifier.padding(padding),
+        )
+    }
+}
+
+@OptIn(ExperimentalMaterial3ExpressiveApi::class)
+@Composable
+fun ModelListContent(
+    onModelSelected: (() -> Unit)? = null,
+    modifier: Modifier = Modifier,
+) {
     val scope = rememberCoroutineScope()
     val haptics = rememberNokoHaptics()
     val apiKey by SettingsManager.apiKey.collectAsState(initial = "")
@@ -104,158 +130,141 @@ fun ModelListScreen(onBack: () -> Unit) {
         }
     }
 
-    Scaffold(
-        topBar = {
-            TopAppBar(
-                title = { Text("Select Model") },
-                navigationIcon = {
-                    IconButton(onClick = onBack) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
-                    }
-                },
-                colors = TopAppBarDefaults.topAppBarColors(containerColor = Color.Transparent),
-            )
-        },
-    ) { padding ->
-        Column(
+    Column(
+        modifier = modifier.fillMaxSize(),
+    ) {
+        TextField(
+            value = search,
+            onValueChange = { search = it },
             modifier = Modifier
-                .fillMaxSize()
-                .padding(padding),
-        ) {
+                .fillMaxWidth()
+                .padding(horizontal = 16.dp, vertical = 8.dp),
+            placeholder = { Text("Search models...") },
+            leadingIcon = { Icon(Icons.Filled.Search, contentDescription = null) },
+            singleLine = true,
+            shape = RoundedCornerShape(20.dp),
+            colors = TextFieldDefaults.colors(
+                focusedContainerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
+                unfocusedContainerColor = MaterialTheme.colorScheme.surfaceContainerLow,
+                focusedIndicatorColor = Color.Transparent,
+                unfocusedIndicatorColor = Color.Transparent,
+            ),
+        )
 
-            TextField(
-                value = search,
-                onValueChange = { search = it },
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 16.dp, vertical = 8.dp),
-                placeholder = { Text("Search models...") },
-                leadingIcon = { Icon(Icons.Filled.Search, contentDescription = null) },
-                singleLine = true,
-                shape = RoundedCornerShape(20.dp),
-                colors = TextFieldDefaults.colors(
-                    focusedContainerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
-                    unfocusedContainerColor = MaterialTheme.colorScheme.surfaceContainerLow,
-                    focusedIndicatorColor = Color.Transparent,
-                    unfocusedIndicatorColor = Color.Transparent,
-                ),
-            )
-
-            when {
-                loading -> {
-                    Box(
-                        modifier = Modifier.fillMaxSize(),
-                        contentAlignment = Alignment.Center,
-                    ) {
-                        LoadingIndicator()
-                    }
+        when {
+            loading -> {
+                Box(
+                    modifier = Modifier.fillMaxSize(),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    LoadingIndicator()
                 }
-                error != null -> {
-                    Box(
-                        modifier = Modifier.fillMaxSize(),
-                        contentAlignment = Alignment.Center,
-                    ) {
-                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                            Text(
-                                error!!,
-                                style = MaterialTheme.typography.bodyLarge,
-                                color = MaterialTheme.colorScheme.error,
-                            )
-                            Spacer(Modifier.size(8.dp))
-                            TextButton(onClick = {
-                                scope.launch {
-                                    loading = true
-                                    error = null
-                                    try {
-                                        ApiClient.configure(apiKey, providerBaseUrl, providerId)
-                                        val response = ApiClient.getModels()
-                                        models = response.data.sortedBy { it.name.lowercase() }
-                                    } catch (e: Exception) {
-                                        error = humanizeException(e)
-                                    }
-                                    loading = false
+            }
+            error != null -> {
+                Box(
+                    modifier = Modifier.fillMaxSize(),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                        Text(
+                            error!!,
+                            style = MaterialTheme.typography.bodyLarge,
+                            color = MaterialTheme.colorScheme.error,
+                        )
+                        Spacer(Modifier.size(8.dp))
+                        TextButton(onClick = {
+                            scope.launch {
+                                loading = true
+                                error = null
+                                try {
+                                    ApiClient.configure(apiKey, providerBaseUrl, providerId)
+                                    val response = ApiClient.getModels()
+                                    models = response.data.sortedBy { it.name.lowercase() }
+                                } catch (e: Exception) {
+                                    error = humanizeException(e)
                                 }
-                            }) {
-                                Text("Retry")
+                                loading = false
                             }
+                        }) {
+                            Text("Retry")
                         }
                     }
                 }
-                else -> {
-                    LazyColumn(
-                        modifier = Modifier.fillMaxSize(),
-                        verticalArrangement = Arrangement.spacedBy(4.dp),
-                    ) {
-                        items(filtered, key = { it.id }) { model ->
-                            val isSelected = model.id == selectedModelId
-                            Card(
+            }
+            else -> {
+                LazyColumn(
+                    modifier = Modifier.fillMaxSize(),
+                    verticalArrangement = Arrangement.spacedBy(4.dp),
+                ) {
+                    items(filtered, key = { it.id }) { model ->
+                        val isSelected = model.id == selectedModelId
+                        Card(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(horizontal = 16.dp, vertical = 2.dp)
+                                .clickable {
+                                    haptics.confirm()
+                                    scope.launch {
+                                        SettingsManager.setSelectedModel(model.id, model.name)
+                                    }
+                                    onModelSelected?.invoke()
+                                },
+                            colors = CardDefaults.cardColors(
+                                containerColor = if (isSelected)
+                                    MaterialTheme.colorScheme.secondaryContainer
+                                else
+                                    MaterialTheme.colorScheme.surfaceContainer,
+                            ),
+                        ) {
+                            Row(
                                 modifier = Modifier
                                     .fillMaxWidth()
-                                    .padding(horizontal = 16.dp, vertical = 2.dp)
-                                    .clickable {
-                                        haptics.confirm()
-                                        scope.launch {
-                                            SettingsManager.setSelectedModel(model.id, model.name)
-                                        }
-                                        onBack()
-                                    },
-                                colors = CardDefaults.cardColors(
-                                    containerColor = if (isSelected)
-                                        MaterialTheme.colorScheme.secondaryContainer
-                                    else
-                                        MaterialTheme.colorScheme.surfaceContainer,
-                                ),
+                                    .padding(12.dp),
+                                verticalAlignment = Alignment.CenterVertically,
                             ) {
-                                Row(
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .padding(12.dp),
-                                    verticalAlignment = Alignment.CenterVertically,
-                                ) {
-                                    Column(modifier = Modifier.weight(1f)) {
-                                        Text(
-                                            model.name,
-                                            style = MaterialTheme.typography.bodyLarge,
-                                            maxLines = 1,
-                                            overflow = TextOverflow.Ellipsis,
-                                        )
-                                        Text(
-                                            model.id,
-                                            style = MaterialTheme.typography.bodySmall,
-                                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                            maxLines = 1,
-                                            overflow = TextOverflow.Ellipsis,
-                                        )
-                                        Row(
-                                            horizontalArrangement = Arrangement.spacedBy(12.dp),
-                                        ) {
-                                            model.contextLength?.let { ctx ->
+                                Column(modifier = Modifier.weight(1f)) {
+                                    Text(
+                                        model.name,
+                                        style = MaterialTheme.typography.bodyLarge,
+                                        maxLines = 1,
+                                        overflow = TextOverflow.Ellipsis,
+                                    )
+                                    Text(
+                                        model.id,
+                                        style = MaterialTheme.typography.bodySmall,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                        maxLines = 1,
+                                        overflow = TextOverflow.Ellipsis,
+                                    )
+                                    Row(
+                                        horizontalArrangement = Arrangement.spacedBy(12.dp),
+                                    ) {
+                                        model.contextLength?.let { ctx ->
+                                            Text(
+                                                "${ctx / 1000}k ctx",
+                                                style = MaterialTheme.typography.labelSmall,
+                                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                            )
+                                        }
+                                        model.pricing?.let { p ->
+                                            val promptPrice = p.prompt?.toDoubleOrNull()
+                                            if (promptPrice != null) {
+                                                val perMillion = promptPrice * 1_000_000
                                                 Text(
-                                                    "${ctx / 1000}k ctx",
+                                                    "$${formatPrice(perMillion)}/M in",
                                                     style = MaterialTheme.typography.labelSmall,
                                                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                                                 )
                                             }
-                                            model.pricing?.let { p ->
-                                                val promptPrice = p.prompt?.toDoubleOrNull()
-                                                if (promptPrice != null) {
-                                                    val perMillion = promptPrice * 1_000_000
-                                                    Text(
-                                                        "$${formatPrice(perMillion)}/M in",
-                                                        style = MaterialTheme.typography.labelSmall,
-                                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                                    )
-                                                }
-                                            }
                                         }
                                     }
-                                    if (isSelected) {
-                                        Icon(
-                                            Icons.Filled.Check,
-                                            contentDescription = "Selected",
-                                            tint = MaterialTheme.colorScheme.primary,
-                                        )
-                                    }
+                                }
+                                if (isSelected) {
+                                    Icon(
+                                        Icons.Filled.Check,
+                                        contentDescription = "Selected",
+                                        tint = MaterialTheme.colorScheme.primary,
+                                    )
                                 }
                             }
                         }

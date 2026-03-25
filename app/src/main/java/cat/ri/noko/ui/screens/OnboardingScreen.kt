@@ -7,10 +7,8 @@ import androidx.activity.result.PickVisualMediaRequest
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.keyframes
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -26,10 +24,10 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.ArrowBack
 import androidx.compose.material.icons.automirrored.rounded.ArrowForward
-import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.SmartToy
 import androidx.compose.material.icons.automirrored.rounded.OpenInNew
+import androidx.compose.material.icons.rounded.FileOpen
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
@@ -62,7 +60,6 @@ import cat.ri.noko.core.AvatarStorage
 import cat.ri.noko.core.SettingsManager
 import cat.ri.noko.core.api.ApiClient
 import cat.ri.noko.core.api.humanizeException
-import cat.ri.noko.model.ApiProvider
 import cat.ri.noko.model.PersonaEntry
 import cat.ri.noko.model.PersonaType
 import cat.ri.noko.model.builtInProviders
@@ -73,10 +70,11 @@ import cat.ri.noko.ui.components.PersonaFormFields
 import cat.ri.noko.ui.components.ProviderCard
 import cat.ri.noko.ui.util.rememberNokoHaptics
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
-private enum class OnboardingStep { Provider, ApiKey, Persona, Character }
+private enum class OnboardingStep { Provider, ApiKey, Model, Persona, Character, ImportCharacter }
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -120,9 +118,20 @@ fun OnboardingScreen(onComplete: () -> Unit) {
     var showGreetingWarning by remember { mutableStateOf(false) }
     var cropForCharacter by remember { mutableStateOf(false) }
 
+    var importUri by remember { mutableStateOf<Uri?>(null) }
+
     val photoPicker = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.PickVisualMedia(),
     ) { uri -> if (uri != null) pendingCropUri = uri }
+
+    val importLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.OpenDocument(),
+    ) { uri ->
+        if (uri != null) {
+            importUri = uri
+            step = OnboardingStep.ImportCharacter
+        }
+    }
 
     fun shake(animatable: Animatable<Float, *>) {
         scope.launch {
@@ -142,6 +151,11 @@ fun OnboardingScreen(onComplete: () -> Unit) {
                 },
             )
         }
+    }
+
+    fun requiresAuth(): Boolean {
+        val provider = getProviderById(selectedProviderId)
+        return provider?.requiresAuth ?: customAuth
     }
 
     if (pendingCropUri != null) {
@@ -187,15 +201,35 @@ fun OnboardingScreen(onComplete: () -> Unit) {
                         colors = TopAppBarDefaults.topAppBarColors(containerColor = Color.Transparent),
                     )
                 }
+                OnboardingStep.Model -> {
+                    TopAppBar(
+                        title = { Text("Select a model") },
+                        navigationIcon = {
+                            IconButton(onClick = {
+                                haptics.tap()
+                                step = if (requiresAuth()) OnboardingStep.ApiKey else OnboardingStep.Provider
+                            }) {
+                                Icon(Icons.AutoMirrored.Rounded.ArrowBack, contentDescription = "Back")
+                            }
+                        },
+                        actions = {
+                            TextButton(onClick = {
+                                haptics.tap()
+                                step = OnboardingStep.Persona
+                            }) {
+                                Text("Skip")
+                            }
+                        },
+                        colors = TopAppBarDefaults.topAppBarColors(containerColor = Color.Transparent),
+                    )
+                }
                 OnboardingStep.Persona -> {
                     TopAppBar(
                         title = { Text("Create your persona") },
                         navigationIcon = {
                             IconButton(onClick = {
                                 haptics.tap()
-                                val provider = getProviderById(selectedProviderId)
-                                val requiresAuth = provider?.requiresAuth ?: customAuth
-                                step = if (requiresAuth) OnboardingStep.ApiKey else OnboardingStep.Provider
+                                step = OnboardingStep.Model
                             }) {
                                 Icon(Icons.AutoMirrored.Rounded.ArrowBack, contentDescription = "Back")
                             }
@@ -217,20 +251,34 @@ fun OnboardingScreen(onComplete: () -> Unit) {
                         colors = TopAppBarDefaults.topAppBarColors(containerColor = Color.Transparent),
                     )
                 }
+                OnboardingStep.ImportCharacter -> {
+                    TopAppBar(
+                        title = { Text("Import character") },
+                        navigationIcon = {
+                            IconButton(onClick = {
+                                haptics.tap()
+                                step = OnboardingStep.Character
+                            }) {
+                                Icon(Icons.AutoMirrored.Rounded.ArrowBack, contentDescription = "Back")
+                            }
+                        },
+                        colors = TopAppBarDefaults.topAppBarColors(containerColor = Color.Transparent),
+                    )
+                }
             }
         },
     ) { padding ->
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(padding)
-                .imePadding()
-                .verticalScroll(rememberScrollState())
-                .padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp),
-        ) {
-            when (step) {
-                OnboardingStep.Provider -> {
+        when (step) {
+            OnboardingStep.Provider -> {
+                Column(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(padding)
+                        .imePadding()
+                        .verticalScroll(rememberScrollState())
+                        .padding(16.dp),
+                    verticalArrangement = Arrangement.spacedBy(12.dp),
+                ) {
                     Text(
                         "Welcome!",
                         style = MaterialTheme.typography.headlineMedium,
@@ -270,9 +318,7 @@ fun OnboardingScreen(onComplete: () -> Unit) {
                             haptics.tap()
                             scope.launch {
                                 SettingsManager.setSelectedProvider(selectedProviderId)
-                                val provider = getProviderById(selectedProviderId)
-                                val requiresAuth = provider?.requiresAuth ?: customAuth
-                                step = if (requiresAuth) OnboardingStep.ApiKey else OnboardingStep.Persona
+                                step = if (requiresAuth()) OnboardingStep.ApiKey else OnboardingStep.Model
                             }
                         },
                         modifier = Modifier.fillMaxWidth(),
@@ -282,8 +328,18 @@ fun OnboardingScreen(onComplete: () -> Unit) {
                         Text("Next")
                     }
                 }
+            }
 
-                OnboardingStep.ApiKey -> {
+            OnboardingStep.ApiKey -> {
+                Column(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(padding)
+                        .imePadding()
+                        .verticalScroll(rememberScrollState())
+                        .padding(16.dp),
+                    verticalArrangement = Arrangement.spacedBy(12.dp),
+                ) {
                     val provider = remember(selectedProviderId) { getProviderById(selectedProviderId) }
                     val providerName = provider?.name ?: "Custom"
                     val onboardingUrlOverride by SettingsManager.getProviderUrlOverride(selectedProviderId).collectAsState(initial = "")
@@ -337,7 +393,7 @@ fun OnboardingScreen(onComplete: () -> Unit) {
                                     }
                                 }.onSuccess {
                                     SettingsManager.setApiKey(apiKeyInput)
-                                    step = OnboardingStep.Persona
+                                    step = OnboardingStep.Model
                                 }.onFailure { e ->
                                     keyError = humanizeException(e)
                                     haptics.reject()
@@ -379,8 +435,25 @@ fun OnboardingScreen(onComplete: () -> Unit) {
                         }
                     }
                 }
+            }
 
-                OnboardingStep.Persona -> {
+            OnboardingStep.Model -> {
+                ModelListContent(
+                    onModelSelected = { step = OnboardingStep.Persona },
+                    modifier = Modifier.padding(padding),
+                )
+            }
+
+            OnboardingStep.Persona -> {
+                Column(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(padding)
+                        .imePadding()
+                        .verticalScroll(rememberScrollState())
+                        .padding(16.dp),
+                    verticalArrangement = Arrangement.spacedBy(12.dp),
+                ) {
                     Text(
                         "This is how the AI will know you.",
                         style = MaterialTheme.typography.bodyMedium,
@@ -457,8 +530,18 @@ fun OnboardingScreen(onComplete: () -> Unit) {
                         Text("Next")
                     }
                 }
+            }
 
-                OnboardingStep.Character -> {
+            OnboardingStep.Character -> {
+                Column(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(padding)
+                        .imePadding()
+                        .verticalScroll(rememberScrollState())
+                        .padding(16.dp),
+                    verticalArrangement = Arrangement.spacedBy(12.dp),
+                ) {
                     Text(
                         "Create a character for the AI to play.",
                         style = MaterialTheme.typography.bodyMedium,
@@ -545,6 +628,21 @@ fun OnboardingScreen(onComplete: () -> Unit) {
                         Text("Get started")
                     }
 
+                    OutlinedButton(
+                        onClick = {
+                            haptics.tap()
+                            SettingsManager.suppressBiometricRelock = true
+                            importLauncher.launch(
+                                arrayOf("image/png", "application/json", "application/octet-stream"),
+                            )
+                        },
+                        modifier = Modifier.fillMaxWidth(),
+                    ) {
+                        Icon(Icons.Rounded.FileOpen, contentDescription = null)
+                        Spacer(Modifier.width(8.dp))
+                        Text("Import character")
+                    }
+
                     if (showGreetingWarning) {
                         AlertDialog(
                             onDismissRequest = { showGreetingWarning = false },
@@ -570,6 +668,28 @@ fun OnboardingScreen(onComplete: () -> Unit) {
                             },
                         )
                     }
+                }
+            }
+
+            OnboardingStep.ImportCharacter -> {
+                val uri = importUri
+                if (uri != null) {
+                    CharacterImportContent(
+                        uri = uri,
+                        onComplete = {
+                            scope.launch {
+                                val chars = SettingsManager.characters.first()
+                                val firstChar = chars.firstOrNull()
+                                if (firstChar != null) {
+                                    SettingsManager.setSelectedCharacterId(firstChar.id)
+                                }
+                                SettingsManager.setOnboardingComplete()
+                                onComplete()
+                            }
+                        },
+                        onBack = { step = OnboardingStep.Character },
+                        modifier = Modifier.padding(padding),
+                    )
                 }
             }
         }

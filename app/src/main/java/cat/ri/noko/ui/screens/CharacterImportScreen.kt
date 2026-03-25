@@ -74,6 +74,39 @@ fun CharacterImportScreen(
     uri: Uri,
     onBack: () -> Unit,
 ) {
+    var importTitle by remember { mutableStateOf("Detecting...") }
+
+    Scaffold(
+        topBar = {
+            TopAppBar(
+                title = { Text(importTitle) },
+                navigationIcon = {
+                    IconButton(onClick = onBack) {
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
+                    }
+                },
+                colors = TopAppBarDefaults.topAppBarColors(containerColor = Color.Transparent),
+            )
+        },
+    ) { padding ->
+        CharacterImportContent(
+            uri = uri,
+            onTitleChange = { importTitle = it },
+            onComplete = onBack,
+            onBack = onBack,
+            modifier = Modifier.padding(padding),
+        )
+    }
+}
+
+@Composable
+fun CharacterImportContent(
+    uri: Uri,
+    onTitleChange: ((String) -> Unit)? = null,
+    onComplete: () -> Unit,
+    onBack: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
     val haptics = rememberNokoHaptics()
@@ -86,6 +119,23 @@ fun CharacterImportScreen(
     var passphrase by remember { mutableStateOf("") }
     var passphraseError by remember { mutableStateOf<String?>(null) }
     val shakeOffset = remember { Animatable(0f) }
+
+    val selectedCount = selected.size
+    val totalCount = characters.size
+
+    LaunchedEffect(state, totalCount, selectedCount) {
+        onTitleChange?.invoke(
+            when (state) {
+                ImportState.DETECTING -> "Detecting..."
+                ImportState.PASSPHRASE -> "Decrypt characters"
+                ImportState.PREVIEW, ImportState.IMPORTING -> {
+                    if (totalCount == 1) "Import character"
+                    else "Import characters ($selectedCount/$totalCount)"
+                }
+                ImportState.ERROR -> "Import failed"
+            },
+        )
+    }
 
     fun handleResult(result: CharacterCodec.ImportResult) {
         when (result) {
@@ -123,335 +173,298 @@ fun CharacterImportScreen(
         }
     }
 
-    val selectedCount = selected.size
-    val totalCount = characters.size
-
-    Scaffold(
-        topBar = {
-            TopAppBar(
-                title = {
-                    Text(
-                        when (state) {
-                            ImportState.DETECTING -> "Detecting..."
-                            ImportState.PASSPHRASE -> "Decrypt characters"
-                            ImportState.PREVIEW, ImportState.IMPORTING -> {
-                                if (totalCount == 1) "Import character"
-                                else "Import characters ($selectedCount/$totalCount)"
-                            }
-                            ImportState.ERROR -> "Import failed"
-                        },
-                    )
-                },
-                navigationIcon = {
-                    IconButton(onClick = onBack) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
-                    }
-                },
-                colors = TopAppBarDefaults.topAppBarColors(containerColor = Color.Transparent),
-            )
-        },
-    ) { padding ->
-        when (state) {
-            ImportState.DETECTING -> {
-                Box(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .padding(padding),
-                    contentAlignment = Alignment.Center,
-                ) {
-                    CircularProgressIndicator()
-                }
+    when (state) {
+        ImportState.DETECTING -> {
+            Box(
+                modifier = modifier.fillMaxSize(),
+                contentAlignment = Alignment.Center,
+            ) {
+                CircularProgressIndicator()
             }
+        }
 
-            ImportState.PASSPHRASE -> {
-                Column(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .padding(padding)
-                        .padding(16.dp),
-                    verticalArrangement = Arrangement.spacedBy(16.dp),
-                ) {
-                    Text(
-                        "Enter the passphrase to decrypt this file.",
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
+        ImportState.PASSPHRASE -> {
+            Column(
+                modifier = modifier
+                    .fillMaxSize()
+                    .padding(16.dp),
+                verticalArrangement = Arrangement.spacedBy(16.dp),
+            ) {
+                Text(
+                    "Enter the passphrase to decrypt this file.",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
 
-                    OutlinedTextField(
-                        value = passphrase,
-                        onValueChange = {
-                            if (it.length <= 256) {
-                                passphrase = it
-                                passphraseError = null
-                            }
-                        },
-                        label = { Text("Passphrase") },
-                        visualTransformation = PasswordVisualTransformation(),
-                        singleLine = true,
-                        isError = passphraseError != null,
-                        supportingText = passphraseError?.let { err -> { Text(err) } },
-                        shape = RoundedCornerShape(20.dp),
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .offset { IntOffset(shakeOffset.value.toInt(), 0) },
-                    )
-
-                    Button(
-                        onClick = {
-                            if (passphrase.isBlank()) {
-                                passphraseError = "Enter a passphrase"
-                                scope.launch {
-                                    haptics.reject()
-                                    shakeOffset.animateTo(
-                                        targetValue = 0f,
-                                        animationSpec = keyframes {
-                                            durationMillis = 400
-                                            0f at 0
-                                            (-18f) at 50
-                                            18f at 100
-                                            (-14f) at 150
-                                            14f at 200
-                                            (-8f) at 250
-                                            8f at 300
-                                            (-4f) at 350
-                                            0f at 400
-                                        },
-                                    )
-                                }
-                                return@Button
-                            }
-                            val passChars = passphrase.toCharArray()
-                            passphrase = ""
+                OutlinedTextField(
+                    value = passphrase,
+                    onValueChange = {
+                        if (it.length <= 256) {
+                            passphrase = it
                             passphraseError = null
-                            state = ImportState.DETECTING
+                        }
+                    },
+                    label = { Text("Passphrase") },
+                    visualTransformation = PasswordVisualTransformation(),
+                    singleLine = true,
+                    isError = passphraseError != null,
+                    supportingText = passphraseError?.let { err -> { Text(err) } },
+                    shape = RoundedCornerShape(20.dp),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .offset { IntOffset(shakeOffset.value.toInt(), 0) },
+                )
+
+                Button(
+                    onClick = {
+                        if (passphrase.isBlank()) {
+                            passphraseError = "Enter a passphrase"
                             scope.launch {
-                                val result = try {
-                                    withContext(Dispatchers.IO) {
-                                        CharacterCodec.importFromNokc(context, uri, passChars)
-                                    }
-                                } finally {
-                                    passChars.fill('\u0000')
-                                }
-                                if (result is CharacterCodec.ImportResult.Error &&
-                                    result.message == "Wrong passphrase"
-                                ) {
-                                    state = ImportState.PASSPHRASE
-                                    passphraseError = "Wrong passphrase"
-                                    haptics.reject()
-                                    shakeOffset.animateTo(
-                                        targetValue = 0f,
-                                        animationSpec = keyframes {
-                                            durationMillis = 400
-                                            0f at 0
-                                            (-18f) at 50
-                                            18f at 100
-                                            (-14f) at 150
-                                            14f at 200
-                                            (-8f) at 250
-                                            8f at 300
-                                            (-4f) at 350
-                                            0f at 400
-                                        },
-                                    )
-                                } else {
-                                    handleResult(result)
-                                }
+                                haptics.reject()
+                                shakeOffset.animateTo(
+                                    targetValue = 0f,
+                                    animationSpec = keyframes {
+                                        durationMillis = 400
+                                        0f at 0
+                                        (-18f) at 50
+                                        18f at 100
+                                        (-14f) at 150
+                                        14f at 200
+                                        (-8f) at 250
+                                        8f at 300
+                                        (-4f) at 350
+                                        0f at 400
+                                    },
+                                )
                             }
-                        },
-                        modifier = Modifier.fillMaxWidth(),
-                        shape = RoundedCornerShape(20.dp),
-                    ) {
-                        Text("Decrypt")
-                    }
+                            return@Button
+                        }
+                        val passChars = passphrase.toCharArray()
+                        passphrase = ""
+                        passphraseError = null
+                        state = ImportState.DETECTING
+                        scope.launch {
+                            val result = try {
+                                withContext(Dispatchers.IO) {
+                                    CharacterCodec.importFromNokc(context, uri, passChars)
+                                }
+                            } finally {
+                                passChars.fill('\u0000')
+                            }
+                            if (result is CharacterCodec.ImportResult.Error &&
+                                result.message == "Wrong passphrase"
+                            ) {
+                                state = ImportState.PASSPHRASE
+                                passphraseError = "Wrong passphrase"
+                                haptics.reject()
+                                shakeOffset.animateTo(
+                                    targetValue = 0f,
+                                    animationSpec = keyframes {
+                                        durationMillis = 400
+                                        0f at 0
+                                        (-18f) at 50
+                                        18f at 100
+                                        (-14f) at 150
+                                        14f at 200
+                                        (-8f) at 250
+                                        8f at 300
+                                        (-4f) at 350
+                                        0f at 400
+                                    },
+                                )
+                            } else {
+                                handleResult(result)
+                            }
+                        }
+                    },
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(20.dp),
+                ) {
+                    Text("Decrypt")
                 }
             }
+        }
 
-            ImportState.PREVIEW -> {
-                Column(
+        ImportState.PREVIEW -> {
+            Column(
+                modifier = modifier.fillMaxSize(),
+            ) {
+                val formatLabel = when (format) {
+                    CharacterCodec.CharacterFormat.TAVERN_PNG -> "TavernAI Card"
+                    CharacterCodec.CharacterFormat.CHARACTER_AI_JSON -> "Character.AI"
+                    CharacterCodec.CharacterFormat.NOKC -> "Noko Encrypted"
+                    else -> "Unknown"
+                }
+                Text(
+                    formatLabel,
+                    style = MaterialTheme.typography.labelMedium,
+                    color = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
+                )
+
+                LazyColumn(
                     modifier = Modifier
-                        .fillMaxSize()
-                        .padding(padding),
+                        .weight(1f)
+                        .padding(horizontal = 16.dp),
+                    verticalArrangement = Arrangement.spacedBy(8.dp),
                 ) {
-                    val formatLabel = when (format) {
-                        CharacterCodec.CharacterFormat.TAVERN_PNG -> "TavernAI Card"
-                        CharacterCodec.CharacterFormat.CHARACTER_AI_JSON -> "Character.AI"
-                        CharacterCodec.CharacterFormat.NOKC -> "Noko Encrypted"
-                        else -> "Unknown"
-                    }
-                    Text(
-                        formatLabel,
-                        style = MaterialTheme.typography.labelMedium,
-                        color = MaterialTheme.colorScheme.primary,
-                        modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
-                    )
-
-                    LazyColumn(
-                        modifier = Modifier
-                            .weight(1f)
-                            .padding(horizontal = 16.dp),
-                        verticalArrangement = Arrangement.spacedBy(8.dp),
-                    ) {
-                        itemsIndexed(characters) { index, char ->
-                            val isSelected = index in selected
-                            Card(
-                                colors = CardDefaults.cardColors(
-                                    containerColor = MaterialTheme.colorScheme.surfaceContainer,
-                                ),
-                                shape = RoundedCornerShape(20.dp),
+                    itemsIndexed(characters) { index, char ->
+                        val isSelected = index in selected
+                        Card(
+                            colors = CardDefaults.cardColors(
+                                containerColor = MaterialTheme.colorScheme.surfaceContainer,
+                            ),
+                            shape = RoundedCornerShape(20.dp),
+                        ) {
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(12.dp),
+                                verticalAlignment = Alignment.CenterVertically,
                             ) {
-                                Row(
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .padding(12.dp),
-                                    verticalAlignment = Alignment.CenterVertically,
-                                ) {
-                                    if (totalCount > 1) {
-                                        Checkbox(
-                                            checked = isSelected,
-                                            onCheckedChange = { checked ->
-                                                if (checked) selected.add(index) else selected.remove(index)
-                                            },
+                                if (totalCount > 1) {
+                                    Checkbox(
+                                        checked = isSelected,
+                                        onCheckedChange = { checked ->
+                                            if (checked) selected.add(index) else selected.remove(index)
+                                        },
+                                    )
+                                }
+                                if (char.avatarBytes != null) {
+                                    val bitmap = remember(char.avatarBytes) {
+                                        BitmapFactory.decodeByteArray(
+                                            char.avatarBytes, 0, char.avatarBytes.size,
                                         )
                                     }
-                                    if (char.avatarBytes != null) {
-                                        val bitmap = remember(char.avatarBytes) {
-                                            BitmapFactory.decodeByteArray(
-                                                char.avatarBytes, 0, char.avatarBytes.size,
-                                            )
-                                        }
-                                        if (bitmap != null) {
-                                            AsyncImage(
-                                                model = ImageRequest.Builder(context)
-                                                    .data(bitmap)
-                                                    .build(),
-                                                contentDescription = null,
-                                                modifier = Modifier
-                                                    .size(48.dp)
-                                                    .clip(CircleShape),
-                                                contentScale = ContentScale.Crop,
-                                            )
-                                        }
-                                    } else {
-                                        Box(
+                                    if (bitmap != null) {
+                                        AsyncImage(
+                                            model = ImageRequest.Builder(context)
+                                                .data(bitmap)
+                                                .build(),
+                                            contentDescription = null,
                                             modifier = Modifier
                                                 .size(48.dp)
                                                 .clip(CircleShape),
-                                            contentAlignment = Alignment.Center,
-                                        ) {
-                                            Icon(
-                                                Icons.Filled.Person,
-                                                contentDescription = null,
-                                                modifier = Modifier.size(24.dp),
-                                                tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                                            )
-                                        }
+                                            contentScale = ContentScale.Crop,
+                                        )
                                     }
-                                    Spacer(Modifier.size(12.dp))
-                                    Column(modifier = Modifier.weight(1f)) {
-                                        Text(char.name, style = MaterialTheme.typography.titleSmall)
-                                        if (char.description.isNotBlank()) {
-                                            Text(
-                                                char.description.take(100) +
-                                                    if (char.description.length > 100) "..." else "",
-                                                style = MaterialTheme.typography.bodySmall,
-                                                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                                maxLines = 2,
-                                            )
-                                        }
-                                        if (!char.greetingMessage.isNullOrBlank()) {
-                                            Text(
-                                                "Has greeting message",
-                                                style = MaterialTheme.typography.labelSmall,
-                                                color = MaterialTheme.colorScheme.primary,
-                                            )
-                                        }
+                                } else {
+                                    Box(
+                                        modifier = Modifier
+                                            .size(48.dp)
+                                            .clip(CircleShape),
+                                        contentAlignment = Alignment.Center,
+                                    ) {
+                                        Icon(
+                                            Icons.Filled.Person,
+                                            contentDescription = null,
+                                            modifier = Modifier.size(24.dp),
+                                            tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                                        )
+                                    }
+                                }
+                                Spacer(Modifier.size(12.dp))
+                                Column(modifier = Modifier.weight(1f)) {
+                                    Text(char.name, style = MaterialTheme.typography.titleSmall)
+                                    if (char.description.isNotBlank()) {
+                                        Text(
+                                            char.description.take(100) +
+                                                if (char.description.length > 100) "..." else "",
+                                            style = MaterialTheme.typography.bodySmall,
+                                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                            maxLines = 2,
+                                        )
+                                    }
+                                    if (!char.greetingMessage.isNullOrBlank()) {
+                                        Text(
+                                            "Has greeting message",
+                                            style = MaterialTheme.typography.labelSmall,
+                                            color = MaterialTheme.colorScheme.primary,
+                                        )
                                     }
                                 }
                             }
                         }
                     }
+                }
 
-                    Button(
-                        onClick = {
-                            if (selected.isEmpty()) return@Button
-                            state = ImportState.IMPORTING
-                            scope.launch {
-                                val toImport = selected.sorted().map { characters[it] }
-                                withContext(Dispatchers.IO) {
-                                    toImport.forEach { char ->
-                                        val id = UUID.randomUUID().toString()
-                                        val avatarFileName = char.avatarBytes?.let { bytes ->
-                                            AvatarStorage.saveBytes(context, bytes, id)
-                                        }
-                                        val entry = PersonaEntry(
-                                            id = id,
-                                            type = PersonaType.CHARACTER,
-                                            name = char.name,
-                                            description = char.description,
-                                            greetingMessage = char.greetingMessage,
-                                            avatarFileName = avatarFileName,
-                                        )
-                                        SettingsManager.saveEntry(entry)
+                Button(
+                    onClick = {
+                        if (selected.isEmpty()) return@Button
+                        state = ImportState.IMPORTING
+                        scope.launch {
+                            val toImport = selected.sorted().map { characters[it] }
+                            withContext(Dispatchers.IO) {
+                                toImport.forEach { char ->
+                                    val id = UUID.randomUUID().toString()
+                                    val avatarFileName = char.avatarBytes?.let { bytes ->
+                                        AvatarStorage.saveBytes(context, bytes, id)
                                     }
+                                    val entry = PersonaEntry(
+                                        id = id,
+                                        type = PersonaType.CHARACTER,
+                                        name = char.name,
+                                        description = char.description,
+                                        greetingMessage = char.greetingMessage,
+                                        avatarFileName = avatarFileName,
+                                    )
+                                    SettingsManager.saveEntry(entry)
                                 }
-                                haptics.confirm()
-                                onBack()
                             }
-                        },
-                        enabled = selected.isNotEmpty(),
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(16.dp),
+                            haptics.confirm()
+                            onComplete()
+                        }
+                    },
+                    enabled = selected.isNotEmpty(),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(16.dp),
+                    shape = RoundedCornerShape(20.dp),
+                ) {
+                    Icon(Icons.Filled.Check, contentDescription = null)
+                    Spacer(Modifier.size(8.dp))
+                    Text(
+                        if (selectedCount == 1) "Import 1 character"
+                        else "Import $selectedCount characters",
+                    )
+                }
+            }
+        }
+
+        ImportState.IMPORTING -> {
+            Box(
+                modifier = modifier.fillMaxSize(),
+                contentAlignment = Alignment.Center,
+            ) {
+                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                    CircularProgressIndicator()
+                    Spacer(Modifier.size(16.dp))
+                    Text("Importing...")
+                }
+            }
+        }
+
+        ImportState.ERROR -> {
+            Box(
+                modifier = modifier
+                    .fillMaxSize()
+                    .padding(16.dp),
+                contentAlignment = Alignment.Center,
+            ) {
+                Column(
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.spacedBy(12.dp),
+                ) {
+                    Text(
+                        errorMessage,
+                        style = MaterialTheme.typography.bodyLarge,
+                        color = MaterialTheme.colorScheme.error,
+                    )
+                    Button(
+                        onClick = onBack,
                         shape = RoundedCornerShape(20.dp),
                     ) {
-                        Icon(Icons.Filled.Check, contentDescription = null)
-                        Spacer(Modifier.size(8.dp))
-                        Text(
-                            if (selectedCount == 1) "Import 1 character"
-                            else "Import $selectedCount characters",
-                        )
-                    }
-                }
-            }
-
-            ImportState.IMPORTING -> {
-                Box(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .padding(padding),
-                    contentAlignment = Alignment.Center,
-                ) {
-                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                        CircularProgressIndicator()
-                        Spacer(Modifier.size(16.dp))
-                        Text("Importing...")
-                    }
-                }
-            }
-
-            ImportState.ERROR -> {
-                Box(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .padding(padding)
-                        .padding(16.dp),
-                    contentAlignment = Alignment.Center,
-                ) {
-                    Column(
-                        horizontalAlignment = Alignment.CenterHorizontally,
-                        verticalArrangement = Arrangement.spacedBy(12.dp),
-                    ) {
-                        Text(
-                            errorMessage,
-                            style = MaterialTheme.typography.bodyLarge,
-                            color = MaterialTheme.colorScheme.error,
-                        )
-                        Button(
-                            onClick = onBack,
-                            shape = RoundedCornerShape(20.dp),
-                        ) {
-                            Text("Go back")
-                        }
+                        Text("Go back")
                     }
                 }
             }
