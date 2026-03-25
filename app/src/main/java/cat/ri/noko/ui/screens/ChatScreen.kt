@@ -16,6 +16,7 @@ import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -1038,28 +1039,29 @@ private fun MessageBubble(
                     enter = fadeIn(tween(150)) + expandVertically(tween(150)),
                     exit = fadeOut(tween(100)) + shrinkVertically(tween(100)),
                 ) {
-                    Row(
+                    FlowRow(
                         horizontalArrangement = Arrangement.spacedBy(6.dp),
+                        verticalArrangement = Arrangement.spacedBy(4.dp),
                         modifier = Modifier.padding(top = 4.dp),
                     ) {
                         if (!isUser && onRegenerate != null) {
                             AssistChip(
                                 onClick = { showActions = false; onRegenerate() },
-                                label = { Text("Regenerate", style = MaterialTheme.typography.labelSmall) },
+                                label = { Text("Regenerate", style = MaterialTheme.typography.labelSmall, maxLines = 1, softWrap = false) },
                                 leadingIcon = { Icon(Icons.Filled.Autorenew, contentDescription = null, modifier = Modifier.size(16.dp)) },
                             )
                         }
                         if (onEdit != null) {
                             AssistChip(
                                 onClick = { showActions = false; onEdit() },
-                                label = { Text("Edit", style = MaterialTheme.typography.labelSmall) },
+                                label = { Text("Edit", style = MaterialTheme.typography.labelSmall, maxLines = 1, softWrap = false) },
                                 leadingIcon = { Icon(Icons.Filled.ModeEdit, contentDescription = null, modifier = Modifier.size(16.dp)) },
                             )
                         }
                         if (onRollback != null) {
                             AssistChip(
                                 onClick = { showActions = false; onRollback() },
-                                label = { Text("Rollback", style = MaterialTheme.typography.labelSmall) },
+                                label = { Text("Rollback", style = MaterialTheme.typography.labelSmall, maxLines = 1, softWrap = false) },
                                 leadingIcon = { Icon(Icons.Filled.Replay, contentDescription = null, modifier = Modifier.size(16.dp)) },
                             )
                         }
