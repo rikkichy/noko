@@ -4,6 +4,7 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
@@ -17,6 +18,7 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Switch
@@ -96,6 +98,7 @@ fun PromptBuilderScreen(onBack: () -> Unit) {
             modifier = Modifier
                 .fillMaxSize()
                 .padding(padding)
+                .imePadding()
                 .verticalScroll(rememberScrollState())
                 .padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp),
@@ -153,7 +156,7 @@ private fun PromptSectionCard(
                         PromptSectionType.CHARACTER_DESCRIPTION -> "Character Description"
                         PromptSectionType.CHAT_HISTORY -> "Chat History"
                     },
-                    style = MaterialTheme.typography.titleSmall,
+                    style = MaterialTheme.typography.titleMedium,
                 )
                 if (section.type != PromptSectionType.CHAT_HISTORY) {
                     Switch(checked = section.enabled, onCheckedChange = onToggle)
@@ -168,6 +171,7 @@ private fun PromptSectionCard(
                         modifier = Modifier.fillMaxWidth(),
                         enabled = section.enabled,
                         minLines = 2,
+                        shape = RoundedCornerShape(20.dp),
                     )
                 }
                 PromptSectionType.PERSONA_DESCRIPTION -> {
