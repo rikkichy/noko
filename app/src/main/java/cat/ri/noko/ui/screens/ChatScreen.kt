@@ -629,6 +629,7 @@ fun ChatScreen(
                         modifier = Modifier.fillMaxWidth(),
                         maxLines = 8,
                         keyboardOptions = incognitoKeyboardOptions,
+                        shape = RoundedCornerShape(20.dp),
                     )
                 },
                 confirmButton = {
@@ -719,7 +720,7 @@ fun ChatScreen(
                 singleLine = false,
                 maxLines = 4,
                 keyboardOptions = incognitoKeyboardOptions,
-                shape = MaterialTheme.shapes.extraLarge,
+                shape = RoundedCornerShape(20.dp),
                 colors = TextFieldDefaults.colors(
                     focusedContainerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
                     unfocusedContainerColor = MaterialTheme.colorScheme.surfaceContainerLow,
