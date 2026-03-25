@@ -397,7 +397,11 @@ fun ChatScreen(
                     messages.add(
                         ChatMessage(
                             role = ChatMessage.Role.ASSISTANT,
-                            content = activeCharacter.greetingMessage,
+                            content = activeCharacter.greetingMessage
+                                .replace("{{char}}", activeCharacter.name)
+                                .replace("{{user}}", activePersona?.name ?: "User")
+                                .replace("{char}", activeCharacter.name)
+                                .replace("{user}", activePersona?.name ?: "User"),
                             isGreeting = true,
                             senderName = activeCharacter.name,
                             senderAvatarFileName = activeCharacter.avatarFileName,
@@ -430,7 +434,11 @@ fun ChatScreen(
             messages.add(
                 ChatMessage(
                     role = ChatMessage.Role.ASSISTANT,
-                    content = activeCharacter.greetingMessage,
+                    content = activeCharacter.greetingMessage
+                        .replace("{{char}}", activeCharacter.name)
+                        .replace("{{user}}", activePersona?.name ?: "User")
+                        .replace("{char}", activeCharacter.name)
+                        .replace("{user}", activePersona?.name ?: "User"),
                     isGreeting = true,
                     senderName = activeCharacter.name,
                     senderAvatarFileName = activeCharacter.avatarFileName,
@@ -511,7 +519,11 @@ fun ChatScreen(
                         messages.add(
                             ChatMessage(
                                 role = ChatMessage.Role.ASSISTANT,
-                                content = activeCharacter.greetingMessage,
+                                content = activeCharacter.greetingMessage
+                                    .replace("{{char}}", activeCharacter.name)
+                                    .replace("{{user}}", activePersona?.name ?: "User")
+                                    .replace("{char}", activeCharacter.name)
+                                    .replace("{user}", activePersona?.name ?: "User"),
                                 isGreeting = true,
                                 senderName = activeCharacter.name,
                                 senderAvatarFileName = activeCharacter.avatarFileName,

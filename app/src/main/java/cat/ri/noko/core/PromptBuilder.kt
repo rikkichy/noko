@@ -28,6 +28,8 @@ object PromptBuilder {
                         section.content
                             ?.replace("{{char}}", charName)
                             ?.replace("{{user}}", userName)
+                            ?.replace("{char}", charName)
+                            ?.replace("{user}", userName)
                     }
                     PromptSectionType.PERSONA_DESCRIPTION -> {
                         persona?.let { "${it.name}: ${it.description}" }
