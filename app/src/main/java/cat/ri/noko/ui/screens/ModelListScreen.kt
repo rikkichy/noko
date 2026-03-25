@@ -206,8 +206,8 @@ fun ModelListContent(
                                     haptics.confirm()
                                     scope.launch {
                                         SettingsManager.setSelectedModel(model.id, model.name)
+                                        onModelSelected?.invoke()
                                     }
-                                    onModelSelected?.invoke()
                                 },
                             colors = CardDefaults.cardColors(
                                 containerColor = if (isSelected)
