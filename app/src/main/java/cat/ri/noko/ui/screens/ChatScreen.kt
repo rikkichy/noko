@@ -464,7 +464,7 @@ fun ChatScreen(
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
                     Row(
-                        modifier = Modifier.clickable {
+                        modifier = Modifier.clickable(enabled = !isGenerating) {
                             haptics.tap()
                             showCharacterPicker = true
                         },
@@ -695,7 +695,7 @@ fun ChatScreen(
             Box(
                 modifier = Modifier
                     .clip(CircleShape)
-                    .clickable {
+                    .clickable(enabled = !isGenerating) {
                         haptics.tap()
                         showPersonaPicker = true
                     },
