@@ -25,6 +25,11 @@ object CharacterCodec {
 
     private val json = Json { ignoreUnknownKeys = true }
 
+    private const val MAX_NAME_LENGTH = 255
+    private const val MAX_DESCRIPTION_LENGTH = 10_000
+    private const val MAX_GREETING_LENGTH = 5_000
+    private const val MAX_AVATAR_BYTES = 10 * 1024 * 1024
+
     private val PNG_SIGNATURE = byteArrayOf(
         0x89.toByte(), 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A,
     )
@@ -112,7 +117,7 @@ object CharacterCodec {
 
             val obj = json.parseToJsonElement(text).jsonObject
 
-            val name = obj.str("name")
+            val name = obj.str("name")?.take(MAX_NAME_LENGTH)
                 ?: return ImportResult.Error("Character has no name")
 
             val parts = mutableListOf<String>()
@@ -125,8 +130,8 @@ object CharacterCodec {
                 listOf(
                     ImportedCharacter(
                         name = name,
-                        description = parts.joinToString("\n\n"),
-                        greetingMessage = obj.str("greeting"),
+                        description = parts.joinToString("\n\n").take(MAX_DESCRIPTION_LENGTH),
+                        greetingMessage = obj.str("greeting")?.take(MAX_GREETING_LENGTH),
                         avatarBytes = null,
                     ),
                 ),
@@ -136,7 +141,7 @@ object CharacterCodec {
         }
     }
 
-    fun importFromNokc(context: Context, uri: Uri, passphrase: String): ImportResult {
+    fun importFromNokc(context: Context, uri: Uri, passphrase: CharArray): ImportResult {
         return try {
             val bytes = context.contentResolver.openInputStream(uri)?.use {
                 it.readBytes()
@@ -171,7 +176,7 @@ object CharacterCodec {
         }
     }
 
-    fun exportToNokc(context: Context, entries: List<PersonaEntry>, passphrase: String, outputUri: Uri) {
+    fun exportToNokc(context: Context, entries: List<PersonaEntry>, passphrase: CharArray, outputUri: Uri) {
         val characters = entries.map { entry ->
             val avatarBase64 = entry.avatarFileName?.let { fileName ->
                 val file = AvatarStorage.getFile(context, fileName)
@@ -204,26 +209,30 @@ object CharacterCodec {
             payload.characters.map { it.toImportedCharacter() }
         } catch (_: Exception) {
             val legacy = json.decodeFromString<NokcPayloadLegacy>(jsonString)
+            val decoded = legacy.avatarBase64?.let { Base64.decode(it, Base64.NO_WRAP) }
             listOf(
                 ImportedCharacter(
-                    name = legacy.entry.name,
-                    description = legacy.entry.description,
-                    greetingMessage = legacy.entry.greetingMessage,
-                    avatarBytes = legacy.avatarBase64?.let { Base64.decode(it, Base64.NO_WRAP) },
+                    name = legacy.entry.name.take(MAX_NAME_LENGTH),
+                    description = legacy.entry.description.take(MAX_DESCRIPTION_LENGTH),
+                    greetingMessage = legacy.entry.greetingMessage?.take(MAX_GREETING_LENGTH),
+                    avatarBytes = decoded?.takeIf { it.size <= MAX_AVATAR_BYTES },
                 ),
             )
         }
     }
 
-    private fun NokcCharacter.toImportedCharacter() = ImportedCharacter(
-        name = entry.name,
-        description = entry.description,
-        greetingMessage = entry.greetingMessage,
-        avatarBytes = avatarBase64?.let { Base64.decode(it, Base64.NO_WRAP) },
-    )
+    private fun NokcCharacter.toImportedCharacter(): ImportedCharacter {
+        val decoded = avatarBase64?.let { Base64.decode(it, Base64.NO_WRAP) }
+        return ImportedCharacter(
+            name = entry.name.take(MAX_NAME_LENGTH),
+            description = entry.description.take(MAX_DESCRIPTION_LENGTH),
+            greetingMessage = entry.greetingMessage?.take(MAX_GREETING_LENGTH),
+            avatarBytes = decoded?.takeIf { it.size <= MAX_AVATAR_BYTES },
+        )
+    }
 
     private fun parseTavernData(data: JsonObject, pngBytes: ByteArray): ImportedCharacter? {
-        val name = data.str("name") ?: return null
+        val name = data.str("name")?.take(MAX_NAME_LENGTH) ?: return null
 
         val parts = mutableListOf<String>()
         data.str("description")?.takeIf { it.isNotBlank() }?.let { parts.add(it) }
@@ -236,9 +245,9 @@ object CharacterCodec {
 
         return ImportedCharacter(
             name = name,
-            description = parts.joinToString("\n\n"),
-            greetingMessage = data.str("first_mes"),
-            avatarBytes = pngBytes,
+            description = parts.joinToString("\n\n").take(MAX_DESCRIPTION_LENGTH),
+            greetingMessage = data.str("first_mes")?.take(MAX_GREETING_LENGTH),
+            avatarBytes = pngBytes.takeIf { it.size <= MAX_AVATAR_BYTES },
         )
     }
 
@@ -279,21 +288,25 @@ object CharacterCodec {
         return null
     }
 
-    private fun deriveKey(passphrase: String, salt: ByteArray): SecretKeySpec {
-        val spec = PBEKeySpec(passphrase.toCharArray(), salt, PBKDF2_ITERATIONS, KEY_LENGTH_BITS)
-        val factory = SecretKeyFactory.getInstance("PBKDF2WithHmacSHA256")
-        val keyBytes = factory.generateSecret(spec).encoded
-        return SecretKeySpec(keyBytes, "AES")
+    private fun deriveKey(passphrase: CharArray, salt: ByteArray): SecretKeySpec {
+        val spec = PBEKeySpec(passphrase, salt, PBKDF2_ITERATIONS, KEY_LENGTH_BITS)
+        return try {
+            val factory = SecretKeyFactory.getInstance("PBKDF2WithHmacSHA256")
+            val keyBytes = factory.generateSecret(spec).encoded
+            SecretKeySpec(keyBytes, "AES")
+        } finally {
+            spec.clearPassword()
+        }
     }
 
-    private fun encrypt(passphrase: String, salt: ByteArray, iv: ByteArray, plaintext: ByteArray): ByteArray {
+    private fun encrypt(passphrase: CharArray, salt: ByteArray, iv: ByteArray, plaintext: ByteArray): ByteArray {
         val key = deriveKey(passphrase, salt)
         val cipher = Cipher.getInstance("AES/GCM/NoPadding")
         cipher.init(Cipher.ENCRYPT_MODE, key, GCMParameterSpec(GCM_TAG_BITS, iv))
         return cipher.doFinal(plaintext)
     }
 
-    private fun decrypt(passphrase: String, salt: ByteArray, iv: ByteArray, ciphertext: ByteArray): ByteArray {
+    private fun decrypt(passphrase: CharArray, salt: ByteArray, iv: ByteArray, ciphertext: ByteArray): ByteArray {
         val key = deriveKey(passphrase, salt)
         val cipher = Cipher.getInstance("AES/GCM/NoPadding")
         cipher.init(Cipher.DECRYPT_MODE, key, GCMParameterSpec(GCM_TAG_BITS, iv))

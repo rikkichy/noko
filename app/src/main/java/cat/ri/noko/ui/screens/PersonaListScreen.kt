@@ -106,14 +106,19 @@ fun PersonaListScreen(
         contract = ActivityResultContracts.CreateDocument("application/octet-stream"),
     ) { uri ->
         if (uri != null && exportTargets.isNotEmpty() && exportPassphrase.isNotBlank()) {
+            val passChars = exportPassphrase.toCharArray()
+            exportPassphrase = ""
+            exportPassphraseConfirm = ""
             scope.launch {
-                withContext(Dispatchers.IO) {
-                    CharacterCodec.exportToNokc(context, exportTargets, exportPassphrase, uri)
+                try {
+                    withContext(Dispatchers.IO) {
+                        CharacterCodec.exportToNokc(context, exportTargets, passChars, uri)
+                    }
+                } finally {
+                    passChars.fill('\u0000')
                 }
                 haptics.confirm()
                 exportTargets = emptyList()
-                exportPassphrase = ""
-                exportPassphraseConfirm = ""
             }
         }
     }

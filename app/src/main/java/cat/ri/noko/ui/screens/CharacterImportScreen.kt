@@ -219,9 +219,15 @@ fun CharacterImportScreen(
                                 return@Button
                             }
                             state = ImportState.DETECTING
+                            val passChars = passphrase.toCharArray()
+                            passphrase = ""
                             scope.launch {
                                 val result = withContext(Dispatchers.IO) {
-                                    CharacterCodec.importFromNokc(context, uri, passphrase)
+                                    try {
+                                        CharacterCodec.importFromNokc(context, uri, passChars)
+                                    } finally {
+                                        passChars.fill('\u0000')
+                                    }
                                 }
                                 if (result is CharacterCodec.ImportResult.Error &&
                                     result.message == "Wrong passphrase"

@@ -127,6 +127,7 @@ fun ProviderListScreen(onBack: () -> Unit) {
 
                     AnimatedVisibility(visible = selectedProviderId == "custom") {
                         Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                            val customUrlValid = customUrlInput.isBlank() || SettingsManager.validateProviderUrl(customUrlInput)
                             OutlinedTextField(
                                 value = customUrlInput,
                                 onValueChange = {
@@ -136,6 +137,10 @@ fun ProviderListScreen(onBack: () -> Unit) {
                                 label = { Text("Base URL") },
                                 placeholder = { Text("https://api.example.com/v1/") },
                                 singleLine = true,
+                                isError = !customUrlValid,
+                                supportingText = if (!customUrlValid) {
+                                    { Text("Use https:// (or http:// for localhost)") }
+                                } else null,
                                 shape = RoundedCornerShape(20.dp),
                                 modifier = Modifier.fillMaxWidth(),
                             )
@@ -246,20 +251,27 @@ private fun ProviderCard(
                 }
             }
 
-            AnimatedVisibility(visible = isSelected) {
-                OutlinedTextField(
-                    value = urlInput,
-                    onValueChange = {
-                        urlInput = it
-                        val override = if (it == provider.baseUrl) "" else it
-                        scope.launch { SettingsManager.setProviderUrlOverride(provider.id, override) }
-                    },
-                    label = { Text("Base URL") },
-                    placeholder = { Text(provider.baseUrl) },
-                    singleLine = true,
-                    shape = RoundedCornerShape(20.dp),
-                    modifier = Modifier.fillMaxWidth(),
-                )
+            if (provider.urlEditable) {
+                AnimatedVisibility(visible = isSelected) {
+                    val urlValid = urlInput.isBlank() || SettingsManager.validateProviderUrl(urlInput)
+                    OutlinedTextField(
+                        value = urlInput,
+                        onValueChange = {
+                            urlInput = it
+                            val override = if (it == provider.baseUrl) "" else it
+                            scope.launch { SettingsManager.setProviderUrlOverride(provider.id, override) }
+                        },
+                        label = { Text("Base URL") },
+                        placeholder = { Text(provider.baseUrl) },
+                        singleLine = true,
+                        isError = !urlValid,
+                        supportingText = if (!urlValid) {
+                            { Text("Use https:// (or http:// for localhost)") }
+                        } else null,
+                        shape = RoundedCornerShape(20.dp),
+                        modifier = Modifier.fillMaxWidth(),
+                    )
+                }
             }
         }
     }

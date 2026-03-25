@@ -9,6 +9,7 @@ data class ApiProvider(
     val baseUrl: String,
     val requiresAuth: Boolean = true,
     val isLocal: Boolean = false,
+    val urlEditable: Boolean = true,
 )
 
 val builtInProviders = listOf(
@@ -23,6 +24,7 @@ val builtInProviders = listOf(
         name = "OpenAI",
         baseUrl = "https://api.openai.com/v1/",
         requiresAuth = true,
+        urlEditable = false,
     ),
     ApiProvider(
         id = "ollama",

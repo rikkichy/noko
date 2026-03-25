@@ -12,16 +12,14 @@ import cat.ri.noko.model.PersonaEntry
 import cat.ri.noko.model.PersonaType
 import cat.ri.noko.model.PromptPreset
 import cat.ri.noko.model.defaultPromptPreset
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
-import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
+import java.net.URL
 
 private val Context.dataStore by preferencesDataStore(name = "noko_settings")
 
@@ -44,12 +42,10 @@ object SettingsManager {
     private val INCOGNITO_KEYBOARD = booleanPreferencesKey("incognito_keyboard")
     private val CLEAR_CLIPBOARD = booleanPreferencesKey("clear_clipboard")
     private val HIDE_FROM_RECENTS = booleanPreferencesKey("hide_from_recents")
-    private val PERSONAS_JSON = stringPreferencesKey("personas_json")
     private val SELECTED_PERSONA_ID = stringPreferencesKey("selected_persona_id")
     private val SELECTED_CHARACTER_ID = stringPreferencesKey("selected_character_id")
     private val SELECTED_MODEL_ID = stringPreferencesKey("selected_model_id")
     private val SELECTED_MODEL_NAME = stringPreferencesKey("selected_model_name")
-    private val PROMPT_PRESETS_JSON = stringPreferencesKey("prompt_presets_json")
     private val SELECTED_PRESET_ID = stringPreferencesKey("selected_preset_id")
 
     private val BIOMETRIC_AUTH = booleanPreferencesKey("biometric_auth")
@@ -84,7 +80,6 @@ object SettingsManager {
             EncryptedSharedPreferences.PrefKeyEncryptionScheme.AES256_SIV,
             EncryptedSharedPreferences.PrefValueEncryptionScheme.AES256_GCM,
         )
-        migrateApiKeyToProvider()
         val providerId = runBlocking {
             appContext.dataStore.data.first()[SELECTED_PROVIDER_ID] ?: "openrouter"
         }
@@ -93,57 +88,12 @@ object SettingsManager {
         _presetsFlow.value = loadEncryptedList<PromptPreset>(KEY_PRESETS_JSON)
             .ifEmpty { listOf(defaultPromptPreset()) }
         ChatStorage.init(appContext)
-        migrateFromDataStore()
         _secureInitDone = true
-    }
-
-    private fun migrateApiKeyToProvider() {
-        val old = securePrefs.getString(KEY_API_KEY, null)
-        if (old != null && old.isNotBlank()) {
-            val providerKey = "${KEY_API_KEY}_openrouter"
-            if ((securePrefs.getString(providerKey, null) ?: "").isBlank()) {
-                securePrefs.edit().putString(providerKey, old).apply()
-            }
-            securePrefs.edit().remove(KEY_API_KEY).apply()
-        }
     }
 
     private inline fun <reified T> loadEncryptedList(key: String): List<T> {
         val raw = securePrefs.getString(key, null) ?: return emptyList()
         return runCatching { json.decodeFromString<List<T>>(raw) }.getOrDefault(emptyList())
-    }
-
-    private fun migrateFromDataStore() {
-        @Suppress("OPT_IN_USAGE")
-        GlobalScope.launch(Dispatchers.IO) {
-            appContext.dataStore.edit { prefs ->
-                val legacyApiKey = stringPreferencesKey("api_key")
-                prefs[legacyApiKey]?.let { old ->
-                    if (old.isNotBlank()) {
-                        securePrefs.edit().putString(KEY_API_KEY, old).apply()
-                        _apiKeyFlow.value = old
-                    }
-                    prefs.remove(legacyApiKey)
-                }
-
-                prefs[PERSONAS_JSON]?.let { old ->
-                    if (old.isNotBlank()) {
-                        securePrefs.edit().putString(KEY_PERSONAS_JSON, old).apply()
-                        _personasFlow.value = loadEncryptedList(KEY_PERSONAS_JSON)
-                    }
-                    prefs.remove(PERSONAS_JSON)
-                }
-
-                prefs[PROMPT_PRESETS_JSON]?.let { old ->
-                    if (old.isNotBlank()) {
-                        securePrefs.edit().putString(KEY_PRESETS_JSON, old).apply()
-                        _presetsFlow.value = loadEncryptedList<PromptPreset>(KEY_PRESETS_JSON)
-                            .ifEmpty { listOf(defaultPromptPreset()) }
-                    }
-                    prefs.remove(PROMPT_PRESETS_JSON)
-                }
-            }
-        }
     }
 
     val onboardingComplete: Flow<Boolean>
@@ -312,6 +262,24 @@ object SettingsManager {
             prefs.remove(SELECTED_MODEL_NAME)
         }
         _apiKeyFlow.value = getApiKeyForProvider(providerId)
+    }
+
+    private const val MAX_URL_LENGTH = 2048
+
+    fun validateProviderUrl(url: String): Boolean {
+        if (url.isBlank() || url.length > MAX_URL_LENGTH) return false
+        return try {
+            val parsed = URL(url)
+            val host = parsed.host?.lowercase() ?: return false
+            val isLocal = host == "localhost" || host == "127.0.0.1"
+            when (parsed.protocol) {
+                "https" -> true
+                "http" -> isLocal
+                else -> false
+            }
+        } catch (_: Exception) {
+            false
+        }
     }
 
     suspend fun setCustomProviderUrl(url: String) {
