@@ -394,7 +394,8 @@ fun HomeScreen(
                                                 )
                                             }
                                             Text(
-                                                meta.lastMessagePreview,
+                                                meta.lastMessagePreview
+                                                    .replace(Regex("(?<!\\*)\\*(?!\\*)((?:(?!\\*).)+?)\\*(?!\\*)"), "$1"),
                                                 style = MaterialTheme.typography.bodySmall,
                                                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                                                 maxLines = 1,

@@ -230,7 +230,11 @@ fun ChatScreen(
             ChatMessage.Role.USER -> activePersona?.name ?: "You"
             ChatMessage.Role.ASSISTANT -> character.name
         }
-        val preview = "$senderName: ${lastMsg.content.take(100).replace('\n', ' ')}"
+        val cleanContent = lastMsg.content
+            .replace(Regex("(?<!\\*)\\*(?!\\*)((?:(?!\\*).)+?)\\*(?!\\*)"), "$1")
+            .replace('\n', ' ')
+            .trim()
+        val preview = "$senderName: ${cleanContent.take(100)}"
         val meta = ChatSessionMeta(
             id = currentChatId,
             characterId = character.id,
