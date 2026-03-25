@@ -34,10 +34,13 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.Send
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Autorenew
+import androidx.compose.material.icons.filled.ModeEdit
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.SmartToy
 import androidx.compose.material.icons.filled.Stop
 import androidx.compose.material.icons.filled.Refresh
+import androidx.compose.material.icons.filled.Replay
 import androidx.compose.material.icons.filled.VisibilityOff
 import androidx.compose.material.icons.rounded.Warning
 import androidx.compose.material3.AlertDialog
@@ -1038,18 +1041,21 @@ private fun MessageBubble(
                             AssistChip(
                                 onClick = { showActions = false; onRegenerate() },
                                 label = { Text("Regenerate", style = MaterialTheme.typography.labelSmall) },
+                                leadingIcon = { Icon(Icons.Filled.Autorenew, contentDescription = null, modifier = Modifier.size(16.dp)) },
                             )
                         }
                         if (onEdit != null) {
                             AssistChip(
                                 onClick = { showActions = false; onEdit() },
                                 label = { Text("Edit", style = MaterialTheme.typography.labelSmall) },
+                                leadingIcon = { Icon(Icons.Filled.ModeEdit, contentDescription = null, modifier = Modifier.size(16.dp)) },
                             )
                         }
                         if (onRollback != null) {
                             AssistChip(
                                 onClick = { showActions = false; onRollback() },
                                 label = { Text("Rollback", style = MaterialTheme.typography.labelSmall) },
+                                leadingIcon = { Icon(Icons.Filled.Replay, contentDescription = null, modifier = Modifier.size(16.dp)) },
                             )
                         }
                     }
