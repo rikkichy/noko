@@ -68,6 +68,7 @@ import cat.ri.noko.model.PersonaType
 import cat.ri.noko.model.builtInProviders
 import cat.ri.noko.model.getProviderById
 import cat.ri.noko.ui.components.ImageCropOverlay
+import cat.ri.noko.ui.components.CustomProviderCard
 import cat.ri.noko.ui.components.PersonaFormFields
 import cat.ri.noko.ui.components.ProviderCard
 import cat.ri.noko.ui.util.rememberNokoHaptics
@@ -87,8 +88,7 @@ fun OnboardingScreen(onComplete: () -> Unit) {
     var step by remember { mutableStateOf(OnboardingStep.Provider) }
 
     var selectedProviderId by remember { mutableStateOf("openrouter") }
-    var customUrl by remember { mutableStateOf("") }
-    var customAuth by remember { mutableStateOf(false) }
+    val customAuth by SettingsManager.customProviderAuth.collectAsState(initial = false)
 
     var apiKeyInput by remember { mutableStateOf("") }
     var keyError by remember { mutableStateOf<String?>(null) }
@@ -246,6 +246,14 @@ fun OnboardingScreen(onComplete: () -> Unit) {
 
                     Spacer(Modifier.height(4.dp))
 
+                    CustomProviderCard(
+                        isSelected = selectedProviderId == "custom",
+                        onSelect = {
+                            haptics.tap()
+                            selectedProviderId = "custom"
+                        },
+                    )
+
                     builtInProviders.forEach { provider ->
                         ProviderCard(
                             provider = provider,
@@ -254,7 +262,6 @@ fun OnboardingScreen(onComplete: () -> Unit) {
                                 haptics.tap()
                                 selectedProviderId = provider.id
                             },
-                            showUrlEditor = false,
                         )
                     }
 
@@ -280,6 +287,7 @@ fun OnboardingScreen(onComplete: () -> Unit) {
                     val provider = remember(selectedProviderId) { getProviderById(selectedProviderId) }
                     val providerName = provider?.name ?: "Custom"
                     val onboardingUrlOverride by SettingsManager.getProviderUrlOverride(selectedProviderId).collectAsState(initial = "")
+                    val customUrl by SettingsManager.customProviderUrl.collectAsState(initial = "")
                     val providerBaseUrl = if (provider != null) onboardingUrlOverride.ifBlank { provider.baseUrl } else customUrl
                     val placeholder = when (selectedProviderId) {
                         "openrouter" -> "sk-or-v1-..."

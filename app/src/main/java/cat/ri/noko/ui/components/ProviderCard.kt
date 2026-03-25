@@ -31,8 +31,102 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import cat.ri.noko.core.SettingsManager
+import androidx.compose.material3.Switch
 import cat.ri.noko.model.ApiProvider
+import cat.ri.noko.ui.util.rememberNokoHaptics
 import kotlinx.coroutines.launch
+
+@Composable
+fun CustomProviderCard(
+    isSelected: Boolean,
+    onSelect: () -> Unit,
+) {
+    val scope = rememberCoroutineScope()
+    val haptics = rememberNokoHaptics()
+    val customUrl by SettingsManager.customProviderUrl.collectAsState(initial = "")
+    val customAuth by SettingsManager.customProviderAuth.collectAsState(initial = false)
+    var customUrlInput by remember(customUrl) { mutableStateOf(customUrl) }
+    var customAuthInput by remember(customAuth) { mutableStateOf(customAuth) }
+
+    Card(
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surfaceContainer,
+        ),
+        shape = RoundedCornerShape(20.dp),
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .clickable(onClick = onSelect)
+                .padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(8.dp),
+        ) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Column(modifier = Modifier.weight(1f)) {
+                    Text("Custom", style = MaterialTheme.typography.titleMedium)
+                    Text(
+                        "Enter your own OpenAI-compatible endpoint.",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
+                if (isSelected) {
+                    Icon(
+                        Icons.Filled.Check,
+                        contentDescription = "Selected",
+                        tint = MaterialTheme.colorScheme.primary,
+                    )
+                }
+            }
+
+            AnimatedVisibility(visible = isSelected) {
+                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    val customUrlValid = customUrlInput.isBlank() || SettingsManager.validateProviderUrl(customUrlInput)
+                    OutlinedTextField(
+                        value = customUrlInput,
+                        onValueChange = {
+                            customUrlInput = it
+                            if (it.isBlank() || SettingsManager.validateProviderUrl(it)) {
+                                scope.launch { SettingsManager.setCustomProviderUrl(it) }
+                            }
+                        },
+                        label = { Text("Base URL") },
+                        placeholder = { Text("https://api.example.com/v1/") },
+                        singleLine = true,
+                        isError = !customUrlValid,
+                        supportingText = if (!customUrlValid) {
+                            { Text("Use https:// (or http:// for localhost)") }
+                        } else null,
+                        shape = RoundedCornerShape(20.dp),
+                        modifier = Modifier.fillMaxWidth(),
+                    )
+
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                    ) {
+                        Text(
+                            "Requires API key",
+                            style = MaterialTheme.typography.bodyMedium,
+                        )
+                        Switch(
+                            checked = customAuthInput,
+                            onCheckedChange = { value ->
+                                customAuthInput = value
+                                if (value) haptics.toggleOn() else haptics.toggleOff()
+                                scope.launch { SettingsManager.setCustomProviderAuth(value) }
+                            },
+                        )
+                    }
+                }
+            }
+        }
+    }
+}
 
 @Composable
 fun ProviderCard(

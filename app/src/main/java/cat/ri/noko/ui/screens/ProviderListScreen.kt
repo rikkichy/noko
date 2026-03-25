@@ -1,47 +1,31 @@
 package cat.ri.noko.ui.screens
 
-import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.filled.Check
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
-import androidx.compose.runtime.setValue
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import cat.ri.noko.core.SettingsManager
-import cat.ri.noko.model.ApiProvider
 import cat.ri.noko.model.builtInProviders
+import cat.ri.noko.ui.components.CustomProviderCard
 import cat.ri.noko.ui.components.ProviderCard
 import cat.ri.noko.ui.util.rememberNokoHaptics
 import kotlinx.coroutines.launch
@@ -52,12 +36,6 @@ fun ProviderListScreen(onBack: () -> Unit) {
     val scope = rememberCoroutineScope()
     val haptics = rememberNokoHaptics()
     val selectedProviderId by SettingsManager.selectedProviderId.collectAsState(initial = SettingsManager.getSelectedProviderId())
-    val customUrl by SettingsManager.customProviderUrl.collectAsState(initial = "")
-    val customAuth by SettingsManager.customProviderAuth.collectAsState(initial = false)
-
-    var customUrlInput by remember(customUrl) { mutableStateOf(customUrl) }
-    var customAuthInput by remember(customAuth) { mutableStateOf(customAuth) }
-
     Scaffold(
         topBar = {
             TopAppBar(
@@ -85,89 +63,15 @@ fun ProviderListScreen(onBack: () -> Unit) {
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
 
-            Card(
-                colors = CardDefaults.cardColors(
-                    containerColor = MaterialTheme.colorScheme.surfaceContainer,
-                ),
-                shape = RoundedCornerShape(20.dp),
-            ) {
-                Column(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .clickable {
-                            haptics.tap()
-                            scope.launch {
-                                SettingsManager.setSelectedProvider("custom")
-                            }
-                        }
-                        .padding(16.dp),
-                    verticalArrangement = Arrangement.spacedBy(8.dp),
-                ) {
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        verticalAlignment = Alignment.CenterVertically,
-                    ) {
-                        Column(modifier = Modifier.weight(1f)) {
-                            Text("Custom", style = MaterialTheme.typography.titleMedium)
-                            Text(
-                                "Enter your own OpenAI-compatible endpoint.",
-                                style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            )
-                        }
-                        if (selectedProviderId == "custom") {
-                            Icon(
-                                Icons.Filled.Check,
-                                contentDescription = "Selected",
-                                tint = MaterialTheme.colorScheme.primary,
-                            )
-                        }
+            CustomProviderCard(
+                isSelected = selectedProviderId == "custom",
+                onSelect = {
+                    haptics.tap()
+                    scope.launch {
+                        SettingsManager.setSelectedProvider("custom")
                     }
-
-                    AnimatedVisibility(visible = selectedProviderId == "custom") {
-                        Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                            val customUrlValid = customUrlInput.isBlank() || SettingsManager.validateProviderUrl(customUrlInput)
-                            OutlinedTextField(
-                                value = customUrlInput,
-                                onValueChange = {
-                                    customUrlInput = it
-                                    if (it.isBlank() || SettingsManager.validateProviderUrl(it)) {
-                                        scope.launch { SettingsManager.setCustomProviderUrl(it) }
-                                    }
-                                },
-                                label = { Text("Base URL") },
-                                placeholder = { Text("https://api.example.com/v1/") },
-                                singleLine = true,
-                                isError = !customUrlValid,
-                                supportingText = if (!customUrlValid) {
-                                    { Text("Use https:// (or http:// for localhost)") }
-                                } else null,
-                                shape = RoundedCornerShape(20.dp),
-                                modifier = Modifier.fillMaxWidth(),
-                            )
-
-                            Row(
-                                modifier = Modifier.fillMaxWidth(),
-                                verticalAlignment = Alignment.CenterVertically,
-                                horizontalArrangement = Arrangement.SpaceBetween,
-                            ) {
-                                Text(
-                                    "Requires API key",
-                                    style = MaterialTheme.typography.bodyMedium,
-                                )
-                                Switch(
-                                    checked = customAuthInput,
-                                    onCheckedChange = { value ->
-                                        customAuthInput = value
-                                        if (value) haptics.toggleOn() else haptics.toggleOff()
-                                        scope.launch { SettingsManager.setCustomProviderAuth(value) }
-                                    },
-                                )
-                            }
-                        }
-                    }
-                }
-            }
+                },
+            )
 
             builtInProviders.forEach { provider ->
                 ProviderCard(
