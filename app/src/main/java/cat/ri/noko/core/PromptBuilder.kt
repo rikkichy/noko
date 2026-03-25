@@ -32,10 +32,22 @@ object PromptBuilder {
                             ?.replace("{user}", userName)
                     }
                     PromptSectionType.PERSONA_DESCRIPTION -> {
-                        persona?.let { "${it.name}: ${it.description}" }
+                        persona?.let {
+                            "${it.name}: ${it.description}"
+                                .replace("{{char}}", charName)
+                                .replace("{{user}}", userName)
+                                .replace("{char}", charName)
+                                .replace("{user}", userName)
+                        }
                     }
                     PromptSectionType.CHARACTER_DESCRIPTION -> {
-                        character?.let { "${it.name}: ${it.description}" }
+                        character?.let {
+                            "${it.name}: ${it.description}"
+                                .replace("{{char}}", charName)
+                                .replace("{{user}}", userName)
+                                .replace("{char}", charName)
+                                .replace("{user}", userName)
+                        }
                     }
                     PromptSectionType.CHAT_HISTORY -> null
                 }
