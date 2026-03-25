@@ -180,8 +180,10 @@ fun CharacterImportScreen(
                     OutlinedTextField(
                         value = passphrase,
                         onValueChange = {
-                            passphrase = it
-                            passphraseError = null
+                            if (it.length <= 256) {
+                                passphrase = it
+                                passphraseError = null
+                            }
                         },
                         label = { Text("Passphrase") },
                         visualTransformation = PasswordVisualTransformation(),
@@ -218,16 +220,17 @@ fun CharacterImportScreen(
                                 }
                                 return@Button
                             }
-                            state = ImportState.DETECTING
                             val passChars = passphrase.toCharArray()
                             passphrase = ""
+                            passphraseError = null
+                            state = ImportState.DETECTING
                             scope.launch {
-                                val result = withContext(Dispatchers.IO) {
-                                    try {
+                                val result = try {
+                                    withContext(Dispatchers.IO) {
                                         CharacterCodec.importFromNokc(context, uri, passChars)
-                                    } finally {
-                                        passChars.fill('\u0000')
                                     }
+                                } finally {
+                                    passChars.fill('\u0000')
                                 }
                                 if (result is CharacterCodec.ImportResult.Error &&
                                     result.message == "Wrong passphrase"

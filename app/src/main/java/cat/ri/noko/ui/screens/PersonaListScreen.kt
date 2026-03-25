@@ -381,8 +381,10 @@ fun PersonaListScreen(
                     OutlinedTextField(
                         value = exportPassphrase,
                         onValueChange = {
-                            exportPassphrase = it
-                            passphraseError = null
+                            if (it.length <= 256) {
+                                exportPassphrase = it
+                                passphraseError = null
+                            }
                         },
                         label = { Text("Passphrase") },
                         visualTransformation = PasswordVisualTransformation(),
@@ -396,8 +398,10 @@ fun PersonaListScreen(
                     OutlinedTextField(
                         value = exportPassphraseConfirm,
                         onValueChange = {
-                            exportPassphraseConfirm = it
-                            passphraseError = null
+                            if (it.length <= 256) {
+                                exportPassphraseConfirm = it
+                                passphraseError = null
+                            }
                         },
                         label = { Text("Confirm passphrase") },
                         visualTransformation = PasswordVisualTransformation(),

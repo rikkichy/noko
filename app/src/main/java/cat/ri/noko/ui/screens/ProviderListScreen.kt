@@ -132,7 +132,9 @@ fun ProviderListScreen(onBack: () -> Unit) {
                                 value = customUrlInput,
                                 onValueChange = {
                                     customUrlInput = it
-                                    scope.launch { SettingsManager.setCustomProviderUrl(it) }
+                                    if (it.isBlank() || SettingsManager.validateProviderUrl(it)) {
+                                        scope.launch { SettingsManager.setCustomProviderUrl(it) }
+                                    }
                                 },
                                 label = { Text("Base URL") },
                                 placeholder = { Text("https://api.example.com/v1/") },
@@ -258,8 +260,10 @@ private fun ProviderCard(
                         value = urlInput,
                         onValueChange = {
                             urlInput = it
-                            val override = if (it == provider.baseUrl) "" else it
-                            scope.launch { SettingsManager.setProviderUrlOverride(provider.id, override) }
+                            if (it.isBlank() || SettingsManager.validateProviderUrl(it)) {
+                                val override = if (it == provider.baseUrl) "" else it
+                                scope.launch { SettingsManager.setProviderUrlOverride(provider.id, override) }
+                            }
                         },
                         label = { Text("Base URL") },
                         placeholder = { Text(provider.baseUrl) },

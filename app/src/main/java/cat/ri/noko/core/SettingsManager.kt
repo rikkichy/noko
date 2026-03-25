@@ -12,11 +12,13 @@ import cat.ri.noko.model.PersonaEntry
 import cat.ri.noko.model.PersonaType
 import cat.ri.noko.model.PromptPreset
 import cat.ri.noko.model.defaultPromptPreset
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.withContext
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 import java.net.URL
@@ -191,13 +193,17 @@ object SettingsManager {
     suspend fun saveEntry(entry: PersonaEntry) {
         val current = _personasFlow.value
         val updated = current.filterNot { it.id == entry.id } + entry
-        securePrefs.edit().putString(KEY_PERSONAS_JSON, json.encodeToString(updated)).apply()
+        withContext(Dispatchers.IO) {
+            securePrefs.edit().putString(KEY_PERSONAS_JSON, json.encodeToString(updated)).commit()
+        }
         _personasFlow.value = updated
     }
 
     suspend fun deleteEntry(id: String) {
         val updated = _personasFlow.value.filterNot { it.id == id }
-        securePrefs.edit().putString(KEY_PERSONAS_JSON, json.encodeToString(updated)).apply()
+        withContext(Dispatchers.IO) {
+            securePrefs.edit().putString(KEY_PERSONAS_JSON, json.encodeToString(updated)).commit()
+        }
         _personasFlow.value = updated
     }
 
@@ -232,13 +238,17 @@ object SettingsManager {
 
     suspend fun setApiKey(key: String) {
         val providerId = appContext.dataStore.data.first()[SELECTED_PROVIDER_ID] ?: "openrouter"
-        securePrefs.edit().putString("${KEY_API_KEY}_$providerId", key).apply()
+        withContext(Dispatchers.IO) {
+            securePrefs.edit().putString("${KEY_API_KEY}_$providerId", key).commit()
+        }
         _apiKeyFlow.value = key
     }
 
     suspend fun clearApiKey() {
         val providerId = appContext.dataStore.data.first()[SELECTED_PROVIDER_ID] ?: "openrouter"
-        securePrefs.edit().remove("${KEY_API_KEY}_$providerId").apply()
+        withContext(Dispatchers.IO) {
+            securePrefs.edit().remove("${KEY_API_KEY}_$providerId").commit()
+        }
         _apiKeyFlow.value = ""
     }
 
@@ -327,7 +337,9 @@ object SettingsManager {
     suspend fun savePreset(preset: PromptPreset) {
         val current = _presetsFlow.value
         val updated = current.filterNot { it.id == preset.id } + preset
-        securePrefs.edit().putString(KEY_PRESETS_JSON, json.encodeToString(updated)).apply()
+        withContext(Dispatchers.IO) {
+            securePrefs.edit().putString(KEY_PRESETS_JSON, json.encodeToString(updated)).commit()
+        }
         _presetsFlow.value = updated
     }
 

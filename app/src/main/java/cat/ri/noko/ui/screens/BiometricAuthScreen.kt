@@ -8,10 +8,14 @@ import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.Fingerprint
+import androidx.compose.material.icons.rounded.Warning
+import androidx.compose.material3.Button
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
@@ -27,6 +31,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
 import androidx.fragment.app.FragmentActivity
@@ -40,6 +45,7 @@ fun BiometricAuthScreen(onSuccess: () -> Unit) {
     val scope = rememberCoroutineScope()
     var subtitle by remember { mutableStateOf("Tap to unlock") }
     var authTrigger by remember { mutableIntStateOf(0) }
+    var biometricUnavailable by remember { mutableStateOf(false) }
 
     val canAuthenticate = remember {
         BiometricManager.from(context).canAuthenticate(BIOMETRIC_STRONG)
@@ -47,9 +53,20 @@ fun BiometricAuthScreen(onSuccess: () -> Unit) {
 
     LaunchedEffect(canAuthenticate) {
         if (canAuthenticate != BiometricManager.BIOMETRIC_SUCCESS) {
-            scope.launch { SettingsManager.setBiometricAuth(false) }
-            onSuccess()
+            biometricUnavailable = true
         }
+    }
+
+    if (biometricUnavailable) {
+        BiometricUnavailableScreen(
+            onAcknowledge = {
+                scope.launch {
+                    SettingsManager.setBiometricAuth(false)
+                    onSuccess()
+                }
+            },
+        )
+        return
     }
 
     LaunchedEffect(authTrigger) {
@@ -106,6 +123,48 @@ fun BiometricAuthScreen(onSuccess: () -> Unit) {
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier.padding(top = 8.dp),
             )
+        }
+    }
+}
+
+@Composable
+private fun BiometricUnavailableScreen(onAcknowledge: () -> Unit) {
+    Scaffold { padding ->
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(padding)
+                .padding(32.dp),
+            verticalArrangement = Arrangement.Center,
+            horizontalAlignment = Alignment.CenterHorizontally,
+        ) {
+            Icon(
+                Icons.Rounded.Warning,
+                contentDescription = null,
+                modifier = Modifier.size(64.dp),
+                tint = MaterialTheme.colorScheme.error,
+            )
+            Text(
+                "Biometric unavailable",
+                style = MaterialTheme.typography.headlineSmall,
+                modifier = Modifier.padding(top = 16.dp),
+            )
+            Text(
+                "Biometric authentication was enabled, but is no longer available on this device. This may happen if biometric data was removed from system settings. The lock has been disabled.",
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                textAlign = TextAlign.Center,
+                modifier = Modifier.padding(top = 12.dp),
+            )
+            Button(
+                onClick = onAcknowledge,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(top = 24.dp),
+                shape = RoundedCornerShape(20.dp),
+            ) {
+                Text("Continue")
+            }
         }
     }
 }

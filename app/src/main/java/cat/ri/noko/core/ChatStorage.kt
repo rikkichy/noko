@@ -1,10 +1,8 @@
 package cat.ri.noko.core
 
 import android.content.Context
-import android.util.Log
 import androidx.security.crypto.EncryptedFile
 import androidx.security.crypto.MasterKeys
-import cat.ri.noko.BuildConfig
 import cat.ri.noko.model.ChatMessage
 import cat.ri.noko.model.ChatSessionMeta
 import kotlinx.coroutines.Dispatchers
@@ -49,8 +47,7 @@ object ChatStorage {
             if (bytes != null) {
                 json.decodeFromString<List<ChatSessionMeta>>(bytes.decodeToString())
             } else emptyList()
-        } catch (e: Exception) {
-            if (BuildConfig.DEBUG) Log.w("ChatStorage", "Failed to decrypt index", e)
+        } catch (_: Exception) {
             emptyList()
         }
     }
@@ -89,8 +86,7 @@ object ChatStorage {
             if (bytes != null) {
                 json.decodeFromString<List<ChatMessage>>(bytes.decodeToString())
             } else null
-        } catch (e: Exception) {
-            if (BuildConfig.DEBUG) Log.w("ChatStorage", "Failed to decrypt chat $chatId", e)
+        } catch (_: Exception) {
             null
         }
     }
