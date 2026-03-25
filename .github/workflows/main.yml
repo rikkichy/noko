@@ -65,13 +65,13 @@ jobs:
           TAG: ${{ env.RELEASE_TAG }}
         run: |
           BODY="### App
-          + Placeholder
+          + No changes.
 
           ### Build
-          + Placeholder
+          + No changes.
 
           ### Repo
-          + Placeholder"
+          + No changes."
 
           gh release view "$TAG" >/dev/null 2>&1 || \
             gh release create "$TAG" --draft --title "$TAG" --notes "$BODY"
