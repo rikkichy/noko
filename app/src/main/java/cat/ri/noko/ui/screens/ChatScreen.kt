@@ -995,7 +995,6 @@ private fun MessageBubble(
 
             Column(
                 horizontalAlignment = if (isUser) Alignment.End else Alignment.Start,
-                modifier = Modifier.widthIn(max = 280.dp),
             ) {
                 Text(
                     text = name,
@@ -1007,6 +1006,7 @@ private fun MessageBubble(
                     shape = RoundedCornerShape(16.dp),
                     color = MaterialTheme.colorScheme.surfaceVariant,
                     modifier = Modifier
+                        .widthIn(max = 280.dp)
                         .animateContentSize(
                             animationSpec = spring(
                                 dampingRatio = Spring.DampingRatioNoBouncy,
@@ -1041,9 +1041,7 @@ private fun MessageBubble(
                 ) {
                     Row(
                         horizontalArrangement = Arrangement.spacedBy(6.dp),
-                        modifier = Modifier
-                            .padding(top = 4.dp)
-                            .horizontalScroll(rememberScrollState()),
+                        modifier = Modifier.padding(top = 4.dp),
                     ) {
                         if (!isUser && onRegenerate != null) {
                             AssistChip(
