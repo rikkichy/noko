@@ -754,6 +754,10 @@ fun ChatScreen(
                         }
 
                         startStreaming()
+                    } else if (messages.isNotEmpty() && messages.last().role == ChatMessage.Role.USER) {
+                        haptics.tap()
+                        keyboard?.hide()
+                        startStreaming()
                     }
                 },
                 shapes = IconButtonShapes(
