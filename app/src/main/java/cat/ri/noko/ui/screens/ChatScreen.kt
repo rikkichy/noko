@@ -654,11 +654,7 @@ fun ChatScreen(
         }
 
 
-        AnimatedVisibility(
-            visible = imeVisible,
-            enter = fadeIn(tween(100)),
-            exit = fadeOut(tween(100)),
-        ) {
+        if (imeVisible) {
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
