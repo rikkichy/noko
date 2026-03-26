@@ -207,6 +207,9 @@ object SettingsManager {
         }
     }
 
+    fun getEntries(type: PersonaType): List<PersonaEntry> =
+        _personasFlow.value.filter { it.type == type }
+
     fun getEntry(entries: List<PersonaEntry>, id: String): PersonaEntry? =
         entries.find { it.id == id }
 
