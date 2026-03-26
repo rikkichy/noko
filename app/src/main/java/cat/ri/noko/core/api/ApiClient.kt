@@ -48,7 +48,7 @@ object ApiClient {
     private var api: ChatApi? = null
 
     fun configure(key: String, baseUrl: String, providerId: String) {
-        if (key == apiKey && baseUrl == currentBaseUrl && api != null) return
+        if (key == apiKey && baseUrl == currentBaseUrl && providerId == currentProviderId && api != null) return
         apiKey = key
         currentBaseUrl = baseUrl
         currentProviderId = providerId

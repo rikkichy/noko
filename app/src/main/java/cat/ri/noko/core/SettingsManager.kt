@@ -17,6 +17,7 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.encodeToString
@@ -190,21 +191,20 @@ object SettingsManager {
     val characters: Flow<List<PersonaEntry>>
         get() = allEntries.map { it.filter { e -> e.type == PersonaType.CHARACTER } }
 
-    suspend fun saveEntry(entry: PersonaEntry) {
-        val current = _personasFlow.value
-        val updated = current.filterNot { it.id == entry.id } + entry
-        withContext(Dispatchers.IO) {
+    suspend fun saveEntry(entry: PersonaEntry) = withContext(Dispatchers.IO) {
+        _personasFlow.update { current ->
+            val updated = current.filterNot { it.id == entry.id } + entry
             securePrefs.edit().putString(KEY_PERSONAS_JSON, json.encodeToString(updated)).commit()
+            updated
         }
-        _personasFlow.value = updated
     }
 
-    suspend fun deleteEntry(id: String) {
-        val updated = _personasFlow.value.filterNot { it.id == id }
-        withContext(Dispatchers.IO) {
+    suspend fun deleteEntry(id: String) = withContext(Dispatchers.IO) {
+        _personasFlow.update { current ->
+            val updated = current.filterNot { it.id == id }
             securePrefs.edit().putString(KEY_PERSONAS_JSON, json.encodeToString(updated)).commit()
+            updated
         }
-        _personasFlow.value = updated
     }
 
     fun getEntry(entries: List<PersonaEntry>, id: String): PersonaEntry? =
@@ -335,13 +335,12 @@ object SettingsManager {
     val selectedPresetId: Flow<String>
         get() = appContext.dataStore.data.map { it[SELECTED_PRESET_ID] ?: "default" }
 
-    suspend fun savePreset(preset: PromptPreset) {
-        val current = _presetsFlow.value
-        val updated = current.filterNot { it.id == preset.id } + preset
-        withContext(Dispatchers.IO) {
+    suspend fun savePreset(preset: PromptPreset) = withContext(Dispatchers.IO) {
+        _presetsFlow.update { current ->
+            val updated = current.filterNot { it.id == preset.id } + preset
             securePrefs.edit().putString(KEY_PRESETS_JSON, json.encodeToString(updated)).commit()
+            updated
         }
-        _presetsFlow.value = updated
     }
 
     suspend fun setSelectedPresetId(id: String) {

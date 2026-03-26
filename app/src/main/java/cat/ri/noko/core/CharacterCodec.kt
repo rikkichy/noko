@@ -173,33 +173,39 @@ object CharacterCodec {
             ImportResult.Success(characters)
         } catch (e: Exception) {
             ImportResult.Error("Failed to import .nokc file: ${e.message}")
+        } finally {
+            passphrase.fill('\u0000')
         }
     }
 
     fun exportToNokc(context: Context, entries: List<PersonaEntry>, passphrase: CharArray, outputUri: Uri) {
-        val characters = entries.map { entry ->
-            val avatarBase64 = entry.avatarFileName?.let { fileName ->
-                val file = AvatarStorage.getFile(context, fileName)
-                if (file.exists()) Base64.encodeToString(file.readBytes(), Base64.NO_WRAP) else null
+        try {
+            val characters = entries.map { entry ->
+                val avatarBase64 = entry.avatarFileName?.let { fileName ->
+                    val file = AvatarStorage.getFile(context, fileName)
+                    if (file.exists()) Base64.encodeToString(file.readBytes(), Base64.NO_WRAP) else null
+                }
+                NokcCharacter(entry = entry.copy(avatarFileName = null), avatarBase64 = avatarBase64)
             }
-            NokcCharacter(entry = entry.copy(avatarFileName = null), avatarBase64 = avatarBase64)
-        }
 
-        val payload = NokcPayload(characters = characters)
-        val plaintext = json.encodeToString(payload).toByteArray()
+            val payload = NokcPayload(characters = characters)
+            val plaintext = json.encodeToString(payload).toByteArray()
 
-        val random = SecureRandom()
-        val salt = ByteArray(SALT_LENGTH).also { random.nextBytes(it) }
-        val iv = ByteArray(IV_LENGTH).also { random.nextBytes(it) }
+            val random = SecureRandom()
+            val salt = ByteArray(SALT_LENGTH).also { random.nextBytes(it) }
+            val iv = ByteArray(IV_LENGTH).also { random.nextBytes(it) }
 
-        val ciphertext = encrypt(passphrase, salt, iv, plaintext)
+            val ciphertext = encrypt(passphrase, salt, iv, plaintext)
 
-        context.contentResolver.openOutputStream(outputUri)?.use { out ->
-            out.write(NOKC_MAGIC)
-            out.write(byteArrayOf(NOKC_VERSION))
-            out.write(salt)
-            out.write(iv)
-            out.write(ciphertext)
+            context.contentResolver.openOutputStream(outputUri)?.use { out ->
+                out.write(NOKC_MAGIC)
+                out.write(byteArrayOf(NOKC_VERSION))
+                out.write(salt)
+                out.write(iv)
+                out.write(ciphertext)
+            }
+        } finally {
+            passphrase.fill('\u0000')
         }
     }
 

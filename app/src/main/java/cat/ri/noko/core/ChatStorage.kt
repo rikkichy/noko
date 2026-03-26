@@ -9,6 +9,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
@@ -63,19 +64,18 @@ object ChatStorage {
         messages: List<ChatMessage>,
         meta: ChatSessionMeta,
     ) = withContext(Dispatchers.IO) {
-
         val data = json.encodeToString(messages).toByteArray()
         writeEncrypted(chatFile(chatId), data)
 
-
-        val existing = _recentChats.value.find { it.id == meta.id }
-        val preservedMeta = if (existing?.pinned == true) meta.copy(pinned = true) else meta
-        val current = _recentChats.value.filterNot { it.id == meta.id }
-        val updated = (current + preservedMeta)
-            .sortedByDescending { it.updatedAt }
-            .take(50)
-        saveIndex(updated)
-        _recentChats.value = updated
+        _recentChats.update { current ->
+            val existing = current.find { it.id == meta.id }
+            val preservedMeta = if (existing?.pinned == true) meta.copy(pinned = true) else meta
+            val updated = (current.filterNot { it.id == meta.id } + preservedMeta)
+                .sortedByDescending { it.updatedAt }
+                .take(50)
+            saveIndex(updated)
+            updated
+        }
     }
 
     suspend fun loadChat(chatId: String): List<ChatMessage>? = withContext(Dispatchers.IO) {
@@ -92,18 +92,22 @@ object ChatStorage {
     }
 
     suspend fun togglePin(chatId: String) = withContext(Dispatchers.IO) {
-        val updated = _recentChats.value.map {
-            if (it.id == chatId) it.copy(pinned = !it.pinned) else it
+        _recentChats.update { current ->
+            val updated = current.map {
+                if (it.id == chatId) it.copy(pinned = !it.pinned) else it
+            }
+            saveIndex(updated)
+            updated
         }
-        saveIndex(updated)
-        _recentChats.value = updated
     }
 
     suspend fun deleteChat(chatId: String) = withContext(Dispatchers.IO) {
         secureDelete(chatFile(chatId))
-        val updated = _recentChats.value.filterNot { it.id == chatId }
-        saveIndex(updated)
-        _recentChats.value = updated
+        _recentChats.update { current ->
+            val updated = current.filterNot { it.id == chatId }
+            saveIndex(updated)
+            updated
+        }
     }
 
 
