@@ -113,7 +113,7 @@ fun PersonaFormFields(
 
     OutlinedTextField(
         value = description,
-        onValueChange = { if (it.length <= 2000) onDescriptionChange(it) },
+        onValueChange = { if (it.length <= 10_000) onDescriptionChange(it) },
         label = { Text("Description") },
         placeholder = { Text(descriptionPlaceholder) },
         isError = descError,
@@ -131,7 +131,7 @@ fun PersonaFormFields(
     if (type == PersonaType.CHARACTER) {
         OutlinedTextField(
             value = greetingMessage,
-            onValueChange = { if (it.length <= 2000) onGreetingChange(it) },
+            onValueChange = { if (it.length <= 5_000) onGreetingChange(it) },
             label = { Text("Greeting Message") },
             placeholder = { Text("First message when starting a chat...") },
             shape = RoundedCornerShape(20.dp),
