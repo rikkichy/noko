@@ -50,6 +50,7 @@ import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.ui.graphics.Color
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -134,6 +135,13 @@ fun HomeScreen(
     var searchQuery by remember { mutableStateOf("") }
     var selectedCharacterId by remember { mutableStateOf<String?>(null) }
     var expandedChatId by remember { mutableStateOf<String?>(null) }
+
+    LaunchedEffect(refreshKey) {
+        searchQuery = ""
+        selectedCharacterId = null
+        expandedChatId = null
+        focusManager.clearFocus()
+    }
     var deleteTarget by remember { mutableStateOf<ChatSessionMeta?>(null) }
 
     val uniqueCharacters = remember(recentChats) {
