@@ -237,11 +237,12 @@ object SettingsManager {
         securePrefs.getString("${KEY_API_KEY}_$providerId", "") ?: ""
 
     suspend fun setApiKey(key: String) {
+        val trimmed = key.filter { it.code >= 0x20 && it.code != 0x7f }.trim()
         val providerId = appContext.dataStore.data.first()[SELECTED_PROVIDER_ID] ?: "openrouter"
         withContext(Dispatchers.IO) {
-            securePrefs.edit().putString("${KEY_API_KEY}_$providerId", key).commit()
+            securePrefs.edit().putString("${KEY_API_KEY}_$providerId", trimmed).commit()
         }
-        _apiKeyFlow.value = key
+        _apiKeyFlow.value = trimmed
     }
 
     suspend fun clearApiKey() {

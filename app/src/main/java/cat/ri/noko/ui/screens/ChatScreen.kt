@@ -11,6 +11,9 @@ import androidx.compose.runtime.withFrameMillis
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
+import androidx.compose.animation.slideInVertically
+import androidx.compose.animation.slideOutVertically
+import kotlinx.coroutines.delay
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
@@ -654,7 +657,19 @@ fun ChatScreen(
         }
 
 
-        if (imeVisible) {
+        LaunchedEffect(imeVisible) {
+            if (imeVisible) {
+                delay(100)
+                haptics.tick()
+            }
+        }
+        AnimatedVisibility(
+            visible = imeVisible,
+            enter = fadeIn(tween(200, delayMillis = 80)) +
+                    slideInVertically(tween(250, delayMillis = 80)) { it },
+            exit = fadeOut(tween(120)) +
+                    slideOutVertically(tween(150)) { it },
+        ) {
             Row(
                 modifier = Modifier
                     .fillMaxWidth()

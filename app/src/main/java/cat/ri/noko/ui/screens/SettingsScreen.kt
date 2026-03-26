@@ -19,7 +19,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.KeyboardArrowRight
 import androidx.compose.material.icons.rounded.Brush
-import androidx.compose.material.icons.rounded.Cloud
+import androidx.compose.material.icons.rounded.Api
 import androidx.compose.material.icons.rounded.Description
 import androidx.compose.material.icons.rounded.People
 import androidx.compose.material.icons.rounded.Shield
@@ -118,39 +118,58 @@ fun SettingsScreen(navController: NavController) {
                     verticalArrangement = Arrangement.spacedBy(12.dp),
                 ) {
                     Row(verticalAlignment = Alignment.CenterVertically) {
-                        Icon(Icons.Rounded.Brush, contentDescription = null)
+                        Icon(Icons.Rounded.People, contentDescription = null)
                         Spacer(Modifier.size(8.dp))
-                        Text("Appearance", style = MaterialTheme.typography.titleMedium)
+                        Text("Personas & Characters", style = MaterialTheme.typography.titleMedium)
                     }
 
-                    val isDarkTheme = isSystemInDarkTheme()
                     Row(
-                        modifier = Modifier.fillMaxWidth(),
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clickable {
+                                haptics.tap()
+                                navController.navigate("personas/${PersonaType.PERSONA.name}")
+                            },
                         verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.SpaceBetween,
                     ) {
                         Column(modifier = Modifier.weight(1f)) {
+                            Text("Personas")
                             Text(
-                                "AMOLED mode",
-                                color = if (isDarkTheme) MaterialTheme.colorScheme.onSurface
-                                else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.38f),
-                            )
-                            Text(
-                                if (isDarkTheme) "Use pure black background in dark theme."
-                                else "Available only on dark theme.",
+                                "Your roleplay identities",
                                 style = MaterialTheme.typography.bodySmall,
-                                color = if (isDarkTheme) MaterialTheme.colorScheme.onSurfaceVariant
-                                else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.38f),
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
                             )
                         }
-                        Spacer(Modifier.size(12.dp))
-                        Switch(
-                            checked = amoled,
-                            onCheckedChange = { enabled ->
-                                if (enabled) haptics.toggleOn() else haptics.toggleOff()
-                                scope.launch { SettingsManager.setAmoledMode(enabled) }
+                        Icon(
+                            Icons.AutoMirrored.Rounded.KeyboardArrowRight,
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    }
+
+                    HorizontalDivider()
+
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clickable {
+                                haptics.tap()
+                                navController.navigate("personas/${PersonaType.CHARACTER.name}")
                             },
-                            enabled = isDarkTheme,
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        Column(modifier = Modifier.weight(1f)) {
+                            Text("Characters")
+                            Text(
+                                "AI character profiles",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            )
+                        }
+                        Icon(
+                            Icons.AutoMirrored.Rounded.KeyboardArrowRight,
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant,
                         )
                     }
                 }
@@ -169,9 +188,9 @@ fun SettingsScreen(navController: NavController) {
                     verticalArrangement = Arrangement.spacedBy(12.dp),
                 ) {
                     Row(verticalAlignment = Alignment.CenterVertically) {
-                        Icon(Icons.Rounded.Cloud, contentDescription = null)
+                        Icon(Icons.Rounded.Api, contentDescription = null)
                         Spacer(Modifier.size(8.dp))
-                        Text(providerName, style = MaterialTheme.typography.titleMedium)
+                        Text("API", style = MaterialTheme.typography.titleMedium)
                     }
 
                     Row(
@@ -344,6 +363,7 @@ fun SettingsScreen(navController: NavController) {
                             tint = MaterialTheme.colorScheme.onSurfaceVariant,
                         )
                     }
+
                 }
             }
 
@@ -404,58 +424,39 @@ fun SettingsScreen(navController: NavController) {
                     verticalArrangement = Arrangement.spacedBy(12.dp),
                 ) {
                     Row(verticalAlignment = Alignment.CenterVertically) {
-                        Icon(Icons.Rounded.People, contentDescription = null)
+                        Icon(Icons.Rounded.Brush, contentDescription = null)
                         Spacer(Modifier.size(8.dp))
-                        Text("Personas & Characters", style = MaterialTheme.typography.titleMedium)
+                        Text("Appearance", style = MaterialTheme.typography.titleMedium)
                     }
 
+                    val isDarkTheme = isSystemInDarkTheme()
                     Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .clickable {
-                                haptics.tap()
-                                navController.navigate("personas/${PersonaType.PERSONA.name}")
-                            },
+                        modifier = Modifier.fillMaxWidth(),
                         verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.SpaceBetween,
                     ) {
                         Column(modifier = Modifier.weight(1f)) {
-                            Text("Personas")
                             Text(
-                                "Your roleplay identities",
+                                "AMOLED mode",
+                                color = if (isDarkTheme) MaterialTheme.colorScheme.onSurface
+                                else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.38f),
+                            )
+                            Text(
+                                if (isDarkTheme) "Use pure black background in dark theme."
+                                else "Available only on dark theme.",
                                 style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                color = if (isDarkTheme) MaterialTheme.colorScheme.onSurfaceVariant
+                                else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.38f),
                             )
                         }
-                        Icon(
-                            Icons.AutoMirrored.Rounded.KeyboardArrowRight,
-                            contentDescription = null,
-                            tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                        )
-                    }
-
-                    HorizontalDivider()
-
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .clickable {
-                                haptics.tap()
-                                navController.navigate("personas/${PersonaType.CHARACTER.name}")
+                        Spacer(Modifier.size(12.dp))
+                        Switch(
+                            checked = amoled,
+                            onCheckedChange = { enabled ->
+                                if (enabled) haptics.toggleOn() else haptics.toggleOff()
+                                scope.launch { SettingsManager.setAmoledMode(enabled) }
                             },
-                        verticalAlignment = Alignment.CenterVertically,
-                    ) {
-                        Column(modifier = Modifier.weight(1f)) {
-                            Text("Characters")
-                            Text(
-                                "AI character profiles",
-                                style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            )
-                        }
-                        Icon(
-                            Icons.AutoMirrored.Rounded.KeyboardArrowRight,
-                            contentDescription = null,
-                            tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                            enabled = isDarkTheme,
                         )
                     }
                 }
@@ -538,7 +539,13 @@ fun SettingsScreen(navController: NavController) {
                 verticalArrangement = Arrangement.spacedBy(4.dp),
             ) {
                 Text(
-                    text = "Noko v${BuildConfig.VERSION_NAME}",
+                    text = "Noko ${BuildConfig.VERSION_NAME}",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    textAlign = TextAlign.Center,
+                )
+                Text(
+                    text = "Made with \uD83E\uDD0D by Rikkichy",
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     textAlign = TextAlign.Center,
