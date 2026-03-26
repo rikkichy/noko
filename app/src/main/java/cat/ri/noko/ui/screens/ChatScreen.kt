@@ -78,6 +78,7 @@ import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.draw.clip
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
@@ -171,6 +172,8 @@ fun ChatScreen(
     val keyboard = LocalSoftwareKeyboardController.current
     val haptics = rememberNokoHaptics()
     val imeVisible = WindowInsets.isImeVisible
+    var chatInputFocused by remember { mutableStateOf(false) }
+    val showRpChips = imeVisible && chatInputFocused
     val incognitoKeyboard by SettingsManager.incognitoKeyboard.collectAsState(initial = false)
     val incognitoKeyboardOptions = if (incognitoKeyboard) KeyboardOptions(
         platformImeOptions = PlatformImeOptions(
@@ -657,14 +660,14 @@ fun ChatScreen(
         }
 
 
-        LaunchedEffect(imeVisible) {
-            if (imeVisible) {
+        LaunchedEffect(showRpChips) {
+            if (showRpChips) {
                 delay(100)
                 haptics.tick()
             }
         }
         AnimatedVisibility(
-            visible = imeVisible,
+            visible = showRpChips,
             enter = fadeIn(tween(200, delayMillis = 80)) +
                     slideInVertically(tween(250, delayMillis = 80)) { it },
             exit = fadeOut(tween(120)) +
@@ -727,7 +730,8 @@ fun ChatScreen(
                 value = input,
                 onValueChange = { input = it },
                 modifier = Modifier
-                    .weight(1f),
+                    .weight(1f)
+                    .onFocusChanged { chatInputFocused = it.isFocused },
                 placeholder = { Text(placeholder) },
                 singleLine = false,
                 maxLines = 4,
