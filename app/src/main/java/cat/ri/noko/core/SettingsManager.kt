@@ -2,6 +2,7 @@ package cat.ri.noko.core
 
 import android.content.Context
 import android.content.SharedPreferences
+import cat.ri.noko.BuildConfig
 import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.stringPreferencesKey
@@ -88,6 +89,25 @@ object SettingsManager {
         }
         _apiKeyFlow.value = securePrefs.getString("${KEY_API_KEY}_$providerId", "") ?: ""
         _personasFlow.value = loadEncryptedList(KEY_PERSONAS_JSON)
+        if (BuildConfig.DEBUG && _personasFlow.value.isEmpty()) {
+            val seed = (1..6).flatMap { i ->
+                listOf(
+                    PersonaEntry(
+                        type = PersonaType.PERSONA,
+                        name = "Persona $i",
+                        description = "[Name: {{user}};\nInfo: {{user}} is a persona card test;]",
+                    ),
+                    PersonaEntry(
+                        type = PersonaType.CHARACTER,
+                        name = "Character $i",
+                        description = "[Name: {{char}};\nTask: {{char}} should greet {{user}} and ask generic questions. {{char}} will always use internet RP style to chat with {{user}};]",
+                        greetingMessage = "*comes closer*\n\"Hello there, {{user}}! How are you doing today?\"",
+                    ),
+                )
+            }
+            securePrefs.edit().putString(KEY_PERSONAS_JSON, json.encodeToString(seed)).commit()
+            _personasFlow.value = seed
+        }
         _presetsFlow.value = loadEncryptedList<PromptPreset>(KEY_PRESETS_JSON)
             .ifEmpty { listOf(defaultPromptPreset()) }
         ChatStorage.init(appContext)

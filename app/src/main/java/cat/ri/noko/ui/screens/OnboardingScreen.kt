@@ -56,6 +56,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
+import cat.ri.noko.BuildConfig
 import cat.ri.noko.core.AvatarStorage
 import cat.ri.noko.core.SettingsManager
 import cat.ri.noko.core.api.ApiClient
@@ -326,6 +327,20 @@ fun OnboardingScreen(onComplete: () -> Unit) {
                         Icon(Icons.AutoMirrored.Rounded.ArrowForward, contentDescription = null)
                         Spacer(Modifier.width(8.dp))
                         Text("Next")
+                    }
+
+                    if (BuildConfig.DEBUG) {
+                        OutlinedButton(
+                            onClick = {
+                                scope.launch {
+                                    SettingsManager.setOnboardingComplete()
+                                    onComplete()
+                                }
+                            },
+                            modifier = Modifier.fillMaxWidth(),
+                        ) {
+                            Text("(Debug) SKIP_ONBOARDING")
+                        }
                     }
                 }
             }
