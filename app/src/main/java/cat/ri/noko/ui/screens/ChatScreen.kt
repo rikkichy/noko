@@ -37,6 +37,14 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.Send
+import androidx.compose.material.icons.automirrored.filled.NavigateBefore
+import androidx.compose.material.icons.automirrored.filled.NavigateNext
+import androidx.compose.foundation.gestures.detectHorizontalDragGestures
+import androidx.compose.ui.draw.alpha
+import androidx.compose.ui.draw.rotate
+import androidx.compose.ui.draw.scale
+import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.unit.IntOffset
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Autorenew
 import androidx.compose.material.icons.filled.ModeEdit
@@ -192,12 +200,18 @@ fun ChatScreen(
 
     val selectedPersonaId by SettingsManager.selectedPersonaId.collectAsState(initial = null)
     val selectedCharacterId by SettingsManager.selectedCharacterId.collectAsState(initial = null)
+    var characterIdOverride by remember { mutableStateOf<String?>(null) }
+    val effectiveCharacterId = characterIdOverride ?: selectedCharacterId
+
+    LaunchedEffect(selectedCharacterId) {
+        if (selectedCharacterId == characterIdOverride) characterIdOverride = null
+    }
 
     val activePersona = remember(allEntries, selectedPersonaId) {
         selectedPersonaId?.let { id -> allEntries.find { it.id == id } }
     }
-    val activeCharacter = remember(allEntries, selectedCharacterId) {
-        selectedCharacterId?.let { id -> allEntries.find { it.id == id } }
+    val activeCharacter = remember(allEntries, effectiveCharacterId) {
+        effectiveCharacterId?.let { id -> allEntries.find { it.id == id } }
     }
 
     var showCharacterPicker by remember { mutableStateOf(false) }
@@ -267,17 +281,30 @@ fun ChatScreen(
     }
 
 
-    fun startStreaming() {
+    fun startStreaming(targetIdx: Int? = null) {
         if ((providerRequiresAuth && apiKey.isBlank()) || modelId.isBlank() || providerBaseUrl.isBlank()) return
         isGenerating = true
         hasStreamedContent = false
-        val assistantIdx = messages.size
-        messages.add(ChatMessage(
-            role = ChatMessage.Role.ASSISTANT,
-            content = "",
-            senderName = activeCharacter?.name,
-            senderAvatarFileName = activeCharacter?.avatarFileName,
-        ))
+        val assistantIdx: Int
+        if (targetIdx != null) {
+            assistantIdx = targetIdx
+            messages[assistantIdx] = messages[assistantIdx].copy(
+                content = "",
+                stoppedByUser = false,
+                guardBlocked = false,
+                guardReason = null,
+                emojisTrimmed = false,
+                actionsStructured = false,
+            )
+        } else {
+            assistantIdx = messages.size
+            messages.add(ChatMessage(
+                role = ChatMessage.Role.ASSISTANT,
+                content = "",
+                senderName = activeCharacter?.name,
+                senderAvatarFileName = activeCharacter?.avatarFileName,
+            ))
+        }
 
         streamJob = scope.launch {
             val buffer = StringBuilder()
@@ -287,7 +314,7 @@ fun ChatScreen(
                     preset = activePreset,
                     persona = activePersona,
                     character = activeCharacter,
-                    chatMessages = messages.dropLast(1),
+                    chatMessages = if (targetIdx != null) messages.take(targetIdx) else messages.dropLast(1),
                 )
                 val request = ChatRequest(
                     model = modelId,
@@ -474,10 +501,12 @@ fun ChatScreen(
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
                     Row(
-                        modifier = Modifier.clickable(enabled = !isGenerating) {
-                            haptics.tap()
-                            showCharacterPicker = true
-                        },
+                        modifier = Modifier
+                            .alpha(if (isGenerating) 0.4f else 1f)
+                            .clickable(enabled = !isGenerating) {
+                                haptics.tap()
+                                showCharacterPicker = true
+                            },
                         verticalAlignment = Alignment.CenterVertically,
                     ) {
                         SmallAvatar(
@@ -584,6 +613,7 @@ fun ChatScreen(
                     && message.role == ChatMessage.Role.ASSISTANT
                     && message.content.isNotBlank()
 
+                val altCount = message.alternatives.size + 1
                 MessageBubble(
                     message = message,
                     persona = activePersona,
@@ -594,9 +624,14 @@ fun ChatScreen(
                         {
                             val idx = messages.indexOfFirst { it.id == message.id }
                             if (idx >= 0) {
-
-                                messages.removeAt(idx)
-                                startStreaming()
+                                val current = messages[idx]
+                                val newSwipeIndex = current.alternatives.size + 1
+                                val updatedAlts = current.alternatives + current.copy(alternatives = emptyList())
+                                messages[idx] = current.copy(
+                                    swipeIndex = newSwipeIndex,
+                                    alternatives = updatedAlts,
+                                )
+                                startStreaming(targetIdx = idx)
                             }
                         }
                     } else null,
@@ -620,6 +655,33 @@ fun ChatScreen(
                             }
                         }
                     } else null,
+                    onSwipe = if (message.role == ChatMessage.Role.ASSISTANT && !message.isGreeting && altCount > 1 && !isGenerating) {
+                        { direction ->
+                            val msgIdx = messages.indexOfFirst { it.id == message.id }
+                            if (msgIdx >= 0) {
+                                val current = messages[msgIdx]
+                                val targetSwipeIndex = current.swipeIndex + direction
+                                val targetContent = current.alternatives.find { it.swipeIndex == targetSwipeIndex }
+                                if (targetContent != null) {
+                                    val remainingAlts = current.alternatives.filter { it.swipeIndex != targetSwipeIndex } +
+                                        current.copy(alternatives = emptyList())
+                                    messages[msgIdx] = current.copy(
+                                        content = targetContent.content,
+                                        stoppedByUser = targetContent.stoppedByUser,
+                                        guardBlocked = targetContent.guardBlocked,
+                                        guardReason = targetContent.guardReason,
+                                        emojisTrimmed = targetContent.emojisTrimmed,
+                                        actionsStructured = targetContent.actionsStructured,
+                                        swipeIndex = targetSwipeIndex,
+                                        alternatives = remainingAlts,
+                                    )
+                                    saveCurrentChat()
+                                }
+                            }
+                        }
+                    } else null,
+                    swipeIndex = message.swipeIndex,
+                    swipeCount = altCount,
                 )
             }
         }
@@ -670,8 +732,8 @@ fun ChatScreen(
             visible = showRpChips,
             enter = fadeIn(tween(200, delayMillis = 80)) +
                     slideInVertically(tween(250, delayMillis = 80)) { it },
-            exit = fadeOut(tween(120)) +
-                    slideOutVertically(tween(150)) { it },
+            exit = fadeOut(tween(170)) +
+                    slideOutVertically(tween(200)) { it },
         ) {
             Row(
                 modifier = Modifier
@@ -714,6 +776,7 @@ fun ChatScreen(
             Box(
                 modifier = Modifier
                     .clip(CircleShape)
+                    .alpha(if (isGenerating) 0.4f else 1f)
                     .clickable(enabled = !isGenerating) {
                         haptics.tap()
                         showPersonaPicker = true
@@ -795,10 +858,18 @@ fun ChatScreen(
         PersonaPickerSheet(
             title = "Select Character",
             entries = characters,
-            selectedId = selectedCharacterId,
+            selectedId = effectiveCharacterId,
             onSelect = { entry ->
                 haptics.confirm()
-                scope.launch { SettingsManager.setSelectedCharacterId(entry.id) }
+                if (entry.id != effectiveCharacterId) {
+                    saveCurrentChat()
+                    streamJob?.cancel()
+                    messages.clear()
+                    currentChatId = UUID.randomUUID().toString()
+                    isSecretChat = false
+                    characterIdOverride = entry.id
+                    scope.launch { SettingsManager.setSelectedCharacterId(entry.id) }
+                }
                 showCharacterPicker = false
             },
             onDismiss = { showCharacterPicker = false },
@@ -906,6 +977,9 @@ private fun MessageBubble(
     onRegenerate: (() -> Unit)? = null,
     onEdit: (() -> Unit)? = null,
     onRollback: (() -> Unit)? = null,
+    onSwipe: ((Int) -> Unit)? = null,
+    swipeIndex: Int = 0,
+    swipeCount: Int = 1,
 ) {
     if (message.isGreeting) {
         Surface(
@@ -964,6 +1038,32 @@ private fun MessageBubble(
                 }
             }
         }
+        if (swipeCount > 1 && onSwipe != null && !isGenerating) {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                modifier = Modifier.padding(top = 4.dp),
+            ) {
+                IconButton(
+                    onClick = { onSwipe(-1) },
+                    enabled = swipeIndex > 0,
+                    modifier = Modifier.size(32.dp),
+                ) {
+                    Icon(Icons.AutoMirrored.Filled.NavigateBefore, contentDescription = "Previous", modifier = Modifier.size(16.dp))
+                }
+                Text(
+                    text = "${swipeIndex + 1}/$swipeCount",
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f),
+                )
+                IconButton(
+                    onClick = { onSwipe(1) },
+                    enabled = swipeIndex < swipeCount - 1,
+                    modifier = Modifier.size(32.dp),
+                ) {
+                    Icon(Icons.AutoMirrored.Filled.NavigateNext, contentDescription = "Next", modifier = Modifier.size(16.dp))
+                }
+            }
+        }
         return
     }
 
@@ -977,6 +1077,10 @@ private fun MessageBubble(
     val canInteract = !isStreaming && !isGenerating
     var showActions by remember { mutableStateOf(false) }
 
+    val swipeOffset = remember { Animatable(0f) }
+    val swipeScope = rememberCoroutineScope()
+    val haptics = rememberNokoHaptics()
+    var regenProgress by remember { mutableStateOf(0f) }
 
     val shakeOffset = remember { Animatable(0f) }
     LaunchedEffect(message.stoppedByUser) {
@@ -989,6 +1093,8 @@ private fun MessageBubble(
         }
     }
 
+    val hasSwipeGesture = canInteract && (onSwipe != null || onRegenerate != null)
+
     Box(
         modifier = Modifier.fillMaxWidth(),
         contentAlignment = if (isUser) Alignment.CenterEnd else Alignment.CenterStart,
@@ -996,7 +1102,69 @@ private fun MessageBubble(
         Row(
             verticalAlignment = Alignment.Top,
             horizontalArrangement = if (isUser) Arrangement.End else Arrangement.Start,
-            modifier = Modifier.offset(x = shakeOffset.value.dp),
+            modifier = Modifier
+                .offset(x = shakeOffset.value.dp)
+                .offset { IntOffset(swipeOffset.value.toInt(), 0) }
+                .then(
+                    if (hasSwipeGesture) {
+                        Modifier.pointerInput(onSwipe, onRegenerate, swipeIndex, swipeCount) {
+                            var totalDrag = 0f
+                            val swipeThreshold = 80.dp.toPx()
+                            val regenThreshold = 80.dp.toPx()
+                            detectHorizontalDragGestures(
+                                onDragStart = { },
+                                onDragEnd = {
+                                    val isLastSwipe = swipeIndex >= swipeCount - 1
+                                    val isFirstSwipe = swipeIndex <= 0
+                                    if (totalDrag < -swipeThreshold && onSwipe != null && !isLastSwipe) {
+                                        swipeScope.launch {
+                                            regenProgress = 0f
+                                            swipeOffset.animateTo(-500f, tween(200))
+                                            onSwipe(1)
+                                            swipeOffset.snapTo(500f)
+                                            swipeOffset.animateTo(0f, tween(170))
+                                        }
+                                    } else if (totalDrag < -regenThreshold && isLastSwipe && onRegenerate != null) {
+                                        haptics.confirm()
+                                        swipeScope.launch {
+                                            regenProgress = 0f
+                                            swipeOffset.animateTo(-500f, tween(200))
+                                            onRegenerate()
+                                            swipeOffset.snapTo(0f)
+                                        }
+                                    } else if (totalDrag > swipeThreshold && onSwipe != null && !isFirstSwipe) {
+                                        swipeScope.launch {
+                                            regenProgress = 0f
+                                            swipeOffset.animateTo(500f, tween(200))
+                                            onSwipe(-1)
+                                            swipeOffset.snapTo(-500f)
+                                            swipeOffset.animateTo(0f, tween(170))
+                                        }
+                                    } else {
+                                        swipeScope.launch {
+                                            regenProgress = 0f
+                                            swipeOffset.animateTo(0f, spring())
+                                        }
+                                    }
+                                    totalDrag = 0f
+                                },
+                                onHorizontalDrag = { change, dragAmount ->
+                                    change.consume()
+                                    totalDrag += dragAmount
+                                    swipeScope.launch { swipeOffset.snapTo(swipeOffset.value + dragAmount) }
+                                    val isLastSwipe = swipeIndex >= swipeCount - 1
+                                    if (totalDrag < 0 && isLastSwipe && onRegenerate != null) {
+                                        val progress = (-totalDrag / regenThreshold).coerceIn(0f, 1f)
+                                        if (progress >= 1f && regenProgress < 1f) haptics.tick()
+                                        regenProgress = progress
+                                    } else {
+                                        regenProgress = 0f
+                                    }
+                                }
+                            )
+                        }
+                    } else Modifier
+                ),
         ) {
             if (!isUser) {
                 SmallAvatar(
@@ -1017,41 +1185,58 @@ private fun MessageBubble(
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier.padding(horizontal = 4.dp, vertical = 2.dp),
                 )
-                Surface(
-                    shape = RoundedCornerShape(16.dp),
-                    color = MaterialTheme.colorScheme.surfaceVariant,
-                    modifier = Modifier
-                        .widthIn(max = 280.dp)
-                        .animateContentSize(
-                            animationSpec = spring(
-                                dampingRatio = Spring.DampingRatioNoBouncy,
-                                stiffness = Spring.StiffnessHigh,
+                Box {
+                    Surface(
+                        shape = RoundedCornerShape(16.dp),
+                        color = MaterialTheme.colorScheme.surfaceVariant,
+                        modifier = Modifier
+                            .widthIn(max = 280.dp)
+                            .animateContentSize(
+                                animationSpec = spring(
+                                    dampingRatio = Spring.DampingRatioNoBouncy,
+                                    stiffness = Spring.StiffnessHigh,
+                                )
                             )
-                        )
-                        .then(if (canInteract) Modifier.clickable { showActions = !showActions } else Modifier),
-                ) {
+                            .then(if (canInteract) Modifier.clickable { showActions = !showActions } else Modifier),
+                    ) {
 
-                    var wasStreaming by remember { mutableStateOf(false) }
-                    if (isStreaming) wasStreaming = true
+                        var wasStreaming by remember { mutableStateOf(false) }
+                        if (isStreaming) wasStreaming = true
 
-                    if (wasStreaming) {
-                        StreamingText(
-                            text = message.content,
-                            isStreaming = isStreaming,
-                            modifier = Modifier.padding(12.dp),
-                            style = MaterialTheme.typography.bodyLarge,
-                        )
-                    } else {
-                        Text(
-                            text = parseMarkdown(message.content),
-                            modifier = Modifier.padding(12.dp),
-                            style = MaterialTheme.typography.bodyLarge,
+                        if (wasStreaming) {
+                            StreamingText(
+                                text = message.content,
+                                isStreaming = isStreaming,
+                                modifier = Modifier.padding(12.dp),
+                                style = MaterialTheme.typography.bodyLarge,
+                            )
+                        } else {
+                            Text(
+                                text = parseMarkdown(message.content),
+                                modifier = Modifier.padding(12.dp),
+                                style = MaterialTheme.typography.bodyLarge,
+                            )
+                        }
+                    }
+                    if (regenProgress > 0f && !isUser) {
+                        val p = regenProgress
+                        val pop = 1f - (1f - p) * (1f - p) * (1f - p)
+                        Icon(
+                            Icons.Filled.Autorenew,
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.primary,
+                            modifier = Modifier
+                                .align(Alignment.CenterEnd)
+                                .offset { IntOffset((24.dp.toPx() + 18.dp.toPx() * pop).toInt(), 0) }
+                                .size(35.dp)
+                                .scale(pop)
+                                .rotate(360f * p),
                         )
                     }
                 }
                 AnimatedVisibility(
                     visible = showActions && canInteract,
-                    enter = fadeIn(tween(150)) + expandVertically(tween(150)),
+                    enter = fadeIn(tween(200)) + expandVertically(tween(200)),
                     exit = fadeOut(tween(100)) + shrinkVertically(tween(100)),
                 ) {
                     Row(
@@ -1104,6 +1289,31 @@ private fun MessageBubble(
                         color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f),
                         modifier = Modifier.padding(horizontal = 4.dp, vertical = 2.dp),
                     )
+                }
+                if (swipeCount > 1 && onSwipe != null && canInteract) {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        IconButton(
+                            onClick = { onSwipe(-1) },
+                            enabled = swipeIndex > 0,
+                            modifier = Modifier.size(32.dp),
+                        ) {
+                            Icon(Icons.AutoMirrored.Filled.NavigateBefore, contentDescription = "Previous", modifier = Modifier.size(16.dp))
+                        }
+                        Text(
+                            text = "${swipeIndex + 1}/$swipeCount",
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f),
+                        )
+                        IconButton(
+                            onClick = { onSwipe(1) },
+                            enabled = swipeIndex < swipeCount - 1,
+                            modifier = Modifier.size(32.dp),
+                        ) {
+                            Icon(Icons.AutoMirrored.Filled.NavigateNext, contentDescription = "Next", modifier = Modifier.size(16.dp))
+                        }
+                    }
                 }
             }
 

@@ -7,6 +7,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
@@ -123,9 +124,8 @@ fun PersonaFormFields(
         shape = RoundedCornerShape(20.dp),
         modifier = Modifier
             .fillMaxWidth()
-            .height(160.dp)
+            .heightIn(min = 160.dp)
             .offset { IntOffset(descShakeOffset.toInt(), 0) },
-        maxLines = 6,
     )
 
     if (type == PersonaType.CHARACTER) {
@@ -137,8 +137,7 @@ fun PersonaFormFields(
             shape = RoundedCornerShape(20.dp),
             modifier = Modifier
                 .fillMaxWidth()
-                .height(120.dp),
-            maxLines = 4,
+                .heightIn(min = 120.dp),
         )
     }
 }

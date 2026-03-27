@@ -17,6 +17,8 @@ data class ChatMessage(
     val timestamp: Long = System.currentTimeMillis(),
     val senderName: String? = null,
     val senderAvatarFileName: String? = null,
+    val alternatives: List<ChatMessage> = emptyList(),
+    val swipeIndex: Int = 0,
 ) {
     @Serializable
     enum class Role { USER, ASSISTANT }
