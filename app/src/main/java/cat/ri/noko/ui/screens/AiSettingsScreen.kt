@@ -72,8 +72,10 @@ fun AiSettingsScreen(onBack: () -> Unit) {
 
     val presets by SettingsManager.promptPresets.collectAsState(initial = builtInPresets())
     val selectedPresetId by SettingsManager.selectedPresetId.collectAsState(initial = "default")
-    val activePreset = remember(presets, selectedPresetId) {
-        presets.find { it.id == selectedPresetId } ?: presets.first()
+    var presetIdOverride by remember { mutableStateOf<String?>(null) }
+    val effectivePresetId = presetIdOverride ?: selectedPresetId
+    val activePreset = remember(presets, effectivePresetId) {
+        presets.find { it.id == effectivePresetId } ?: presets.first()
     }
 
     var sections by remember(activePreset) { mutableStateOf(activePreset.sections) }
@@ -208,6 +210,7 @@ fun AiSettingsScreen(onBack: () -> Unit) {
                                         onClick = {
                                             haptics.tap()
                                             showPresetDropdown = false
+                                            presetIdOverride = preset.id
                                             scope.launch {
                                                 SettingsManager.setSelectedPresetId(preset.id)
                                             }
@@ -226,6 +229,7 @@ fun AiSettingsScreen(onBack: () -> Unit) {
                         IconButton(onClick = {
                             haptics.tap()
                             val dup = activePreset.duplicate()
+                            presetIdOverride = dup.id
                             scope.launch {
                                 SettingsManager.savePreset(dup)
                                 SettingsManager.setSelectedPresetId(dup.id)
@@ -395,6 +399,7 @@ fun AiSettingsScreen(onBack: () -> Unit) {
                             id = UUID.randomUUID().toString(),
                             name = name.trim(),
                         )
+                        presetIdOverride = preset.id
                         scope.launch {
                             SettingsManager.savePreset(preset)
                             SettingsManager.setSelectedPresetId(preset.id)
@@ -421,6 +426,7 @@ fun AiSettingsScreen(onBack: () -> Unit) {
             confirmButton = {
                 TextButton(onClick = {
                     haptics.reject()
+                    presetIdOverride = "default"
                     scope.launch {
                         SettingsManager.setSelectedPresetId("default")
                         SettingsManager.deletePreset(activePreset.id)
