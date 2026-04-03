@@ -496,6 +496,7 @@ fun PersonaListScreen(
                         haptics.reject()
                         scope.launch {
                             entry.avatarFileName?.let { AvatarStorage.delete(context, it) }
+                            ChatStorage.deleteChatsForCharacter(entry.id)
                             SettingsManager.deleteEntry(entry.id)
                         }
                         deleteTarget = null
@@ -612,6 +613,7 @@ fun PersonaListScreen(
                         scope.launch {
                             targets.forEach { entry ->
                                 entry.avatarFileName?.let { AvatarStorage.delete(context, it) }
+                                ChatStorage.deleteChatsForCharacter(entry.id)
                                 SettingsManager.deleteEntry(entry.id)
                             }
                         }

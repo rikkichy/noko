@@ -320,6 +320,12 @@ fun ChatScreen(
                     model = modelId,
                     messages = apiMessages,
                     stream = true,
+                    temperature = activePreset.temperature,
+                    maxTokens = activePreset.maxTokens,
+                    topP = activePreset.topP,
+                    topK = activePreset.topK,
+                    frequencyPenalty = activePreset.frequencyPenalty,
+                    presencePenalty = activePreset.presencePenalty,
                 )
                 var lastUiUpdate = 0L
                 var wordCount = 0

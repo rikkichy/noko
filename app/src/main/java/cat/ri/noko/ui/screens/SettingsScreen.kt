@@ -20,7 +20,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.KeyboardArrowRight
 import androidx.compose.material.icons.rounded.Brush
 import androidx.compose.material.icons.rounded.Api
-import androidx.compose.material.icons.rounded.Description
+import androidx.compose.material.icons.rounded.Tune
 import androidx.compose.material.icons.rounded.People
 import androidx.compose.material.icons.rounded.Shield
 import androidx.compose.material3.Button
@@ -380,9 +380,9 @@ fun SettingsScreen(navController: NavController) {
                     verticalArrangement = Arrangement.spacedBy(12.dp),
                 ) {
                     Row(verticalAlignment = Alignment.CenterVertically) {
-                        Icon(Icons.Rounded.Description, contentDescription = null)
+                        Icon(Icons.Rounded.Tune, contentDescription = null)
                         Spacer(Modifier.size(8.dp))
-                        Text("Prompt Builder", style = MaterialTheme.typography.titleMedium)
+                        Text("AI Settings", style = MaterialTheme.typography.titleMedium)
                     }
 
                     Row(
@@ -395,9 +395,9 @@ fun SettingsScreen(navController: NavController) {
                         verticalAlignment = Alignment.CenterVertically,
                     ) {
                         Column(modifier = Modifier.weight(1f)) {
-                            Text("Prompt Template")
+                            Text("AI Settings")
                             Text(
-                                "Configure what gets sent to the AI",
+                                "Configure prompt template and generation parameters",
                                 style = MaterialTheme.typography.bodySmall,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                             )

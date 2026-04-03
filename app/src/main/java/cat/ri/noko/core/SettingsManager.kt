@@ -12,6 +12,7 @@ import androidx.security.crypto.MasterKeys
 import cat.ri.noko.model.PersonaEntry
 import cat.ri.noko.model.PersonaType
 import cat.ri.noko.model.PromptPreset
+import cat.ri.noko.model.builtInPresets
 import cat.ri.noko.model.defaultPromptPreset
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
@@ -108,8 +109,9 @@ object SettingsManager {
             securePrefs.edit().putString(KEY_PERSONAS_JSON, json.encodeToString(seed)).commit()
             _personasFlow.value = seed
         }
-        _presetsFlow.value = loadEncryptedList<PromptPreset>(KEY_PRESETS_JSON)
-            .ifEmpty { listOf(defaultPromptPreset()) }
+        val userPresets = loadEncryptedList<PromptPreset>(KEY_PRESETS_JSON)
+            .filterNot { it.builtIn }
+        _presetsFlow.value = builtInPresets() + userPresets
         ChatStorage.init(appContext)
         _secureInitDone = true
     }
@@ -368,5 +370,14 @@ object SettingsManager {
 
     suspend fun setSelectedPresetId(id: String) {
         appContext.dataStore.edit { it[SELECTED_PRESET_ID] = id }
+    }
+
+    suspend fun deletePreset(id: String) = withContext(Dispatchers.IO) {
+        _presetsFlow.update { current ->
+            if (current.find { it.id == id }?.builtIn == true) return@update current
+            val updated = current.filterNot { it.id == id }
+            securePrefs.edit().putString(KEY_PRESETS_JSON, json.encodeToString(updated)).commit()
+            updated
+        }
     }
 }

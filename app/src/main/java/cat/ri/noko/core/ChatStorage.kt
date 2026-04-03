@@ -110,6 +110,16 @@ object ChatStorage {
         }
     }
 
+    suspend fun deleteChatsForCharacter(characterId: String) = withContext(Dispatchers.IO) {
+        _recentChats.update { current ->
+            val toDelete = current.filter { it.characterId == characterId }
+            toDelete.forEach { secureDelete(chatFile(it.id)) }
+            val updated = current.filterNot { it.characterId == characterId }
+            saveIndex(updated)
+            updated
+        }
+    }
+
 
     private fun encryptedFile(file: File): EncryptedFile =
         EncryptedFile.Builder(

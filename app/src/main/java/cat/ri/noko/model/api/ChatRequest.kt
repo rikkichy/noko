@@ -10,6 +10,10 @@ data class ChatRequest(
     val stream: Boolean = false,
     val temperature: Float? = null,
     @SerialName("max_tokens") val maxTokens: Int? = null,
+    @SerialName("top_p") val topP: Float? = null,
+    @SerialName("top_k") val topK: Int? = null,
+    @SerialName("frequency_penalty") val frequencyPenalty: Float? = null,
+    @SerialName("presence_penalty") val presencePenalty: Float? = null,
 )
 
 @Serializable

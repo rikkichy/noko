@@ -60,7 +60,7 @@ fun SettingsNavHost() {
             ModelListScreen(onBack = { navController.popBackStack() })
         }
         composable("prompt_builder") {
-            PromptBuilderScreen(onBack = { navController.popBackStack() })
+            AiSettingsScreen(onBack = { navController.popBackStack() })
         }
         composable("noko_polkit") {
             NokoPolkitScreen(onBack = { navController.popBackStack() })
