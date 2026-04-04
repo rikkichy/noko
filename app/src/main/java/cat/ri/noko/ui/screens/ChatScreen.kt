@@ -8,6 +8,7 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.ProcessLifecycleOwner
 import cat.ri.noko.MainActivity
 import cat.ri.noko.NokoApplication
+import cat.ri.noko.R
 import cat.ri.noko.core.replaceTemplateVars
 import cat.ri.noko.ui.components.NokoAvatar
 import androidx.compose.animation.AnimatedVisibility
@@ -461,7 +462,7 @@ fun ChatScreen(
                             PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT,
                         )
                         val notification = NotificationCompat.Builder(context, NokoApplication.CHANNEL_STREAM_COMPLETE)
-                            .setSmallIcon(android.R.drawable.ic_dialog_info)
+                            .setSmallIcon(R.mipmap.ic_launcher_monochrome)
                             .setContentTitle(titles.random())
                             .setContentText(preview)
                             .setContentIntent(tapIntent)
