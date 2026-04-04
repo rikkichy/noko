@@ -7,6 +7,8 @@ import androidx.core.app.NotificationManagerCompat
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.ProcessLifecycleOwner
 import cat.ri.noko.MainActivity
+import cat.ri.noko.NokoApplication
+import cat.ri.noko.core.replaceTemplateVars
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.animateContentSize
 import androidx.compose.animation.expandVertically
@@ -42,6 +44,7 @@ import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import cat.ri.noko.ui.theme.NokoFieldShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.Send
 import androidx.compose.material.icons.automirrored.filled.NavigateBefore
@@ -79,7 +82,6 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextField
 import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.material3.TopAppBar
-import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.ui.graphics.Color
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
@@ -126,6 +128,7 @@ import cat.ri.noko.model.PersonaEntry
 import cat.ri.noko.model.PersonaType
 import cat.ri.noko.model.api.ChatRequest
 import cat.ri.noko.ui.ChatAction
+import cat.ri.noko.ui.theme.nokoTopAppBarColors
 import cat.ri.noko.ui.util.parseMarkdown
 import cat.ri.noko.ui.util.rememberNokoHaptics
 import coil3.compose.AsyncImage
@@ -451,11 +454,11 @@ fun ChatScreen(
                             context, currentChatId.hashCode(),
                             Intent(context, MainActivity::class.java).apply {
                                 flags = Intent.FLAG_ACTIVITY_SINGLE_TOP or Intent.FLAG_ACTIVITY_CLEAR_TOP
-                                putExtra("navigate_to_chat", true)
+                                putExtra(MainActivity.EXTRA_NAVIGATE_TO_CHAT, true)
                             },
                             PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT,
                         )
-                        val notification = NotificationCompat.Builder(context, "stream_complete")
+                        val notification = NotificationCompat.Builder(context, NokoApplication.CHANNEL_STREAM_COMPLETE)
                             .setSmallIcon(android.R.drawable.ic_dialog_info)
                             .setContentTitle(titles.random())
                             .setContentText(preview)
@@ -485,10 +488,7 @@ fun ChatScreen(
                         ChatMessage(
                             role = ChatMessage.Role.ASSISTANT,
                             content = activeCharacter.greetingMessage
-                                .replace("{{char}}", activeCharacter.name)
-                                .replace("{{user}}", activePersona?.name ?: "User")
-                                .replace("{char}", activeCharacter.name)
-                                .replace("{user}", activePersona?.name ?: "User"),
+                                .replaceTemplateVars(activeCharacter.name, activePersona?.name ?: "User"),
                             isGreeting = true,
                             senderName = activeCharacter.name,
                             senderAvatarFileName = activeCharacter.avatarFileName,
@@ -522,10 +522,7 @@ fun ChatScreen(
                 ChatMessage(
                     role = ChatMessage.Role.ASSISTANT,
                     content = activeCharacter.greetingMessage
-                        .replace("{{char}}", activeCharacter.name)
-                        .replace("{{user}}", activePersona?.name ?: "User")
-                        .replace("{char}", activeCharacter.name)
-                        .replace("{user}", activePersona?.name ?: "User"),
+                        .replaceTemplateVars(activeCharacter.name, activePersona?.name ?: "User"),
                     isGreeting = true,
                     senderName = activeCharacter.name,
                     senderAvatarFileName = activeCharacter.avatarFileName,
@@ -609,10 +606,7 @@ fun ChatScreen(
                             ChatMessage(
                                 role = ChatMessage.Role.ASSISTANT,
                                 content = activeCharacter.greetingMessage
-                                    .replace("{{char}}", activeCharacter.name)
-                                    .replace("{{user}}", activePersona?.name ?: "User")
-                                    .replace("{char}", activeCharacter.name)
-                                    .replace("{user}", activePersona?.name ?: "User"),
+                                    .replaceTemplateVars(activeCharacter.name, activePersona?.name ?: "User"),
                                 isGreeting = true,
                                 senderName = activeCharacter.name,
                                 senderAvatarFileName = activeCharacter.avatarFileName,
@@ -623,7 +617,7 @@ fun ChatScreen(
                     Icon(Icons.Filled.Add, contentDescription = "New chat")
                 }
             },
-            colors = TopAppBarDefaults.topAppBarColors(containerColor = Color.Transparent),
+            colors = nokoTopAppBarColors(),
         )
 
 
@@ -744,7 +738,7 @@ fun ChatScreen(
                         modifier = Modifier.fillMaxWidth(),
                         maxLines = 8,
                         keyboardOptions = incognitoKeyboardOptions,
-                        shape = RoundedCornerShape(20.dp),
+                        shape = NokoFieldShape,
                     )
                 },
                 confirmButton = {
@@ -845,7 +839,7 @@ fun ChatScreen(
                 singleLine = false,
                 maxLines = 4,
                 keyboardOptions = incognitoKeyboardOptions,
-                shape = RoundedCornerShape(20.dp),
+                shape = NokoFieldShape,
                 colors = TextFieldDefaults.colors(
                     focusedContainerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
                     unfocusedContainerColor = MaterialTheme.colorScheme.surfaceContainerLow,
@@ -1468,7 +1462,7 @@ private fun PersonaPickerSheet(
                     onValueChange = { searchQuery = it },
                     placeholder = { Text("Search..") },
                     singleLine = true,
-                    shape = RoundedCornerShape(20.dp),
+                    shape = NokoFieldShape,
                     modifier = Modifier
                         .fillMaxWidth()
                         .padding(horizontal = 24.dp, vertical = 4.dp),

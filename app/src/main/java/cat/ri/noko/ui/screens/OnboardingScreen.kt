@@ -6,7 +6,7 @@ import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.PickVisualMediaRequest
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.core.Animatable
-import androidx.compose.animation.core.keyframes
+import cat.ri.noko.ui.util.shake
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
@@ -19,7 +19,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.RoundedCornerShape
+import cat.ri.noko.ui.theme.NokoFieldShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.ArrowBack
@@ -41,7 +41,6 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
-import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -51,7 +50,6 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.IntOffset
@@ -69,6 +67,7 @@ import cat.ri.noko.ui.components.ImageCropOverlay
 import cat.ri.noko.ui.components.CustomProviderCard
 import cat.ri.noko.ui.components.PersonaFormFields
 import cat.ri.noko.ui.components.ProviderCard
+import cat.ri.noko.ui.theme.nokoTopAppBarColors
 import cat.ri.noko.ui.util.rememberNokoHaptics
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.first
@@ -135,23 +134,7 @@ fun OnboardingScreen(onComplete: () -> Unit) {
     }
 
     fun shake(animatable: Animatable<Float, *>) {
-        scope.launch {
-            animatable.animateTo(
-                targetValue = 0f,
-                animationSpec = keyframes {
-                    durationMillis = 400
-                    0f at 0
-                    (-18f) at 50
-                    18f at 100
-                    (-14f) at 150
-                    14f at 200
-                    (-8f) at 250
-                    8f at 300
-                    (-4f) at 350
-                    0f at 400
-                },
-            )
-        }
+        scope.launch { animatable.shake() }
     }
 
     fun requiresAuth(): Boolean {
@@ -185,7 +168,7 @@ fun OnboardingScreen(onComplete: () -> Unit) {
                 OnboardingStep.Provider -> {
                     TopAppBar(
                         title = { Text("Noko") },
-                        colors = TopAppBarDefaults.topAppBarColors(containerColor = Color.Transparent),
+                        colors = nokoTopAppBarColors(),
                     )
                 }
                 OnboardingStep.ApiKey -> {
@@ -199,7 +182,7 @@ fun OnboardingScreen(onComplete: () -> Unit) {
                                 Icon(Icons.AutoMirrored.Rounded.ArrowBack, contentDescription = "Back")
                             }
                         },
-                        colors = TopAppBarDefaults.topAppBarColors(containerColor = Color.Transparent),
+                        colors = nokoTopAppBarColors(),
                     )
                 }
                 OnboardingStep.Model -> {
@@ -221,7 +204,7 @@ fun OnboardingScreen(onComplete: () -> Unit) {
                                 Text("Skip")
                             }
                         },
-                        colors = TopAppBarDefaults.topAppBarColors(containerColor = Color.Transparent),
+                        colors = nokoTopAppBarColors(),
                     )
                 }
                 OnboardingStep.Persona -> {
@@ -235,7 +218,7 @@ fun OnboardingScreen(onComplete: () -> Unit) {
                                 Icon(Icons.AutoMirrored.Rounded.ArrowBack, contentDescription = "Back")
                             }
                         },
-                        colors = TopAppBarDefaults.topAppBarColors(containerColor = Color.Transparent),
+                        colors = nokoTopAppBarColors(),
                     )
                 }
                 OnboardingStep.Character -> {
@@ -249,7 +232,7 @@ fun OnboardingScreen(onComplete: () -> Unit) {
                                 Icon(Icons.AutoMirrored.Rounded.ArrowBack, contentDescription = "Back")
                             }
                         },
-                        colors = TopAppBarDefaults.topAppBarColors(containerColor = Color.Transparent),
+                        colors = nokoTopAppBarColors(),
                     )
                 }
                 OnboardingStep.ImportCharacter -> {
@@ -263,7 +246,7 @@ fun OnboardingScreen(onComplete: () -> Unit) {
                                 Icon(Icons.AutoMirrored.Rounded.ArrowBack, contentDescription = "Back")
                             }
                         },
-                        colors = TopAppBarDefaults.topAppBarColors(containerColor = Color.Transparent),
+                        colors = nokoTopAppBarColors(),
                     )
                 }
             }
@@ -388,7 +371,7 @@ fun OnboardingScreen(onComplete: () -> Unit) {
                             { Text(keyError!!) }
                         } else null,
                         visualTransformation = PasswordVisualTransformation(),
-                        shape = RoundedCornerShape(20.dp),
+                        shape = NokoFieldShape,
                         modifier = Modifier
                             .fillMaxWidth()
                             .offset { IntOffset(keyShake.value.toInt(), 0) },

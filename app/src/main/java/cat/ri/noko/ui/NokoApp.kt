@@ -38,10 +38,12 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalDensity
 import androidx.lifecycle.DefaultLifecycleObserver
 import androidx.lifecycle.LifecycleOwner
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.compose.ui.unit.dp
+import cat.ri.noko.MainActivity
 import cat.ri.noko.core.ChatStorage
 import cat.ri.noko.core.SettingsManager
 import cat.ri.noko.core.ShortcutPublisher
@@ -167,17 +169,17 @@ fun NokoApp() {
             }
         }
 
-        val mainActivity = activity as? cat.ri.noko.MainActivity
-        val navigateToChat by mainActivity?.pendingNavigateToChat?.collectAsState()
-            ?: remember { mutableStateOf(false) }
-        LaunchedEffect(navigateToChat) {
-            if (navigateToChat) {
-                selectedTab = 1
-                mainActivity?.consumeNavigateToChat()
+        val mainActivity = activity as? MainActivity
+        LaunchedEffect(Unit) {
+            mainActivity?.pendingNavigateToChat?.collect { navigate ->
+                if (navigate) {
+                    selectedTab = 1
+                    mainActivity.consumeNavigateToChat()
+                }
             }
         }
 
-        val density = androidx.compose.ui.platform.LocalDensity.current
+        val density = LocalDensity.current
         val screenWidthPx = with(density) { LocalConfiguration.current.screenWidthDp.dp.roundToPx() }
         val animSpec = tween<Int>(durationMillis = 250)
 

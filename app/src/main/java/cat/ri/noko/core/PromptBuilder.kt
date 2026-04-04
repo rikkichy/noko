@@ -6,6 +6,12 @@ import cat.ri.noko.model.PromptPreset
 import cat.ri.noko.model.PromptSectionType
 import cat.ri.noko.model.api.ChatRequestMessage
 
+fun String.replaceTemplateVars(charName: String, userName: String): String =
+    replace("{{char}}", charName)
+        .replace("{{user}}", userName)
+        .replace("{char}", charName)
+        .replace("{user}", userName)
+
 object PromptBuilder {
 
     fun buildMessages(
@@ -25,28 +31,16 @@ object PromptBuilder {
             val systemParts = systemSections.mapNotNull { section ->
                 when (section.type) {
                     PromptSectionType.MAIN_PROMPT -> {
-                        section.content
-                            ?.replace("{{char}}", charName)
-                            ?.replace("{{user}}", userName)
-                            ?.replace("{char}", charName)
-                            ?.replace("{user}", userName)
+                        section.content?.replaceTemplateVars(charName, userName)
                     }
                     PromptSectionType.PERSONA_DESCRIPTION -> {
                         persona?.let {
-                            "${it.name}: ${it.description}"
-                                .replace("{{char}}", charName)
-                                .replace("{{user}}", userName)
-                                .replace("{char}", charName)
-                                .replace("{user}", userName)
+                            "${it.name}: ${it.description}".replaceTemplateVars(charName, userName)
                         }
                     }
                     PromptSectionType.CHARACTER_DESCRIPTION -> {
                         character?.let {
-                            "${it.name}: ${it.description}"
-                                .replace("{{char}}", charName)
-                                .replace("{{user}}", userName)
-                                .replace("{char}", charName)
-                                .replace("{user}", userName)
+                            "${it.name}: ${it.description}".replaceTemplateVars(charName, userName)
                         }
                     }
                     PromptSectionType.CHAT_HISTORY -> null

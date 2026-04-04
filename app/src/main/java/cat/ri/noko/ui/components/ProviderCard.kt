@@ -9,7 +9,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.shape.RoundedCornerShape
+import cat.ri.noko.ui.theme.NokoFieldShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.rounded.Cloud
@@ -52,7 +52,7 @@ fun CustomProviderCard(
         colors = CardDefaults.cardColors(
             containerColor = MaterialTheme.colorScheme.surfaceContainer,
         ),
-        shape = RoundedCornerShape(20.dp),
+        shape = NokoFieldShape,
     ) {
         Column(
             modifier = Modifier
@@ -100,7 +100,7 @@ fun CustomProviderCard(
                         supportingText = if (!customUrlValid) {
                             { Text("Use https:// (or http:// for localhost)") }
                         } else null,
-                        shape = RoundedCornerShape(20.dp),
+                        shape = NokoFieldShape,
                         modifier = Modifier.fillMaxWidth(),
                     )
 
@@ -145,7 +145,7 @@ fun ProviderCard(
         colors = CardDefaults.cardColors(
             containerColor = MaterialTheme.colorScheme.surfaceContainer,
         ),
-        shape = RoundedCornerShape(20.dp),
+        shape = NokoFieldShape,
     ) {
         Column(
             modifier = Modifier
@@ -214,7 +214,7 @@ fun ProviderCard(
                         supportingText = if (!urlValid) {
                             { Text("Use https:// (or http:// for localhost)") }
                         } else null,
-                        shape = RoundedCornerShape(20.dp),
+                        shape = NokoFieldShape,
                         modifier = Modifier.fillMaxWidth(),
                     )
                 }

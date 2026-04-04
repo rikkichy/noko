@@ -22,6 +22,7 @@ import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import cat.ri.noko.ui.theme.NokoFieldShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Clear
@@ -51,8 +52,6 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
-import androidx.compose.material3.TopAppBarDefaults
-import androidx.compose.ui.graphics.Color
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -74,6 +73,7 @@ import cat.ri.noko.core.ChatStorage
 import cat.ri.noko.core.SettingsManager
 import cat.ri.noko.model.ChatSessionMeta
 import cat.ri.noko.model.PersonaEntry
+import cat.ri.noko.ui.theme.nokoTopAppBarColors
 import cat.ri.noko.ui.util.rememberNokoHaptics
 import coil3.compose.AsyncImage
 import coil3.request.ImageRequest
@@ -201,7 +201,7 @@ fun HomeScreen(
                         }
                     }
                 },
-                colors = TopAppBarDefaults.topAppBarColors(containerColor = Color.Transparent),
+                colors = nokoTopAppBarColors(),
             )
         },
     ) { padding ->
@@ -296,7 +296,7 @@ fun HomeScreen(
                             }
                         },
                         singleLine = true,
-                        shape = RoundedCornerShape(20.dp),
+                        shape = NokoFieldShape,
                         modifier = Modifier.fillMaxWidth(),
                     )
 
@@ -424,7 +424,7 @@ fun HomeScreen(
                                                 }
                                             },
                                         ),
-                                    shape = RoundedCornerShape(20.dp),
+                                    shape = NokoFieldShape,
                                     color = if (isSelected) MaterialTheme.colorScheme.secondaryContainer
                                         else MaterialTheme.colorScheme.surfaceContainerLow,
                                 ) {

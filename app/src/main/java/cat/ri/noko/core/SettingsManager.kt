@@ -209,7 +209,10 @@ object SettingsManager {
         get() = appContext.dataStore.data.map { it[BIOMETRIC_AUTH] ?: false }
 
     suspend fun setBiometricAuth(enabled: Boolean) {
-        appContext.dataStore.edit { it[BIOMETRIC_AUTH] = enabled }
+        appContext.dataStore.edit { prefs ->
+            prefs[BIOMETRIC_AUTH] = enabled
+            if (enabled) prefs[NOKO_POLKIT_STREAM_NOTIFICATIONS] = false
+        }
     }
 
     val allEntries: Flow<List<PersonaEntry>>

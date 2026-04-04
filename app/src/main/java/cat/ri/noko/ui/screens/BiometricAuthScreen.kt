@@ -11,7 +11,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.shape.RoundedCornerShape
+import cat.ri.noko.ui.theme.NokoFieldShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.Fingerprint
 import androidx.compose.material.icons.rounded.Warning
@@ -161,7 +161,7 @@ private fun BiometricUnavailableScreen(onAcknowledge: () -> Unit) {
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(top = 24.dp),
-                shape = RoundedCornerShape(20.dp),
+                shape = NokoFieldShape,
             ) {
                 Text("Continue")
             }

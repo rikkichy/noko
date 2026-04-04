@@ -5,7 +5,7 @@ import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.biometric.BiometricPrompt
 import androidx.compose.animation.core.Animatable
-import androidx.compose.animation.core.keyframes
+import cat.ri.noko.ui.util.shake
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.combinedClickable
@@ -22,7 +22,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
+import cat.ri.noko.ui.theme.NokoFieldShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Add
@@ -48,7 +48,6 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
-import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -60,7 +59,6 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalFocusManager
@@ -77,6 +75,7 @@ import cat.ri.noko.core.AvatarStorage
 import cat.ri.noko.core.CharacterCodec
 import cat.ri.noko.core.ChatStorage
 import cat.ri.noko.core.SettingsManager
+import cat.ri.noko.ui.theme.nokoTopAppBarColors
 import cat.ri.noko.model.PersonaEntry
 import cat.ri.noko.model.PersonaType
 import cat.ri.noko.ui.util.rememberNokoHaptics
@@ -199,7 +198,7 @@ fun PersonaListScreen(
                         }
                     }
                 },
-                colors = TopAppBarDefaults.topAppBarColors(containerColor = Color.Transparent),
+                colors = nokoTopAppBarColors(),
             )
         },
         floatingActionButton = {
@@ -340,7 +339,7 @@ fun PersonaListScreen(
                             }
                         },
                         singleLine = true,
-                        shape = RoundedCornerShape(20.dp),
+                        shape = NokoFieldShape,
                         modifier = Modifier
                             .fillMaxWidth()
                             .padding(horizontal = 16.dp)
@@ -667,7 +666,7 @@ fun PersonaListScreen(
                         visualTransformation = PasswordVisualTransformation(),
                         singleLine = true,
                         isError = passphraseError != null,
-                        shape = RoundedCornerShape(20.dp),
+                        shape = NokoFieldShape,
                         modifier = Modifier
                             .fillMaxWidth()
                             .offset { IntOffset(passphraseShakeOffset.value.toInt(), 0) },
@@ -685,7 +684,7 @@ fun PersonaListScreen(
                         singleLine = true,
                         isError = passphraseError != null,
                         supportingText = passphraseError?.let { err -> { Text(err) } },
-                        shape = RoundedCornerShape(20.dp),
+                        shape = NokoFieldShape,
                         modifier = Modifier
                             .fillMaxWidth()
                             .offset { IntOffset(passphraseShakeOffset.value.toInt(), 0) },
@@ -700,42 +699,14 @@ fun PersonaListScreen(
                                 passphraseError = "At least 8 characters"
                                 scope.launch {
                                     haptics.reject()
-                                    passphraseShakeOffset.animateTo(
-                                        targetValue = 0f,
-                                        animationSpec = keyframes {
-                                            durationMillis = 400
-                                            0f at 0
-                                            (-18f) at 50
-                                            18f at 100
-                                            (-14f) at 150
-                                            14f at 200
-                                            (-8f) at 250
-                                            8f at 300
-                                            (-4f) at 350
-                                            0f at 400
-                                        },
-                                    )
+                                    passphraseShakeOffset.shake()
                                 }
                             }
                             exportPassphrase != exportPassphraseConfirm -> {
                                 passphraseError = "Passphrases don't match"
                                 scope.launch {
                                     haptics.reject()
-                                    passphraseShakeOffset.animateTo(
-                                        targetValue = 0f,
-                                        animationSpec = keyframes {
-                                            durationMillis = 400
-                                            0f at 0
-                                            (-18f) at 50
-                                            18f at 100
-                                            (-14f) at 150
-                                            14f at 200
-                                            (-8f) at 250
-                                            8f at 300
-                                            (-4f) at 350
-                                            0f at 400
-                                        },
-                                    )
+                                    passphraseShakeOffset.shake()
                                 }
                             }
                             else -> {

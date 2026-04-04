@@ -13,6 +13,10 @@ import kotlinx.coroutines.flow.asStateFlow
 
 class MainActivity : FragmentActivity() {
 
+    companion object {
+        const val EXTRA_NAVIGATE_TO_CHAT = "navigate_to_chat"
+    }
+
     private val _pendingNavigateToChat = MutableStateFlow(false)
     val pendingNavigateToChat: StateFlow<Boolean> = _pendingNavigateToChat.asStateFlow()
 
@@ -32,9 +36,9 @@ class MainActivity : FragmentActivity() {
     }
 
     private fun handleIntent(intent: Intent) {
-        if (intent.getBooleanExtra("navigate_to_chat", false)) {
+        if (intent.getBooleanExtra(EXTRA_NAVIGATE_TO_CHAT, false)) {
             _pendingNavigateToChat.value = true
-            intent.removeExtra("navigate_to_chat")
+            intent.removeExtra(EXTRA_NAVIGATE_TO_CHAT)
         }
     }
 }

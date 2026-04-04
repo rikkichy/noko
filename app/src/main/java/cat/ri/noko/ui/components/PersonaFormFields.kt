@@ -11,7 +11,7 @@ import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
+import cat.ri.noko.ui.theme.NokoFieldShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material3.Icon
@@ -106,7 +106,7 @@ fun PersonaFormFields(
         supportingText = if (nameError) {
             { Text("Name is required") }
         } else null,
-        shape = RoundedCornerShape(20.dp),
+        shape = NokoFieldShape,
         modifier = Modifier
             .fillMaxWidth()
             .offset { IntOffset(nameShakeOffset.toInt(), 0) },
@@ -121,7 +121,7 @@ fun PersonaFormFields(
         supportingText = if (descError) {
             { Text("Description is required") }
         } else null,
-        shape = RoundedCornerShape(20.dp),
+        shape = NokoFieldShape,
         modifier = Modifier
             .fillMaxWidth()
             .heightIn(min = 160.dp)
@@ -134,7 +134,7 @@ fun PersonaFormFields(
             onValueChange = { if (it.length <= 5_000) onGreetingChange(it) },
             label = { Text("Greeting Message") },
             placeholder = { Text("First message when starting a chat...") },
-            shape = RoundedCornerShape(20.dp),
+            shape = NokoFieldShape,
             modifier = Modifier
                 .fillMaxWidth()
                 .heightIn(min = 120.dp),

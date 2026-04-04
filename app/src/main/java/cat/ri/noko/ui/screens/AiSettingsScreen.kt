@@ -12,7 +12,7 @@ import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.RoundedCornerShape
+import cat.ri.noko.ui.theme.NokoFieldShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
@@ -37,7 +37,6 @@ import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
-import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -50,7 +49,6 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import cat.ri.noko.core.SettingsManager
@@ -60,6 +58,7 @@ import cat.ri.noko.model.PromptSection
 import cat.ri.noko.model.PromptSectionType
 import cat.ri.noko.model.builtInPresets
 import cat.ri.noko.model.duplicate
+import cat.ri.noko.ui.theme.nokoTopAppBarColors
 import cat.ri.noko.ui.util.rememberNokoHaptics
 import kotlinx.coroutines.launch
 import java.util.UUID
@@ -133,7 +132,7 @@ fun AiSettingsScreen(onBack: () -> Unit) {
                         }
                     }
                 },
-                colors = TopAppBarDefaults.topAppBarColors(containerColor = Color.Transparent),
+                colors = nokoTopAppBarColors(),
             )
         },
     ) { padding ->
@@ -386,7 +385,7 @@ fun AiSettingsScreen(onBack: () -> Unit) {
                     onValueChange = { if (it.length <= 50) name = it },
                     label = { Text("Name") },
                     singleLine = true,
-                    shape = RoundedCornerShape(20.dp),
+                    shape = NokoFieldShape,
                     modifier = Modifier.fillMaxWidth(),
                 )
             },
@@ -585,7 +584,7 @@ private fun PromptSectionCard(
                     modifier = Modifier.fillMaxWidth(),
                     enabled = section.enabled && enabled,
                     minLines = 2,
-                    shape = RoundedCornerShape(20.dp),
+                    shape = NokoFieldShape,
                 )
             }
             PromptSectionType.PERSONA_DESCRIPTION -> {

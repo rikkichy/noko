@@ -31,7 +31,6 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
-import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -39,12 +38,12 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
 import androidx.fragment.app.FragmentActivity
 import cat.ri.noko.core.SettingsManager
+import cat.ri.noko.ui.theme.nokoTopAppBarColors
 import cat.ri.noko.ui.util.rememberNokoHaptics
 import kotlinx.coroutines.launch
 
@@ -76,7 +75,7 @@ fun NokoPolkitScreen(onBack: () -> Unit) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
                     }
                 },
-                colors = TopAppBarDefaults.topAppBarColors(containerColor = Color.Transparent),
+                colors = nokoTopAppBarColors(),
             )
         },
     ) { padding ->
@@ -244,10 +243,7 @@ fun NokoPolkitScreen(onBack: () -> Unit) {
                                         result: BiometricPrompt.AuthenticationResult,
                                     ) {
                                         if (value) haptics.toggleOn() else haptics.toggleOff()
-                                        scope.launch {
-                                            SettingsManager.setBiometricAuth(value)
-                                            if (value) SettingsManager.setNokoPolkitStreamNotifications(false)
-                                        }
+                                        scope.launch { SettingsManager.setBiometricAuth(value) }
                                     }
 
                                     override fun onAuthenticationError(

@@ -12,7 +12,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.shape.RoundedCornerShape
+import cat.ri.noko.ui.theme.NokoFieldShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Check
@@ -30,7 +30,6 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.TopAppBar
-import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -41,13 +40,13 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import cat.ri.noko.core.SettingsManager
 import cat.ri.noko.core.api.ApiClient
 import cat.ri.noko.core.api.humanizeException
 import cat.ri.noko.model.api.ModelInfo
+import cat.ri.noko.ui.theme.nokoTopAppBarColors
 import cat.ri.noko.model.getProviderById
 import cat.ri.noko.ui.util.rememberNokoHaptics
 import kotlinx.coroutines.launch
@@ -64,7 +63,7 @@ fun ModelListScreen(onBack: () -> Unit) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
                     }
                 },
-                colors = TopAppBarDefaults.topAppBarColors(containerColor = Color.Transparent),
+                colors = nokoTopAppBarColors(),
             )
         },
     ) { padding ->
@@ -141,7 +140,7 @@ fun ModelListContent(
             placeholder = { Text("Search models...") },
             leadingIcon = { Icon(Icons.Filled.Search, contentDescription = null) },
             singleLine = true,
-            shape = RoundedCornerShape(20.dp),
+            shape = NokoFieldShape,
         )
 
         when {

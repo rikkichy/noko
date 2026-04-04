@@ -3,7 +3,7 @@ package cat.ri.noko.ui.screens
 import android.graphics.BitmapFactory
 import android.net.Uri
 import androidx.compose.animation.core.Animatable
-import androidx.compose.animation.core.keyframes
+import cat.ri.noko.ui.util.shake
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -17,7 +17,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
+import cat.ri.noko.ui.theme.NokoFieldShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Check
@@ -35,7 +35,6 @@ import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
-import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -47,7 +46,6 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.input.PasswordVisualTransformation
@@ -58,6 +56,7 @@ import cat.ri.noko.core.CharacterCodec
 import cat.ri.noko.core.SettingsManager
 import cat.ri.noko.model.PersonaEntry
 import cat.ri.noko.model.PersonaType
+import cat.ri.noko.ui.theme.nokoTopAppBarColors
 import cat.ri.noko.ui.util.rememberNokoHaptics
 import coil3.compose.AsyncImage
 import coil3.request.ImageRequest
@@ -85,7 +84,7 @@ fun CharacterImportScreen(
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
                     }
                 },
-                colors = TopAppBarDefaults.topAppBarColors(containerColor = Color.Transparent),
+                colors = nokoTopAppBarColors(),
             )
         },
     ) { padding ->
@@ -209,7 +208,7 @@ fun CharacterImportContent(
                     singleLine = true,
                     isError = passphraseError != null,
                     supportingText = passphraseError?.let { err -> { Text(err) } },
-                    shape = RoundedCornerShape(20.dp),
+                    shape = NokoFieldShape,
                     modifier = Modifier
                         .fillMaxWidth()
                         .offset { IntOffset(shakeOffset.value.toInt(), 0) },
@@ -221,21 +220,7 @@ fun CharacterImportContent(
                             passphraseError = "Enter a passphrase"
                             scope.launch {
                                 haptics.reject()
-                                shakeOffset.animateTo(
-                                    targetValue = 0f,
-                                    animationSpec = keyframes {
-                                        durationMillis = 400
-                                        0f at 0
-                                        (-18f) at 50
-                                        18f at 100
-                                        (-14f) at 150
-                                        14f at 200
-                                        (-8f) at 250
-                                        8f at 300
-                                        (-4f) at 350
-                                        0f at 400
-                                    },
-                                )
+                                shakeOffset.shake()
                             }
                             return@Button
                         }
@@ -257,28 +242,14 @@ fun CharacterImportContent(
                                 state = ImportState.PASSPHRASE
                                 passphraseError = "Wrong passphrase"
                                 haptics.reject()
-                                shakeOffset.animateTo(
-                                    targetValue = 0f,
-                                    animationSpec = keyframes {
-                                        durationMillis = 400
-                                        0f at 0
-                                        (-18f) at 50
-                                        18f at 100
-                                        (-14f) at 150
-                                        14f at 200
-                                        (-8f) at 250
-                                        8f at 300
-                                        (-4f) at 350
-                                        0f at 400
-                                    },
-                                )
+                                shakeOffset.shake()
                             } else {
                                 handleResult(result)
                             }
                         }
                     },
                     modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(20.dp),
+                    shape = NokoFieldShape,
                 ) {
                     Text("Decrypt")
                 }
@@ -314,7 +285,7 @@ fun CharacterImportContent(
                             colors = CardDefaults.cardColors(
                                 containerColor = MaterialTheme.colorScheme.surfaceContainer,
                             ),
-                            shape = RoundedCornerShape(20.dp),
+                            shape = NokoFieldShape,
                         ) {
                             Row(
                                 modifier = Modifier
@@ -419,7 +390,7 @@ fun CharacterImportContent(
                     modifier = Modifier
                         .fillMaxWidth()
                         .padding(16.dp),
-                    shape = RoundedCornerShape(20.dp),
+                    shape = NokoFieldShape,
                 ) {
                     Icon(Icons.Filled.Check, contentDescription = null)
                     Spacer(Modifier.size(8.dp))
@@ -462,7 +433,7 @@ fun CharacterImportContent(
                     )
                     Button(
                         onClick = onBack,
-                        shape = RoundedCornerShape(20.dp),
+                        shape = NokoFieldShape,
                     ) {
                         Text("Go back")
                     }

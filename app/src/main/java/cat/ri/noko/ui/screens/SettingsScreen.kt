@@ -1,7 +1,7 @@
 package cat.ri.noko.ui.screens
 
 import androidx.compose.animation.core.Animatable
-import androidx.compose.animation.core.keyframes
+import cat.ri.noko.ui.util.shake
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -14,7 +14,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.RoundedCornerShape
+import cat.ri.noko.ui.theme.NokoFieldShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.KeyboardArrowRight
@@ -37,8 +37,6 @@ import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
-import androidx.compose.material3.TopAppBarDefaults
-import androidx.compose.ui.graphics.Color
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -60,6 +58,7 @@ import cat.ri.noko.core.SettingsManager
 import cat.ri.noko.core.api.ApiClient
 import cat.ri.noko.model.PersonaType
 import cat.ri.noko.model.getProviderById
+import cat.ri.noko.ui.theme.nokoTopAppBarColors
 import cat.ri.noko.ui.util.rememberNokoHaptics
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -93,7 +92,7 @@ fun SettingsScreen(navController: NavController) {
         topBar = {
             TopAppBar(
                 title = { Text("Settings") },
-                colors = TopAppBarDefaults.topAppBarColors(containerColor = Color.Transparent),
+                colors = nokoTopAppBarColors(),
             )
         },
     ) { padding ->
@@ -260,7 +259,7 @@ fun SettingsScreen(navController: NavController) {
                                 supportingText = if (keyError != null) {
                                     { Text(keyError!!) }
                                 } else null,
-                                shape = RoundedCornerShape(20.dp),
+                                shape = NokoFieldShape,
                             )
 
                             Row(
@@ -284,21 +283,7 @@ fun SettingsScreen(navController: NavController) {
                                             }.onFailure { e ->
                                                 keyError = cat.ri.noko.core.api.humanizeException(e)
                                                 haptics.reject()
-                                                shakeOffset.animateTo(
-                                                    targetValue = 0f,
-                                                    animationSpec = keyframes {
-                                                        durationMillis = 400
-                                                        0f at 0
-                                                        (-18f) at 50
-                                                        18f at 100
-                                                        (-14f) at 150
-                                                        14f at 200
-                                                        (-8f) at 250
-                                                        8f at 300
-                                                        (-4f) at 350
-                                                        0f at 400
-                                                    },
-                                                )
+                                                shakeOffset.shake()
 
                                                 if (apiKey.isNotBlank()) {
                                                     ApiClient.configure(apiKey, providerBaseUrl, providerId)
