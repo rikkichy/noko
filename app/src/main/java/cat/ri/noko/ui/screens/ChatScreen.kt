@@ -1,5 +1,12 @@
 package cat.ri.noko.ui.screens
 
+import android.app.PendingIntent
+import android.content.Intent
+import androidx.core.app.NotificationCompat
+import androidx.core.app.NotificationManagerCompat
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.ProcessLifecycleOwner
+import cat.ri.noko.MainActivity
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.animateContentSize
 import androidx.compose.animation.expandVertically
@@ -66,6 +73,7 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextField
@@ -223,6 +231,7 @@ fun ChatScreen(
     val nokoGuard by SettingsManager.nokoGuard.collectAsState(initial = true)
     val nokoPolkitTrimEmojis by SettingsManager.nokoPolkitTrimEmojis.collectAsState(initial = true)
     val nokoPolkitStructureActions by SettingsManager.nokoPolkitStructureActions.collectAsState(initial = true)
+    val streamNotifications by SettingsManager.nokoPolkitStreamNotifications.collectAsState(initial = false)
     val apiKey by SettingsManager.apiKey.collectAsState(initial = "")
     val modelId by SettingsManager.selectedModelId.collectAsState(initial = "")
     val presets by SettingsManager.promptPresets.collectAsState(initial = listOf(defaultPromptPreset()))
@@ -427,6 +436,34 @@ fun ChatScreen(
                 isGenerating = false
                 streamJob = null
                 saveCurrentChat()
+                if (streamNotifications && assistantIdx < messages.size) {
+                    val msg = messages[assistantIdx]
+                    val isBackground = !ProcessLifecycleOwner.get().lifecycle.currentState.isAtLeast(Lifecycle.State.RESUMED)
+                    if (isBackground && msg.content.isNotBlank() && !msg.stoppedByUser && !msg.guardBlocked) {
+                        val titles = listOf(
+                            "${activeCharacter?.name ?: "AI"} replied to you!",
+                            "${activeCharacter?.name ?: "AI"} answered you!",
+                            "${activeCharacter?.name ?: "AI"} responded!",
+                            "${activeCharacter?.name ?: "AI"} wrote back!",
+                        )
+                        val preview = msg.content.take(100).let { if (msg.content.length > 100) "$it..." else it }
+                        val tapIntent = PendingIntent.getActivity(
+                            context, 0,
+                            Intent(context, MainActivity::class.java),
+                            PendingIntent.FLAG_IMMUTABLE,
+                        )
+                        val notification = NotificationCompat.Builder(context, "stream_complete")
+                            .setSmallIcon(android.R.drawable.ic_dialog_info)
+                            .setContentTitle(titles.random())
+                            .setContentText(preview)
+                            .setContentIntent(tapIntent)
+                            .setAutoCancel(true)
+                            .build()
+                        runCatching {
+                            NotificationManagerCompat.from(context).notify(currentChatId.hashCode(), notification)
+                        }
+                    }
+                }
             }
         }
     }
@@ -1405,6 +1442,12 @@ private fun PersonaPickerSheet(
         onDismissRequest = onDismiss,
         sheetState = sheetState,
     ) {
+        var searchQuery by remember { mutableStateOf("") }
+        val filtered = remember(entries, searchQuery) {
+            if (searchQuery.isBlank()) entries
+            else entries.filter { it.name.contains(searchQuery, ignoreCase = true) }
+        }
+
         Column(
             modifier = Modifier
                 .fillMaxWidth()
@@ -1415,6 +1458,19 @@ private fun PersonaPickerSheet(
                 style = MaterialTheme.typography.titleMedium,
                 modifier = Modifier.padding(horizontal = 24.dp, vertical = 12.dp),
             )
+
+            if (entries.size >= 5) {
+                OutlinedTextField(
+                    value = searchQuery,
+                    onValueChange = { searchQuery = it },
+                    placeholder = { Text("Search..") },
+                    singleLine = true,
+                    shape = RoundedCornerShape(20.dp),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 24.dp, vertical = 4.dp),
+                )
+            }
 
             if (entries.isEmpty()) {
                 Box(
@@ -1430,7 +1486,7 @@ private fun PersonaPickerSheet(
                     )
                 }
             } else {
-                entries.forEach { entry ->
+                filtered.forEach { entry ->
                     val isSelected = entry.id == selectedId
                     Surface(
                         modifier = Modifier

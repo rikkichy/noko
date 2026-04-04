@@ -35,7 +35,7 @@ object ShortcutPublisher {
             val character = characters[charId]!!
             ShortcutInfoCompat.Builder(context, "char_$charId")
                 .setShortLabel(character.name)
-                .setLongLabel("Chat with ${character.name}")
+                .setLongLabel(character.name)
                 .setIcon(loadIcon(context, character) ?: IconCompat.createWithResource(context, android.R.drawable.ic_menu_send))
                 .setIntent(
                     Intent(context, MainActivity::class.java).apply {

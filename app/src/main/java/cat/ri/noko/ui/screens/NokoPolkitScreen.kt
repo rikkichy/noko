@@ -1,5 +1,10 @@
 package cat.ri.noko.ui.screens
 
+import android.Manifest
+import android.content.pm.PackageManager
+import android.os.Build
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.biometric.BiometricManager
 import androidx.biometric.BiometricManager.Authenticators.BIOMETRIC_STRONG
 import androidx.biometric.BiometricPrompt
@@ -50,6 +55,7 @@ fun NokoPolkitScreen(onBack: () -> Unit) {
     val haptics = rememberNokoHaptics()
     val trimEmojis by SettingsManager.nokoPolkitTrimEmojis.collectAsState(initial = true)
     val structureActions by SettingsManager.nokoPolkitStructureActions.collectAsState(initial = true)
+    val streamNotifications by SettingsManager.nokoPolkitStreamNotifications.collectAsState(initial = false)
     val biometricAuth by SettingsManager.biometricAuth.collectAsState(initial = false)
     val screenSecurity by SettingsManager.screenSecurity.collectAsState(initial = false)
     val incognitoKeyboard by SettingsManager.incognitoKeyboard.collectAsState(initial = false)
@@ -142,6 +148,51 @@ fun NokoPolkitScreen(onBack: () -> Unit) {
                             onCheckedChange = { value ->
                                 if (value) haptics.toggleOn() else haptics.toggleOff()
                                 scope.launch { SettingsManager.setNokoPolkitStructureActions(value) }
+                            },
+                        )
+                    }
+
+                    HorizontalDivider()
+
+                    val notifPermissionLauncher = rememberLauncherForActivityResult(
+                        ActivityResultContracts.RequestPermission(),
+                    ) { granted ->
+                        if (granted) {
+                            haptics.toggleOn()
+                            scope.launch { SettingsManager.setNokoPolkitStreamNotifications(true) }
+                        }
+                    }
+
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                    ) {
+                        Column(modifier = Modifier.weight(1f)) {
+                            Text("Stream notifications")
+                            Text(
+                                "Notify when AI finishes replying in the background.",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            )
+                        }
+                        Spacer(Modifier.size(12.dp))
+                        Switch(
+                            checked = streamNotifications,
+                            onCheckedChange = { value ->
+                                if (value) {
+                                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU &&
+                                        ContextCompat.checkSelfPermission(context, Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED
+                                    ) {
+                                        notifPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
+                                    } else {
+                                        haptics.toggleOn()
+                                        scope.launch { SettingsManager.setNokoPolkitStreamNotifications(true) }
+                                    }
+                                } else {
+                                    haptics.toggleOff()
+                                    scope.launch { SettingsManager.setNokoPolkitStreamNotifications(false) }
+                                }
                             },
                         )
                     }

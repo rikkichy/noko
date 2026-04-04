@@ -43,6 +43,7 @@ object SettingsManager {
     private val NOKO_POLKIT = booleanPreferencesKey("noko_polkit")
     private val NOKO_POLKIT_TRIM_EMOJIS = booleanPreferencesKey("noko_polkit_trim_emojis")
     private val NOKO_POLKIT_STRUCTURE_ACTIONS = booleanPreferencesKey("noko_polkit_structure_actions")
+    private val NOKO_POLKIT_STREAM_NOTIFICATIONS = booleanPreferencesKey("noko_polkit_stream_notifications")
     private val SCREEN_SECURITY = booleanPreferencesKey("screen_security")
     private val INCOGNITO_KEYBOARD = booleanPreferencesKey("incognito_keyboard")
     private val CLEAR_CLIPBOARD = booleanPreferencesKey("clear_clipboard")
@@ -164,6 +165,13 @@ object SettingsManager {
 
     suspend fun setNokoPolkitStructureActions(enabled: Boolean) {
         appContext.dataStore.edit { it[NOKO_POLKIT_STRUCTURE_ACTIONS] = enabled }
+    }
+
+    val nokoPolkitStreamNotifications: Flow<Boolean>
+        get() = appContext.dataStore.data.map { it[NOKO_POLKIT_STREAM_NOTIFICATIONS] ?: false }
+
+    suspend fun setNokoPolkitStreamNotifications(enabled: Boolean) {
+        appContext.dataStore.edit { it[NOKO_POLKIT_STREAM_NOTIFICATIONS] = enabled }
     }
 
     val screenSecurity: Flow<Boolean>
