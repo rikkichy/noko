@@ -110,6 +110,15 @@ object ChatStorage {
         }
     }
 
+    suspend fun deleteChats(ids: Set<String>) = withContext(Dispatchers.IO) {
+        _recentChats.update { current ->
+            current.filter { it.id in ids }.forEach { secureDelete(chatFile(it.id)) }
+            val updated = current.filterNot { it.id in ids }
+            saveIndex(updated)
+            updated
+        }
+    }
+
     suspend fun deleteChatsForCharacter(characterId: String) = withContext(Dispatchers.IO) {
         _recentChats.update { current ->
             val toDelete = current.filter { it.characterId == characterId }

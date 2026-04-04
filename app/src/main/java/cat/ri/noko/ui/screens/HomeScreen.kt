@@ -1,5 +1,7 @@
 package cat.ri.noko.ui.screens
 
+import androidx.activity.compose.BackHandler
+import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -23,6 +25,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Clear
+import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Lock
@@ -35,6 +38,7 @@ import androidx.compose.material3.AssistChip
 import androidx.compose.material3.AssistChipDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.Checkbox
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.Icon
@@ -135,11 +139,17 @@ fun HomeScreen(
     var searchQuery by remember { mutableStateOf("") }
     var selectedCharacterId by remember { mutableStateOf<String?>(null) }
     var expandedChatId by remember { mutableStateOf<String?>(null) }
+    var selectedChatIds by remember { mutableStateOf(emptySet<String>()) }
+    val inSelectionMode = selectedChatIds.isNotEmpty()
+    var showBulkDeleteDialog by remember { mutableStateOf(false) }
+
+    BackHandler(enabled = inSelectionMode) { selectedChatIds = emptySet() }
 
     LaunchedEffect(refreshKey) {
         searchQuery = ""
         selectedCharacterId = null
         expandedChatId = null
+        selectedChatIds = emptySet()
         focusManager.clearFocus()
     }
     var deleteTarget by remember { mutableStateOf<ChatSessionMeta?>(null) }
@@ -168,16 +178,27 @@ fun HomeScreen(
         topBar = {
             TopAppBar(
                 title = {
-                    Column {
-                        Text(
-                            "Noko",
-                            style = MaterialTheme.typography.titleLarge,
-                        )
-                        Text(
-                            greeting,
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
-                        )
+                    if (inSelectionMode) {
+                        Text("${selectedChatIds.size} selected")
+                    } else {
+                        Column {
+                            Text(
+                                "Noko",
+                                style = MaterialTheme.typography.titleLarge,
+                            )
+                            Text(
+                                greeting,
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
+                            )
+                        }
+                    }
+                },
+                navigationIcon = {
+                    if (inSelectionMode) {
+                        IconButton(onClick = { selectedChatIds = emptySet() }) {
+                            Icon(Icons.Filled.Close, contentDescription = "Cancel selection")
+                        }
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(containerColor = Color.Transparent),
@@ -190,70 +211,94 @@ fun HomeScreen(
                 .padding(padding)
                 .padding(horizontal = 16.dp, vertical = 8.dp),
         ) {
-            DidYouKnowCard(recentChats, entryMap, refreshKey)
-
-            Spacer(Modifier.height(16.dp))
-
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(12.dp),
-            ) {
-                FilledTonalButton(
-                    onClick = onNewChat,
-                    modifier = Modifier
-                        .weight(1f)
-                        .height(56.dp),
-                    shape = RoundedCornerShape(16.dp),
-                ) {
-                    Icon(Icons.Filled.Add, contentDescription = null)
-                    Spacer(Modifier.width(8.dp))
-                    Text("New chat")
+            AnimatedVisibility(visible = !inSelectionMode) {
+                Column {
+                    DidYouKnowCard(recentChats, entryMap, refreshKey)
+                    Spacer(Modifier.height(16.dp))
                 }
-                OutlinedButton(
-                    onClick = onNewSecretChat,
+            }
+
+            if (inSelectionMode) {
+                FilledTonalButton(
+                    onClick = {
+                        haptics.tap()
+                        showBulkDeleteDialog = true
+                    },
                     modifier = Modifier
-                        .weight(1f)
+                        .fillMaxWidth()
                         .height(56.dp),
                     shape = RoundedCornerShape(16.dp),
                 ) {
-                    Icon(Icons.Filled.Lock, contentDescription = null)
+                    Icon(Icons.Filled.Delete, contentDescription = null)
                     Spacer(Modifier.width(8.dp))
-                    Text("Secret chat")
+                    Text(
+                        "Delete ${selectedChatIds.size}",
+                        color = MaterialTheme.colorScheme.error,
+                    )
+                }
+            } else {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(12.dp),
+                ) {
+                    FilledTonalButton(
+                        onClick = onNewChat,
+                        modifier = Modifier
+                            .weight(1f)
+                            .height(56.dp),
+                        shape = RoundedCornerShape(16.dp),
+                    ) {
+                        Icon(Icons.Filled.Add, contentDescription = null)
+                        Spacer(Modifier.width(8.dp))
+                        Text("New chat")
+                    }
+                    OutlinedButton(
+                        onClick = onNewSecretChat,
+                        modifier = Modifier
+                            .weight(1f)
+                            .height(56.dp),
+                        shape = RoundedCornerShape(16.dp),
+                    ) {
+                        Icon(Icons.Filled.Lock, contentDescription = null)
+                        Spacer(Modifier.width(8.dp))
+                        Text("Secret chat")
+                    }
                 }
             }
 
             if (recentChats.isNotEmpty()) {
                 Spacer(Modifier.height(20.dp))
 
-                OutlinedTextField(
-                    value = searchQuery,
-                    onValueChange = { searchQuery = it },
-                    placeholder = { Text("Search chats..") },
-                    leadingIcon = {
-                        Icon(
-                            Icons.Filled.Search,
-                            contentDescription = null,
-                            tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                        )
-                    },
-                    trailingIcon = {
-                        if (searchQuery.isNotEmpty()) {
-                            IconButton(onClick = {
-                                searchQuery = ""
-                                focusManager.clearFocus()
-                            }) {
-                                Icon(
-                                    Icons.Filled.Clear,
-                                    contentDescription = "Clear",
-                                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                                )
+                if (!inSelectionMode) {
+                    OutlinedTextField(
+                        value = searchQuery,
+                        onValueChange = { searchQuery = it },
+                        placeholder = { Text("Search chats..") },
+                        leadingIcon = {
+                            Icon(
+                                Icons.Filled.Search,
+                                contentDescription = null,
+                                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                            )
+                        },
+                        trailingIcon = {
+                            if (searchQuery.isNotEmpty()) {
+                                IconButton(onClick = {
+                                    searchQuery = ""
+                                    focusManager.clearFocus()
+                                }) {
+                                    Icon(
+                                        Icons.Filled.Clear,
+                                        contentDescription = "Clear",
+                                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    )
+                                }
                             }
-                        }
-                    },
-                    singleLine = true,
-                    shape = RoundedCornerShape(20.dp),
-                    modifier = Modifier.fillMaxWidth(),
-                )
+                        },
+                        singleLine = true,
+                        shape = RoundedCornerShape(20.dp),
+                        modifier = Modifier.fillMaxWidth(),
+                    )
 
                 if (uniqueCharacters.size >= 2) {
                     Spacer(Modifier.height(12.dp))
@@ -322,6 +367,7 @@ fun HomeScreen(
                         }
                     }
                 }
+                }
 
                 Spacer(Modifier.height(16.dp))
 
@@ -351,13 +397,17 @@ fun HomeScreen(
                         verticalArrangement = Arrangement.spacedBy(4.dp),
                     ) {
                         items(filteredChats, key = { it.id }) { meta ->
+                            val isSelected = meta.id in selectedChatIds
                             Column {
                                 Surface(
                                     modifier = Modifier
                                         .fillMaxWidth()
                                         .combinedClickable(
                                             onClick = {
-                                                if (expandedChatId == meta.id) {
+                                                if (inSelectionMode) {
+                                                    selectedChatIds = if (isSelected) selectedChatIds - meta.id
+                                                        else selectedChatIds + meta.id
+                                                } else if (expandedChatId == meta.id) {
                                                     expandedChatId = null
                                                 } else {
                                                     onOpenRecentChat(meta)
@@ -365,11 +415,18 @@ fun HomeScreen(
                                             },
                                             onLongClick = {
                                                 haptics.tap()
-                                                expandedChatId = if (expandedChatId == meta.id) null else meta.id
+                                                if (inSelectionMode) {
+                                                    selectedChatIds = if (isSelected) selectedChatIds - meta.id
+                                                        else selectedChatIds + meta.id
+                                                } else {
+                                                    selectedChatIds = selectedChatIds + meta.id
+                                                    expandedChatId = null
+                                                }
                                             },
                                         ),
                                     shape = RoundedCornerShape(20.dp),
-                                    color = MaterialTheme.colorScheme.surfaceContainerLow,
+                                    color = if (isSelected) MaterialTheme.colorScheme.secondaryContainer
+                                        else MaterialTheme.colorScheme.surfaceContainerLow,
                                 ) {
                                     Row(
                                         modifier = Modifier
@@ -377,11 +434,21 @@ fun HomeScreen(
                                             .padding(horizontal = 12.dp, vertical = 10.dp),
                                         verticalAlignment = Alignment.CenterVertically,
                                     ) {
-                                        RecentChatAvatar(
-                                            avatarFileName = entryMap[meta.characterId]?.avatarFileName
-                                                ?: meta.characterAvatarFileName,
-                                            name = meta.characterName,
-                                        )
+                                        if (inSelectionMode) {
+                                            Checkbox(
+                                                checked = isSelected,
+                                                onCheckedChange = {
+                                                    selectedChatIds = if (isSelected) selectedChatIds - meta.id
+                                                        else selectedChatIds + meta.id
+                                                },
+                                            )
+                                        } else {
+                                            RecentChatAvatar(
+                                                avatarFileName = entryMap[meta.characterId]?.avatarFileName
+                                                    ?: meta.characterAvatarFileName,
+                                                name = meta.characterName,
+                                            )
+                                        }
                                         Spacer(Modifier.width(12.dp))
                                         Column(modifier = Modifier.weight(1f)) {
                                             Row(verticalAlignment = Alignment.CenterVertically) {
@@ -412,7 +479,7 @@ fun HomeScreen(
                                         }
                                     }
                                 }
-                                if (expandedChatId == meta.id) {
+                                if (!inSelectionMode && expandedChatId == meta.id) {
                                     Row(
                                         modifier = Modifier
                                             .fillMaxWidth()
@@ -482,6 +549,50 @@ fun HomeScreen(
             },
             dismissButton = {
                 TextButton(onClick = { deleteTarget = null }) {
+                    Text("Cancel")
+                }
+            },
+        )
+    }
+
+    if (showBulkDeleteDialog) {
+        val count = selectedChatIds.size
+        val isLarge = count >= 5
+        var deleteCountdown by remember { mutableStateOf(if (isLarge) 4 else 0) }
+
+        LaunchedEffect(Unit) {
+            if (isLarge) {
+                while (deleteCountdown > 0) {
+                    kotlinx.coroutines.delay(1000)
+                    deleteCountdown--
+                }
+            }
+        }
+
+        AlertDialog(
+            onDismissRequest = { showBulkDeleteDialog = false },
+            title = { Text("Delete $count ${if (count == 1) "chat" else "chats"}?") },
+            text = { Text("This cannot be undone.") },
+            confirmButton = {
+                TextButton(
+                    enabled = deleteCountdown == 0,
+                    onClick = {
+                        haptics.reject()
+                        val ids = selectedChatIds
+                        showBulkDeleteDialog = false
+                        selectedChatIds = emptySet()
+                        scope.launch { ChatStorage.deleteChats(ids) }
+                    },
+                ) {
+                    Text(
+                        if (deleteCountdown > 0) "Delete ($deleteCountdown)" else "Delete",
+                        color = if (deleteCountdown == 0) MaterialTheme.colorScheme.error
+                            else MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showBulkDeleteDialog = false }) {
                     Text("Cancel")
                 }
             },

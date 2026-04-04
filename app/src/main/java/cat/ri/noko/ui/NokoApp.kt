@@ -42,7 +42,10 @@ import androidx.lifecycle.DefaultLifecycleObserver
 import androidx.lifecycle.LifecycleOwner
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.compose.ui.unit.dp
+import cat.ri.noko.core.ChatStorage
 import cat.ri.noko.core.SettingsManager
+import cat.ri.noko.core.ShortcutPublisher
+import cat.ri.noko.model.PersonaType
 import cat.ri.noko.ui.screens.BiometricAuthScreen
 import cat.ri.noko.ui.screens.ChatScreen
 import cat.ri.noko.ui.screens.HomeScreen
@@ -139,6 +142,31 @@ fun NokoApp() {
         var selectedTab by rememberSaveable { mutableIntStateOf(0) }
         var chatAction by remember { mutableStateOf<ChatAction?>(null) }
         var homeRefreshKey by remember { mutableIntStateOf(0) }
+
+        val allEntries by SettingsManager.allEntries.collectAsState(initial = emptyList())
+        val recentChats by ChatStorage.recentChats.collectAsState()
+
+        LaunchedEffect(allEntries, recentChats) {
+            ShortcutPublisher.update(activity ?: return@LaunchedEffect, allEntries, recentChats)
+        }
+
+        val shortcutCharacterId = remember {
+            activity?.intent?.getStringExtra(ShortcutPublisher.EXTRA_CHARACTER_ID)
+        }
+        var shortcutConsumed by remember { mutableStateOf(false) }
+        LaunchedEffect(shortcutCharacterId, shortcutConsumed, allEntries) {
+            if (shortcutCharacterId != null && !shortcutConsumed && allEntries.isNotEmpty()) {
+                val exists = allEntries.any { it.id == shortcutCharacterId && it.type == PersonaType.CHARACTER }
+                if (exists) {
+                    SettingsManager.setSelectedCharacterId(shortcutCharacterId)
+                    chatAction = ChatAction.NewChat(isSecret = false)
+                    selectedTab = 1
+                }
+                shortcutConsumed = true
+                activity?.intent?.removeExtra(ShortcutPublisher.EXTRA_CHARACTER_ID)
+            }
+        }
+
         val density = androidx.compose.ui.platform.LocalDensity.current
         val screenWidthPx = with(density) { LocalConfiguration.current.screenWidthDp.dp.roundToPx() }
         val animSpec = tween<Int>(durationMillis = 250)
