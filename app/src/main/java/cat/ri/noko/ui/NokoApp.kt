@@ -167,6 +167,16 @@ fun NokoApp() {
             }
         }
 
+        val mainActivity = activity as? cat.ri.noko.MainActivity
+        val navigateToChat by mainActivity?.pendingNavigateToChat?.collectAsState()
+            ?: remember { mutableStateOf(false) }
+        LaunchedEffect(navigateToChat) {
+            if (navigateToChat) {
+                selectedTab = 1
+                mainActivity?.consumeNavigateToChat()
+            }
+        }
+
         val density = androidx.compose.ui.platform.LocalDensity.current
         val screenWidthPx = with(density) { LocalConfiguration.current.screenWidthDp.dp.roundToPx() }
         val animSpec = tween<Int>(durationMillis = 250)

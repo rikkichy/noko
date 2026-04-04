@@ -171,7 +171,8 @@ fun NokoPolkitScreen(onBack: () -> Unit) {
                         Column(modifier = Modifier.weight(1f)) {
                             Text("Stream notifications")
                             Text(
-                                "Notify when AI finishes replying in the background.",
+                                if (biometricAuth) "Incompatible with Biometric Authentication."
+                                else "Notify when AI finishes replying in the background.",
                                 style = MaterialTheme.typography.bodySmall,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                             )
@@ -179,6 +180,7 @@ fun NokoPolkitScreen(onBack: () -> Unit) {
                         Spacer(Modifier.size(12.dp))
                         Switch(
                             checked = streamNotifications,
+                            enabled = !biometricAuth,
                             onCheckedChange = { value ->
                                 if (value) {
                                     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU &&
@@ -242,7 +244,10 @@ fun NokoPolkitScreen(onBack: () -> Unit) {
                                         result: BiometricPrompt.AuthenticationResult,
                                     ) {
                                         if (value) haptics.toggleOn() else haptics.toggleOff()
-                                        scope.launch { SettingsManager.setBiometricAuth(value) }
+                                        scope.launch {
+                                            SettingsManager.setBiometricAuth(value)
+                                            if (value) SettingsManager.setNokoPolkitStreamNotifications(false)
+                                        }
                                     }
 
                                     override fun onAuthenticationError(

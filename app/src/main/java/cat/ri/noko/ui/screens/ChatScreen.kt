@@ -448,9 +448,12 @@ fun ChatScreen(
                         )
                         val preview = msg.content.take(100).let { if (msg.content.length > 100) "$it..." else it }
                         val tapIntent = PendingIntent.getActivity(
-                            context, 0,
-                            Intent(context, MainActivity::class.java),
-                            PendingIntent.FLAG_IMMUTABLE,
+                            context, currentChatId.hashCode(),
+                            Intent(context, MainActivity::class.java).apply {
+                                flags = Intent.FLAG_ACTIVITY_SINGLE_TOP or Intent.FLAG_ACTIVITY_CLEAR_TOP
+                                putExtra("navigate_to_chat", true)
+                            },
+                            PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT,
                         )
                         val notification = NotificationCompat.Builder(context, "stream_complete")
                             .setSmallIcon(android.R.drawable.ic_dialog_info)
