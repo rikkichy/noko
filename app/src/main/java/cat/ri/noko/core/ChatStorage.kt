@@ -14,7 +14,6 @@ import kotlinx.coroutines.withContext
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 import java.io.File
-import java.security.SecureRandom
 
 object ChatStorage {
 
@@ -143,27 +142,6 @@ object ChatStorage {
         encryptedFile(file).openFileOutput().use { it.write(bytes) }
     }
 
-    private fun secureDelete(file: File) {
-        if (!file.exists()) return
-        try {
-            val length = file.length()
-            if (length > 0) {
-                val random = SecureRandom()
-                file.outputStream().use { out ->
-                    val buf = ByteArray(4096)
-                    var remaining = length
-                    while (remaining > 0) {
-                        random.nextBytes(buf)
-                        val toWrite = minOf(buf.size.toLong(), remaining).toInt()
-                        out.write(buf, 0, toWrite)
-                        remaining -= toWrite
-                    }
-                }
-            }
-        } catch (_: Exception) {
-        }
-        file.delete()
-    }
 
     private fun readEncrypted(file: File): ByteArray? {
         if (!file.exists()) return null

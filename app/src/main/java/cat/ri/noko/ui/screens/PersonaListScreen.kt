@@ -26,11 +26,12 @@ import cat.ri.noko.ui.theme.NokoFieldShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.filled.Clear
+import cat.ri.noko.ui.components.CountdownDeleteDialog
+import cat.ri.noko.ui.components.NokoAvatar
+import cat.ri.noko.ui.components.NokoSearchField
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Person
-import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.rounded.FileOpen
 import androidx.compose.material.icons.rounded.IosShare
 import androidx.compose.material3.AlertDialog
@@ -79,6 +80,7 @@ import cat.ri.noko.ui.theme.nokoTopAppBarColors
 import cat.ri.noko.model.PersonaEntry
 import cat.ri.noko.model.PersonaType
 import cat.ri.noko.ui.util.rememberNokoHaptics
+import cat.ri.noko.ui.util.rememberSelectionMode
 import coil3.compose.AsyncImage
 import coil3.request.ImageRequest
 import kotlinx.coroutines.Dispatchers
@@ -103,13 +105,12 @@ fun PersonaListScreen(
     val context = LocalContext.current
     val focusManager = LocalFocusManager.current
     var searchQuery by remember { mutableStateOf("") }
-    var selectedIds by remember { mutableStateOf(emptySet<String>()) }
-    val inSelectionMode = selectedIds.isNotEmpty()
+    val selection = rememberSelectionMode()
     var deleteTarget by remember { mutableStateOf<PersonaEntry?>(null) }
     var bulkDeleteTargets by remember { mutableStateOf<List<PersonaEntry>>(emptyList()) }
     var exportTargets by remember { mutableStateOf<List<PersonaEntry>>(emptyList()) }
 
-    BackHandler(enabled = inSelectionMode) { selectedIds = emptySet() }
+    BackHandler(enabled = selection.isActive) { selection.clear() }
     var showPassphraseDialog by remember { mutableStateOf(false) }
     var exportPassphrase by remember { mutableStateOf("") }
     var exportPassphraseConfirm by remember { mutableStateOf("") }
@@ -185,11 +186,11 @@ fun PersonaListScreen(
         topBar = {
             TopAppBar(
                 title = {
-                    Text(if (inSelectionMode) "${selectedIds.size} selected" else title)
+                    Text(if (selection.isActive) "${selection.selectedIds.size} selected" else title)
                 },
                 navigationIcon = {
-                    if (inSelectionMode) {
-                        IconButton(onClick = { selectedIds = emptySet() }) {
+                    if (selection.isActive) {
+                        IconButton(onClick = { selection.clear() }) {
                             Icon(Icons.Filled.Close, contentDescription = "Cancel selection")
                         }
                     } else {
@@ -202,7 +203,7 @@ fun PersonaListScreen(
             )
         },
         floatingActionButton = {
-            if (!inSelectionMode) {
+            if (!selection.isActive) {
                 FloatingActionButton(
                     onClick = {
                         haptics.tap()
@@ -227,11 +228,11 @@ fun PersonaListScreen(
                         .padding(bottom = 8.dp),
                     horizontalArrangement = Arrangement.spacedBy(8.dp),
                 ) {
-                    if (inSelectionMode) {
+                    if (selection.isActive) {
                         FilledTonalButton(
                             onClick = {
                                 haptics.tap()
-                                val selected = entries.filter { it.id in selectedIds }
+                                val selected = entries.filter { selection.isSelected(it.id) }
                                 requestExportWithBiometric(selected)
                             },
                         ) {
@@ -241,12 +242,12 @@ fun PersonaListScreen(
                                 modifier = Modifier.size(18.dp),
                             )
                             Spacer(Modifier.size(8.dp))
-                            Text("Export ${selectedIds.size}")
+                            Text("Export ${selection.selectedIds.size}")
                         }
                         FilledTonalButton(
                             onClick = {
                                 haptics.tap()
-                                bulkDeleteTargets = entries.filter { it.id in selectedIds }
+                                bulkDeleteTargets = entries.filter { selection.isSelected(it.id) }
                             },
                         ) {
                             Icon(
@@ -256,7 +257,7 @@ fun PersonaListScreen(
                                 tint = MaterialTheme.colorScheme.error,
                             )
                             Spacer(Modifier.size(8.dp))
-                            Text("Delete ${selectedIds.size}", color = MaterialTheme.colorScheme.error)
+                            Text("Delete ${selection.selectedIds.size}", color = MaterialTheme.colorScheme.error)
                         }
                     } else {
                         if (onImport != null) {
@@ -312,38 +313,16 @@ fun PersonaListScreen(
                     }
                 }
 
-                if (entries.size > 5 && !inSelectionMode) {
-                    OutlinedTextField(
+                if (entries.size > 5 && !selection.isActive) {
+                    NokoSearchField(
                         value = searchQuery,
                         onValueChange = { searchQuery = it },
-                        placeholder = { Text("Search characters..") },
-                        leadingIcon = {
-                            Icon(
-                                Icons.Filled.Search,
-                                contentDescription = null,
-                                tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                            )
-                        },
-                        trailingIcon = {
-                            if (searchQuery.isNotEmpty()) {
-                                IconButton(onClick = {
-                                    searchQuery = ""
-                                    focusManager.clearFocus()
-                                }) {
-                                    Icon(
-                                        Icons.Filled.Clear,
-                                        contentDescription = "Clear",
-                                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                                    )
-                                }
-                            }
-                        },
-                        singleLine = true,
-                        shape = NokoFieldShape,
+                        placeholder = "Search characters..",
                         modifier = Modifier
                             .fillMaxWidth()
                             .padding(horizontal = 16.dp)
                             .padding(bottom = 8.dp),
+                        focusManager = focusManager,
                     )
                 }
             }
@@ -383,15 +362,14 @@ fun PersonaListScreen(
                     verticalArrangement = Arrangement.spacedBy(8.dp),
                 ) {
                     items(filteredEntries, key = { it.id }) { entry ->
-                        val isSelected = entry.id in selectedIds
+                        val isSelected = selection.isSelected(entry.id)
                         Card(
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .combinedClickable(
                                     onClick = {
-                                        if (inSelectionMode) {
-                                            selectedIds = if (isSelected) selectedIds - entry.id
-                                                else selectedIds + entry.id
+                                        if (selection.isActive) {
+                                            selection.toggle(entry.id)
                                         } else {
                                             haptics.tap()
                                             onEdit(entry.id)
@@ -400,8 +378,7 @@ fun PersonaListScreen(
                                     onLongClick = {
                                         if (type == PersonaType.CHARACTER) {
                                             haptics.tap()
-                                            selectedIds = if (isSelected) selectedIds - entry.id
-                                                else selectedIds + entry.id
+                                            selection.toggle(entry.id)
                                         }
                                     },
                                 ),
@@ -416,39 +393,20 @@ fun PersonaListScreen(
                                     .padding(12.dp),
                                 verticalAlignment = Alignment.CenterVertically,
                             ) {
-                                if (inSelectionMode) {
+                                if (selection.isActive) {
                                     Checkbox(
                                         checked = isSelected,
                                         onCheckedChange = {
-                                            selectedIds = if (isSelected) selectedIds - entry.id
-                                                else selectedIds + entry.id
+                                            selection.toggle(entry.id)
                                         },
                                     )
-                                } else if (entry.avatarFileName != null) {
-                                    AsyncImage(
-                                        model = ImageRequest.Builder(context)
-                                            .data(AvatarStorage.getFile(context, entry.avatarFileName))
-                                            .build(),
-                                        contentDescription = null,
-                                        modifier = Modifier
-                                            .size(48.dp)
-                                            .clip(CircleShape),
-                                        contentScale = ContentScale.Crop,
-                                    )
                                 } else {
-                                    Box(
-                                        modifier = Modifier
-                                            .size(48.dp)
-                                            .clip(CircleShape),
-                                        contentAlignment = Alignment.Center,
-                                    ) {
-                                        Icon(
-                                            Icons.Filled.Person,
-                                            contentDescription = null,
-                                            modifier = Modifier.size(24.dp),
-                                            tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                                        )
-                                    }
+                                    NokoAvatar(
+                                        entry = entry,
+                                        fallbackIcon = Icons.Filled.Person,
+                                        size = 48,
+                                        hasSurface = false,
+                                    )
                                 }
                                 Spacer(Modifier.size(12.dp))
                                 Column(modifier = Modifier.weight(1f)) {
@@ -515,20 +473,10 @@ fun PersonaListScreen(
     if (bulkDeleteTargets.isNotEmpty()) {
         val count = bulkDeleteTargets.size
         val isAll = count == entries.size && count >= 5
-        var deleteCountdown by remember { mutableStateOf(if (isAll) 4 else 0) }
         val recentChats by ChatStorage.recentChats.collectAsState()
 
-        LaunchedEffect(Unit) {
-            if (isAll) {
-                while (deleteCountdown > 0) {
-                    kotlinx.coroutines.delay(1000)
-                    deleteCountdown--
-                }
-            }
-        }
-
-        AlertDialog(
-            onDismissRequest = { bulkDeleteTargets = emptyList() },
+        CountdownDeleteDialog(
+            showCountdown = isAll,
             title = { Text(if (isAll) "Woah..hold on." else "Delete $count ${if (count == 1) "character" else "characters"}?") },
             text = {
                 Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
@@ -557,32 +505,12 @@ fun PersonaListScreen(
                                             verticalAlignment = Alignment.CenterVertically,
                                             horizontalArrangement = Arrangement.spacedBy(10.dp),
                                         ) {
-                                            if (entry.avatarFileName != null) {
-                                                AsyncImage(
-                                                    model = ImageRequest.Builder(context)
-                                                        .data(AvatarStorage.getFile(context, entry.avatarFileName))
-                                                        .build(),
-                                                    contentDescription = null,
-                                                    modifier = Modifier
-                                                        .size(32.dp)
-                                                        .clip(CircleShape),
-                                                    contentScale = ContentScale.Crop,
-                                                )
-                                            } else {
-                                                Box(
-                                                    modifier = Modifier
-                                                        .size(32.dp)
-                                                        .clip(CircleShape),
-                                                    contentAlignment = Alignment.Center,
-                                                ) {
-                                                    Icon(
-                                                        Icons.Filled.Person,
-                                                        contentDescription = null,
-                                                        modifier = Modifier.size(16.dp),
-                                                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                                                    )
-                                                }
-                                            }
+                                            NokoAvatar(
+                                                entry = entry,
+                                                fallbackIcon = Icons.Filled.Person,
+                                                size = 32,
+                                                hasSurface = false,
+                                            )
                                             Column {
                                                 Text(entry.name, style = MaterialTheme.typography.bodyMedium)
                                                 Text(
@@ -601,35 +529,20 @@ fun PersonaListScreen(
                     }
                 }
             },
-            confirmButton = {
-                TextButton(
-                    enabled = deleteCountdown == 0,
-                    onClick = {
-                        haptics.reject()
-                        val targets = bulkDeleteTargets
-                        bulkDeleteTargets = emptyList()
-                        selectedIds = emptySet()
-                        scope.launch {
-                            targets.forEach { entry ->
-                                entry.avatarFileName?.let { AvatarStorage.delete(context, it) }
-                                ChatStorage.deleteChatsForCharacter(entry.id)
-                                SettingsManager.deleteEntry(entry.id)
-                            }
-                        }
-                    },
-                ) {
-                    Text(
-                        if (deleteCountdown > 0) "Delete ($deleteCountdown)" else "Delete",
-                        color = if (deleteCountdown == 0) MaterialTheme.colorScheme.error
-                            else MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
+            onConfirm = {
+                haptics.reject()
+                val targets = bulkDeleteTargets
+                bulkDeleteTargets = emptyList()
+                selection.clear()
+                scope.launch {
+                    targets.forEach { entry ->
+                        entry.avatarFileName?.let { AvatarStorage.delete(context, it) }
+                        ChatStorage.deleteChatsForCharacter(entry.id)
+                        SettingsManager.deleteEntry(entry.id)
+                    }
                 }
             },
-            dismissButton = {
-                TextButton(onClick = { bulkDeleteTargets = emptyList() }) {
-                    Text("Cancel")
-                }
-            },
+            onDismiss = { bulkDeleteTargets = emptyList() },
         )
     }
 

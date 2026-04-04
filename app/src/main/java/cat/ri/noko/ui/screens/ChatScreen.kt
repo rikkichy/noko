@@ -9,6 +9,7 @@ import androidx.lifecycle.ProcessLifecycleOwner
 import cat.ri.noko.MainActivity
 import cat.ri.noko.NokoApplication
 import cat.ri.noko.core.replaceTemplateVars
+import cat.ri.noko.ui.components.NokoAvatar
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.animateContentSize
 import androidx.compose.animation.expandVertically
@@ -114,6 +115,7 @@ import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import cat.ri.noko.ui.components.NokoSearchField
 import cat.ri.noko.core.AvatarStorage
 import cat.ri.noko.core.ChatStorage
 import cat.ri.noko.core.HallucinationDetector
@@ -552,7 +554,7 @@ fun ChatScreen(
                             },
                         verticalAlignment = Alignment.CenterVertically,
                     ) {
-                        SmallAvatar(
+                        NokoAvatar(
                             entry = activeCharacter,
                             fallbackIcon = Icons.Filled.SmartToy,
                             size = 32,
@@ -822,7 +824,7 @@ fun ChatScreen(
                         showPersonaPicker = true
                     },
             ) {
-                SmallAvatar(
+                NokoAvatar(
                     entry = activePersona,
                     fallbackIcon = Icons.Filled.Person,
                     size = 32,
@@ -932,63 +934,6 @@ fun ChatScreen(
     }
 }
 
-@Composable
-internal fun SmallAvatar(
-    entry: PersonaEntry?,
-    fallbackIcon: androidx.compose.ui.graphics.vector.ImageVector,
-    size: Int,
-) {
-    SmallAvatar(
-        name = entry?.name,
-        avatarFileName = entry?.avatarFileName,
-        fallbackIcon = fallbackIcon,
-        size = size,
-    )
-}
-
-@Composable
-internal fun SmallAvatar(
-    name: String?,
-    avatarFileName: String?,
-    fallbackIcon: androidx.compose.ui.graphics.vector.ImageVector,
-    size: Int,
-) {
-    val context = LocalContext.current
-    Box(
-        modifier = Modifier
-            .size(size.dp)
-            .clip(CircleShape),
-        contentAlignment = Alignment.Center,
-    ) {
-        if (avatarFileName != null) {
-            AsyncImage(
-                model = ImageRequest.Builder(context)
-                    .data(AvatarStorage.getFile(context, avatarFileName))
-                    .build(),
-                contentDescription = name,
-                modifier = Modifier
-                    .size(size.dp)
-                    .clip(CircleShape),
-                contentScale = ContentScale.Crop,
-            )
-        } else {
-            Surface(
-                shape = CircleShape,
-                color = MaterialTheme.colorScheme.surfaceContainerHigh,
-                modifier = Modifier.size(size.dp),
-            ) {
-                Box(contentAlignment = Alignment.Center) {
-                    Icon(
-                        fallbackIcon,
-                        contentDescription = null,
-                        modifier = Modifier.size((size / 2).dp),
-                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
-                }
-            }
-        }
-    }
-}
 
 @OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
@@ -1207,7 +1152,7 @@ private fun MessageBubble(
                 ),
         ) {
             if (!isUser) {
-                SmallAvatar(
+                NokoAvatar(
                     name = name,
                     avatarFileName = avatarFileName,
                     fallbackIcon = Icons.Filled.SmartToy,
@@ -1359,7 +1304,7 @@ private fun MessageBubble(
 
             if (isUser) {
                 Spacer(Modifier.width(8.dp))
-                SmallAvatar(
+                NokoAvatar(
                     name = name,
                     avatarFileName = avatarFileName,
                     fallbackIcon = Icons.Filled.Person,
@@ -1457,15 +1402,15 @@ private fun PersonaPickerSheet(
             )
 
             if (entries.size >= 5) {
-                OutlinedTextField(
+                NokoSearchField(
                     value = searchQuery,
                     onValueChange = { searchQuery = it },
-                    placeholder = { Text("Search..") },
-                    singleLine = true,
-                    shape = NokoFieldShape,
+                    placeholder = "Search..",
                     modifier = Modifier
                         .fillMaxWidth()
                         .padding(horizontal = 24.dp, vertical = 4.dp),
+                    showLeadingIcon = false,
+                    showClearButton = false,
                 )
             }
 
@@ -1500,7 +1445,7 @@ private fun PersonaPickerSheet(
                                 .padding(horizontal = 24.dp, vertical = 12.dp),
                             verticalAlignment = Alignment.CenterVertically,
                         ) {
-                            SmallAvatar(
+                            NokoAvatar(
                                 entry = entry,
                                 fallbackIcon = Icons.Filled.Person,
                                 size = 40,

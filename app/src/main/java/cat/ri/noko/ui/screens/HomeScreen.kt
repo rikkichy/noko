@@ -25,14 +25,15 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import cat.ri.noko.ui.theme.NokoFieldShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.filled.Clear
+import cat.ri.noko.ui.components.CountdownDeleteDialog
+import cat.ri.noko.ui.components.NokoAvatar
+import cat.ri.noko.ui.components.NokoSearchField
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.PushPin
-import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.SmartToy
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.AssistChip
@@ -46,7 +47,6 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
-import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -75,6 +75,7 @@ import cat.ri.noko.model.ChatSessionMeta
 import cat.ri.noko.model.PersonaEntry
 import cat.ri.noko.ui.theme.nokoTopAppBarColors
 import cat.ri.noko.ui.util.rememberNokoHaptics
+import cat.ri.noko.ui.util.rememberSelectionMode
 import coil3.compose.AsyncImage
 import coil3.request.ImageRequest
 import java.util.Calendar
@@ -139,17 +140,16 @@ fun HomeScreen(
     var searchQuery by remember { mutableStateOf("") }
     var selectedCharacterId by remember { mutableStateOf<String?>(null) }
     var expandedChatId by remember { mutableStateOf<String?>(null) }
-    var selectedChatIds by remember { mutableStateOf(emptySet<String>()) }
-    val inSelectionMode = selectedChatIds.isNotEmpty()
+    val selection = rememberSelectionMode()
     var showBulkDeleteDialog by remember { mutableStateOf(false) }
 
-    BackHandler(enabled = inSelectionMode) { selectedChatIds = emptySet() }
+    BackHandler(enabled = selection.isActive) { selection.clear() }
 
     LaunchedEffect(refreshKey) {
         searchQuery = ""
         selectedCharacterId = null
         expandedChatId = null
-        selectedChatIds = emptySet()
+        selection.clear()
         focusManager.clearFocus()
     }
     var deleteTarget by remember { mutableStateOf<ChatSessionMeta?>(null) }
@@ -178,8 +178,8 @@ fun HomeScreen(
         topBar = {
             TopAppBar(
                 title = {
-                    if (inSelectionMode) {
-                        Text("${selectedChatIds.size} selected")
+                    if (selection.isActive) {
+                        Text("${selection.selectedIds.size} selected")
                     } else {
                         Column {
                             Text(
@@ -195,8 +195,8 @@ fun HomeScreen(
                     }
                 },
                 navigationIcon = {
-                    if (inSelectionMode) {
-                        IconButton(onClick = { selectedChatIds = emptySet() }) {
+                    if (selection.isActive) {
+                        IconButton(onClick = { selection.clear() }) {
                             Icon(Icons.Filled.Close, contentDescription = "Cancel selection")
                         }
                     }
@@ -211,14 +211,14 @@ fun HomeScreen(
                 .padding(padding)
                 .padding(horizontal = 16.dp, vertical = 8.dp),
         ) {
-            AnimatedVisibility(visible = !inSelectionMode) {
+            AnimatedVisibility(visible = !selection.isActive) {
                 Column {
                     DidYouKnowCard(recentChats, entryMap, refreshKey)
                     Spacer(Modifier.height(16.dp))
                 }
             }
 
-            if (inSelectionMode) {
+            if (selection.isActive) {
                 FilledTonalButton(
                     onClick = {
                         haptics.tap()
@@ -232,7 +232,7 @@ fun HomeScreen(
                     Icon(Icons.Filled.Delete, contentDescription = null)
                     Spacer(Modifier.width(8.dp))
                     Text(
-                        "Delete ${selectedChatIds.size}",
+                        "Delete ${selection.selectedIds.size}",
                         color = MaterialTheme.colorScheme.error,
                     )
                 }
@@ -269,35 +269,13 @@ fun HomeScreen(
             if (recentChats.isNotEmpty()) {
                 Spacer(Modifier.height(20.dp))
 
-                if (!inSelectionMode) {
-                    OutlinedTextField(
+                if (!selection.isActive) {
+                    NokoSearchField(
                         value = searchQuery,
                         onValueChange = { searchQuery = it },
-                        placeholder = { Text("Search chats..") },
-                        leadingIcon = {
-                            Icon(
-                                Icons.Filled.Search,
-                                contentDescription = null,
-                                tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                            )
-                        },
-                        trailingIcon = {
-                            if (searchQuery.isNotEmpty()) {
-                                IconButton(onClick = {
-                                    searchQuery = ""
-                                    focusManager.clearFocus()
-                                }) {
-                                    Icon(
-                                        Icons.Filled.Clear,
-                                        contentDescription = "Clear",
-                                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                                    )
-                                }
-                            }
-                        },
-                        singleLine = true,
-                        shape = NokoFieldShape,
+                        placeholder = "Search chats..",
                         modifier = Modifier.fillMaxWidth(),
+                        focusManager = focusManager,
                     )
 
                 if (uniqueCharacters.size >= 2) {
@@ -397,16 +375,15 @@ fun HomeScreen(
                         verticalArrangement = Arrangement.spacedBy(4.dp),
                     ) {
                         items(filteredChats, key = { it.id }) { meta ->
-                            val isSelected = meta.id in selectedChatIds
+                            val isSelected = selection.isSelected(meta.id)
                             Column {
                                 Surface(
                                     modifier = Modifier
                                         .fillMaxWidth()
                                         .combinedClickable(
                                             onClick = {
-                                                if (inSelectionMode) {
-                                                    selectedChatIds = if (isSelected) selectedChatIds - meta.id
-                                                        else selectedChatIds + meta.id
+                                                if (selection.isActive) {
+                                                    selection.toggle(meta.id)
                                                 } else if (expandedChatId == meta.id) {
                                                     expandedChatId = null
                                                 } else {
@@ -415,11 +392,10 @@ fun HomeScreen(
                                             },
                                             onLongClick = {
                                                 haptics.tap()
-                                                if (inSelectionMode) {
-                                                    selectedChatIds = if (isSelected) selectedChatIds - meta.id
-                                                        else selectedChatIds + meta.id
+                                                if (selection.isActive) {
+                                                    selection.toggle(meta.id)
                                                 } else {
-                                                    selectedChatIds = selectedChatIds + meta.id
+                                                    selection.select(meta.id)
                                                     expandedChatId = null
                                                 }
                                             },
@@ -434,19 +410,20 @@ fun HomeScreen(
                                             .padding(horizontal = 12.dp, vertical = 10.dp),
                                         verticalAlignment = Alignment.CenterVertically,
                                     ) {
-                                        if (inSelectionMode) {
+                                        if (selection.isActive) {
                                             Checkbox(
                                                 checked = isSelected,
                                                 onCheckedChange = {
-                                                    selectedChatIds = if (isSelected) selectedChatIds - meta.id
-                                                        else selectedChatIds + meta.id
+                                                    selection.toggle(meta.id)
                                                 },
                                             )
                                         } else {
-                                            RecentChatAvatar(
+                                            NokoAvatar(
+                                                name = meta.characterName,
                                                 avatarFileName = entryMap[meta.characterId]?.avatarFileName
                                                     ?: meta.characterAvatarFileName,
-                                                name = meta.characterName,
+                                                fallbackIcon = Icons.Filled.SmartToy,
+                                                size = 48,
                                             )
                                         }
                                         Spacer(Modifier.width(12.dp))
@@ -479,7 +456,7 @@ fun HomeScreen(
                                         }
                                     }
                                 }
-                                if (!inSelectionMode && expandedChatId == meta.id) {
+                                if (!selection.isActive && expandedChatId == meta.id) {
                                     Row(
                                         modifier = Modifier
                                             .fillMaxWidth()
@@ -556,46 +533,19 @@ fun HomeScreen(
     }
 
     if (showBulkDeleteDialog) {
-        val count = selectedChatIds.size
-        val isLarge = count >= 5
-        var deleteCountdown by remember { mutableStateOf(if (isLarge) 4 else 0) }
-
-        LaunchedEffect(Unit) {
-            if (isLarge) {
-                while (deleteCountdown > 0) {
-                    kotlinx.coroutines.delay(1000)
-                    deleteCountdown--
-                }
-            }
-        }
-
-        AlertDialog(
-            onDismissRequest = { showBulkDeleteDialog = false },
+        val count = selection.selectedIds.size
+        CountdownDeleteDialog(
+            showCountdown = count >= 5,
             title = { Text("Delete $count ${if (count == 1) "chat" else "chats"}?") },
             text = { Text("This cannot be undone.") },
-            confirmButton = {
-                TextButton(
-                    enabled = deleteCountdown == 0,
-                    onClick = {
-                        haptics.reject()
-                        val ids = selectedChatIds
-                        showBulkDeleteDialog = false
-                        selectedChatIds = emptySet()
-                        scope.launch { ChatStorage.deleteChats(ids) }
-                    },
-                ) {
-                    Text(
-                        if (deleteCountdown > 0) "Delete ($deleteCountdown)" else "Delete",
-                        color = if (deleteCountdown == 0) MaterialTheme.colorScheme.error
-                            else MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
-                }
+            onConfirm = {
+                haptics.reject()
+                val ids = selection.selectedIds
+                showBulkDeleteDialog = false
+                selection.clear()
+                scope.launch { ChatStorage.deleteChats(ids) }
             },
-            dismissButton = {
-                TextButton(onClick = { showBulkDeleteDialog = false }) {
-                    Text("Cancel")
-                }
-            },
+            onDismiss = { showBulkDeleteDialog = false },
         )
     }
 }
@@ -749,44 +699,3 @@ private fun DidYouKnowCard(
     }
 }
 
-@Composable
-private fun RecentChatAvatar(
-    avatarFileName: String?,
-    name: String,
-) {
-    val context = LocalContext.current
-    Box(
-        modifier = Modifier
-            .size(48.dp)
-            .clip(CircleShape),
-        contentAlignment = Alignment.Center,
-    ) {
-        if (avatarFileName != null) {
-            AsyncImage(
-                model = ImageRequest.Builder(context)
-                    .data(AvatarStorage.getFile(context, avatarFileName))
-                    .build(),
-                contentDescription = name,
-                modifier = Modifier
-                    .size(48.dp)
-                    .clip(CircleShape),
-                contentScale = ContentScale.Crop,
-            )
-        } else {
-            Surface(
-                shape = CircleShape,
-                color = MaterialTheme.colorScheme.surfaceContainerHigh,
-                modifier = Modifier.size(48.dp),
-            ) {
-                Box(contentAlignment = Alignment.Center) {
-                    Icon(
-                        Icons.Filled.SmartToy,
-                        contentDescription = null,
-                        modifier = Modifier.size(24.dp),
-                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
-                }
-            }
-        }
-    }
-}
