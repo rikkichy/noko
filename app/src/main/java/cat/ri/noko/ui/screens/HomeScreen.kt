@@ -35,9 +35,6 @@ import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.PushPin
 import androidx.compose.material.icons.filled.SmartToy
-import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.AssistChip
-import androidx.compose.material3.AssistChipDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Checkbox
@@ -50,7 +47,6 @@ import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -139,7 +135,6 @@ fun HomeScreen(
 
     var searchQuery by remember { mutableStateOf("") }
     var selectedCharacterId by remember { mutableStateOf<String?>(null) }
-    var expandedChatId by remember { mutableStateOf<String?>(null) }
     val selection = rememberSelectionMode()
     var showBulkDeleteDialog by remember { mutableStateOf(false) }
 
@@ -148,11 +143,9 @@ fun HomeScreen(
     LaunchedEffect(refreshKey) {
         searchQuery = ""
         selectedCharacterId = null
-        expandedChatId = null
         selection.clear()
         focusManager.clearFocus()
     }
-    var deleteTarget by remember { mutableStateOf<ChatSessionMeta?>(null) }
 
     val uniqueCharacters = remember(recentChats) {
         recentChats.distinctBy { it.characterId }.map {
@@ -219,22 +212,43 @@ fun HomeScreen(
             }
 
             if (selection.isActive) {
-                FilledTonalButton(
-                    onClick = {
-                        haptics.tap()
-                        showBulkDeleteDialog = true
-                    },
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(56.dp),
-                    shape = RoundedCornerShape(16.dp),
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(12.dp),
                 ) {
-                    Icon(Icons.Filled.Delete, contentDescription = null)
-                    Spacer(Modifier.width(8.dp))
-                    Text(
-                        "Delete ${selection.selectedIds.size}",
-                        color = MaterialTheme.colorScheme.error,
-                    )
+                    FilledTonalButton(
+                        onClick = {
+                            haptics.tap()
+                            val ids = selection.selectedIds
+                            selection.clear()
+                            scope.launch { ids.forEach { ChatStorage.togglePin(it) } }
+                        },
+                        modifier = Modifier
+                            .weight(1f)
+                            .height(56.dp),
+                        shape = RoundedCornerShape(16.dp),
+                    ) {
+                        Icon(Icons.Filled.PushPin, contentDescription = null)
+                        Spacer(Modifier.width(8.dp))
+                        Text("Pin ${selection.selectedIds.size}")
+                    }
+                    FilledTonalButton(
+                        onClick = {
+                            haptics.tap()
+                            showBulkDeleteDialog = true
+                        },
+                        modifier = Modifier
+                            .weight(1f)
+                            .height(56.dp),
+                        shape = RoundedCornerShape(16.dp),
+                    ) {
+                        Icon(Icons.Filled.Delete, contentDescription = null)
+                        Spacer(Modifier.width(8.dp))
+                        Text(
+                            "Delete ${selection.selectedIds.size}",
+                            color = MaterialTheme.colorScheme.error,
+                        )
+                    }
                 }
             } else {
                 Row(
@@ -384,8 +398,6 @@ fun HomeScreen(
                                             onClick = {
                                                 if (selection.isActive) {
                                                     selection.toggle(meta.id)
-                                                } else if (expandedChatId == meta.id) {
-                                                    expandedChatId = null
                                                 } else {
                                                     onOpenRecentChat(meta)
                                                 }
@@ -396,7 +408,6 @@ fun HomeScreen(
                                                     selection.toggle(meta.id)
                                                 } else {
                                                     selection.select(meta.id)
-                                                    expandedChatId = null
                                                 }
                                             },
                                         ),
@@ -456,80 +467,12 @@ fun HomeScreen(
                                         }
                                     }
                                 }
-                                if (!selection.isActive && expandedChatId == meta.id) {
-                                    Row(
-                                        modifier = Modifier
-                                            .fillMaxWidth()
-                                            .padding(horizontal = 8.dp, vertical = 4.dp),
-                                        horizontalArrangement = Arrangement.spacedBy(8.dp),
-                                    ) {
-                                        AssistChip(
-                                            onClick = {
-                                                haptics.tap()
-                                                scope.launch { ChatStorage.togglePin(meta.id) }
-                                                expandedChatId = null
-                                            },
-                                            label = { Text(if (meta.pinned) "Unpin" else "Pin") },
-                                            leadingIcon = {
-                                                Icon(
-                                                    Icons.Filled.PushPin,
-                                                    contentDescription = null,
-                                                    modifier = Modifier.size(18.dp),
-                                                )
-                                            },
-                                        )
-                                        AssistChip(
-                                            onClick = {
-                                                haptics.tap()
-                                                deleteTarget = meta
-                                            },
-                                            label = { Text("Delete") },
-                                            leadingIcon = {
-                                                Icon(
-                                                    Icons.Filled.Delete,
-                                                    contentDescription = null,
-                                                    modifier = Modifier.size(18.dp),
-                                                )
-                                            },
-                                            colors = AssistChipDefaults.assistChipColors(
-                                                labelColor = MaterialTheme.colorScheme.error,
-                                                leadingIconContentColor = MaterialTheme.colorScheme.error,
-                                            ),
-                                        )
-                                    }
-                                }
                             }
                         }
                     }
                 }
             }
         }
-    }
-
-    if (deleteTarget != null) {
-        AlertDialog(
-            onDismissRequest = { deleteTarget = null },
-            title = { Text("Delete chat?") },
-            text = {
-                Text("Chat with ${deleteTarget!!.characterName} will be permanently deleted.")
-            },
-            confirmButton = {
-                TextButton(onClick = {
-                    val id = deleteTarget!!.id
-                    deleteTarget = null
-                    expandedChatId = null
-                    haptics.reject()
-                    scope.launch { ChatStorage.deleteChat(id) }
-                }) {
-                    Text("Delete", color = MaterialTheme.colorScheme.error)
-                }
-            },
-            dismissButton = {
-                TextButton(onClick = { deleteTarget = null }) {
-                    Text("Cancel")
-                }
-            },
-        )
     }
 
     if (showBulkDeleteDialog) {
