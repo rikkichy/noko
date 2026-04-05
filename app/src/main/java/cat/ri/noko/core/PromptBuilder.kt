@@ -7,10 +7,10 @@ import cat.ri.noko.model.PromptSectionType
 import cat.ri.noko.model.api.ChatRequestMessage
 
 fun String.replaceTemplateVars(charName: String, userName: String): String =
-    replace("{{char}}", charName)
-        .replace("{{user}}", userName)
-        .replace("{char}", charName)
-        .replace("{user}", userName)
+    replace("{{char}}", charName, ignoreCase = true)
+        .replace("{{user}}", userName, ignoreCase = true)
+        .replace("{char}", charName, ignoreCase = true)
+        .replace("{user}", userName, ignoreCase = true)
 
 object PromptBuilder {
 
