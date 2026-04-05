@@ -462,7 +462,7 @@ fun ChatScreen(
                             PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT,
                         )
                         val notification = NotificationCompat.Builder(context, NokoApplication.CHANNEL_STREAM_COMPLETE)
-                            .setSmallIcon(R.mipmap.ic_launcher_monochrome)
+                            .setSmallIcon(R.drawable.ic_notif)
                             .setContentTitle(titles.random())
                             .setContentText(preview)
                             .setContentIntent(tapIntent)
