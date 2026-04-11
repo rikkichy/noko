@@ -179,9 +179,10 @@ fun NokoApp() {
             }
         }
 
+        val reduceMotion by SettingsManager.reduceMotion.collectAsState(initial = false)
         val density = LocalDensity.current
         val screenWidthPx = with(density) { LocalConfiguration.current.screenWidthDp.dp.roundToPx() }
-        val animSpec = tween<Int>(durationMillis = 250)
+        val animSpec = tween<Int>(durationMillis = if (reduceMotion) 0 else 250)
 
         Scaffold(
             contentWindowInsets = WindowInsets(0),

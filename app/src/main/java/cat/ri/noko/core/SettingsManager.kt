@@ -39,6 +39,9 @@ object SettingsManager {
 
     private val ONBOARDING_COMPLETE = booleanPreferencesKey("onboarding_complete")
     private val AMOLED_MODE = booleanPreferencesKey("amoled_mode")
+    private val SHOW_AVATARS = booleanPreferencesKey("show_avatars")
+    private val SHOW_NAMES = booleanPreferencesKey("show_names")
+    private val REDUCE_MOTION = booleanPreferencesKey("reduce_motion")
     private val NOKO_GUARD = booleanPreferencesKey("noko_guard")
     private val NOKO_POLKIT = booleanPreferencesKey("noko_polkit")
     private val NOKO_POLKIT_TRIM_EMOJIS = booleanPreferencesKey("noko_polkit_trim_emojis")
@@ -137,6 +140,27 @@ object SettingsManager {
     suspend fun setAmoledMode(enabled: Boolean) {
         _amoledCached = enabled
         appContext.dataStore.edit { it[AMOLED_MODE] = enabled }
+    }
+
+    val showAvatars: Flow<Boolean>
+        get() = appContext.dataStore.data.map { it[SHOW_AVATARS] ?: true }
+
+    suspend fun setShowAvatars(enabled: Boolean) {
+        appContext.dataStore.edit { it[SHOW_AVATARS] = enabled }
+    }
+
+    val showNames: Flow<Boolean>
+        get() = appContext.dataStore.data.map { it[SHOW_NAMES] ?: true }
+
+    suspend fun setShowNames(enabled: Boolean) {
+        appContext.dataStore.edit { it[SHOW_NAMES] = enabled }
+    }
+
+    val reduceMotion: Flow<Boolean>
+        get() = appContext.dataStore.data.map { it[REDUCE_MOTION] ?: false }
+
+    suspend fun setReduceMotion(enabled: Boolean) {
+        appContext.dataStore.edit { it[REDUCE_MOTION] = enabled }
     }
 
     val nokoGuard: Flow<Boolean>

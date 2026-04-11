@@ -19,8 +19,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.KeyboardArrowRight
 import androidx.compose.material.icons.rounded.Brush
-import androidx.compose.material.icons.rounded.Api
-import androidx.compose.material.icons.rounded.Tune
+import androidx.compose.material.icons.rounded.SmartToy
 import androidx.compose.material.icons.rounded.People
 import androidx.compose.material.icons.rounded.Shield
 import androidx.compose.material3.Button
@@ -70,6 +69,9 @@ fun SettingsScreen(navController: NavController) {
     val scope = rememberCoroutineScope()
     val haptics = rememberNokoHaptics()
     val amoled by SettingsManager.amoledMode.collectAsState(initial = false)
+    val showAvatars by SettingsManager.showAvatars.collectAsState(initial = true)
+    val showNames by SettingsManager.showNames.collectAsState(initial = true)
+    val reduceMotion by SettingsManager.reduceMotion.collectAsState(initial = false)
     val nokoGuard by SettingsManager.nokoGuard.collectAsState(initial = true)
     val apiKey by SettingsManager.apiKey.collectAsState(initial = if (SettingsManager.hasApiKey()) "placeholder" else "")
     val hasKey = apiKey.isNotBlank()
@@ -187,9 +189,9 @@ fun SettingsScreen(navController: NavController) {
                     verticalArrangement = Arrangement.spacedBy(12.dp),
                 ) {
                     Row(verticalAlignment = Alignment.CenterVertically) {
-                        Icon(Icons.Rounded.Api, contentDescription = null)
+                        Icon(Icons.Rounded.SmartToy, contentDescription = null)
                         Spacer(Modifier.size(8.dp))
-                        Text("API", style = MaterialTheme.typography.titleMedium)
+                        Text("Configuration", style = MaterialTheme.typography.titleMedium)
                     }
 
                     Row(
@@ -349,26 +351,7 @@ fun SettingsScreen(navController: NavController) {
                         )
                     }
 
-                }
-            }
-
-
-            Card(
-                colors = CardDefaults.cardColors(
-                    containerColor = MaterialTheme.colorScheme.surfaceContainer,
-                ),
-            ) {
-                Column(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(16.dp),
-                    verticalArrangement = Arrangement.spacedBy(12.dp),
-                ) {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Icon(Icons.Rounded.Tune, contentDescription = null)
-                        Spacer(Modifier.size(8.dp))
-                        Text("AI Settings", style = MaterialTheme.typography.titleMedium)
-                    }
+                    HorizontalDivider()
 
                     Row(
                         modifier = Modifier
@@ -380,9 +363,9 @@ fun SettingsScreen(navController: NavController) {
                         verticalAlignment = Alignment.CenterVertically,
                     ) {
                         Column(modifier = Modifier.weight(1f)) {
-                            Text("AI Settings")
+                            Text("Prompt Editor")
                             Text(
-                                "Configure prompt template and generation parameters",
+                                "Change how your characters behave",
                                 style = MaterialTheme.typography.bodySmall,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                             )
@@ -393,6 +376,7 @@ fun SettingsScreen(navController: NavController) {
                             tint = MaterialTheme.colorScheme.onSurfaceVariant,
                         )
                     }
+
                 }
             }
 
@@ -442,6 +426,81 @@ fun SettingsScreen(navController: NavController) {
                                 scope.launch { SettingsManager.setAmoledMode(enabled) }
                             },
                             enabled = isDarkTheme,
+                        )
+                    }
+
+                    HorizontalDivider()
+
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                    ) {
+                        Column(modifier = Modifier.weight(1f)) {
+                            Text("Show avatars")
+                            Text(
+                                "Hides avatars in the chat if disabled.",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            )
+                        }
+                        Spacer(Modifier.size(12.dp))
+                        Switch(
+                            checked = showAvatars,
+                            onCheckedChange = { enabled ->
+                                if (enabled) haptics.toggleOn() else haptics.toggleOff()
+                                scope.launch { SettingsManager.setShowAvatars(enabled) }
+                            },
+                        )
+                    }
+
+                    HorizontalDivider()
+
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                    ) {
+                        Column(modifier = Modifier.weight(1f)) {
+                            Text("Show names")
+                            Text(
+                                "Removes names in the chat if disabled.",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            )
+                        }
+                        Spacer(Modifier.size(12.dp))
+                        Switch(
+                            checked = showNames,
+                            onCheckedChange = { enabled ->
+                                if (enabled) haptics.toggleOn() else haptics.toggleOff()
+                                scope.launch { SettingsManager.setShowNames(enabled) }
+                            },
+                        )
+                    }
+
+                    HorizontalDivider()
+
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                    ) {
+                        Column(modifier = Modifier.weight(1f)) {
+                            Text("Reduce motion")
+                            Text(
+                                "Disables animations throughout the app.",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            )
+                        }
+                        Spacer(Modifier.size(12.dp))
+                        Switch(
+                            checked = reduceMotion,
+                            onCheckedChange = { enabled ->
+                                if (enabled) haptics.toggleOn() else haptics.toggleOff()
+                                scope.launch { SettingsManager.setReduceMotion(enabled) }
+                            },
                         )
                     }
                 }
@@ -502,7 +561,7 @@ fun SettingsScreen(navController: NavController) {
                         Column(modifier = Modifier.weight(1f)) {
                             Text("NokoPolkit")
                             Text(
-                                "Chat and app policies.",
+                                "Change how chat and app behaves",
                                 style = MaterialTheme.typography.bodySmall,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                             )

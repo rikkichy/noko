@@ -234,6 +234,9 @@ fun ChatScreen(
     var hasStreamedContent by remember { mutableStateOf(false) }
     var streamJob by remember { mutableStateOf<kotlinx.coroutines.Job?>(null) }
 
+    val showAvatars by SettingsManager.showAvatars.collectAsState(initial = true)
+    val showNames by SettingsManager.showNames.collectAsState(initial = true)
+    val reduceMotion by SettingsManager.reduceMotion.collectAsState(initial = false)
     val nokoGuard by SettingsManager.nokoGuard.collectAsState(initial = true)
     val nokoPolkitTrimEmojis by SettingsManager.nokoPolkitTrimEmojis.collectAsState(initial = true)
     val nokoPolkitStructureActions by SettingsManager.nokoPolkitStructureActions.collectAsState(initial = true)
@@ -662,6 +665,9 @@ fun ChatScreen(
                     message = message,
                     persona = activePersona,
                     character = activeCharacter,
+                    showAvatars = showAvatars,
+                    showNames = showNames,
+                    reduceMotion = reduceMotion,
                     isStreaming = isStreamingThis,
                     isGenerating = isGenerating,
                     onRegenerate = if (message.role == ChatMessage.Role.ASSISTANT && !message.isGreeting) {
@@ -774,10 +780,10 @@ fun ChatScreen(
         }
         AnimatedVisibility(
             visible = showRpChips,
-            enter = fadeIn(tween(200, delayMillis = 80)) +
-                    slideInVertically(tween(250, delayMillis = 80)) { it },
-            exit = fadeOut(tween(170)) +
-                    slideOutVertically(tween(200)) { it },
+            enter = if (reduceMotion) expandVertically(tween(0))
+                    else fadeIn(tween(200, delayMillis = 80)) + slideInVertically(tween(250, delayMillis = 80)) { it },
+            exit = if (reduceMotion) shrinkVertically(tween(0))
+                   else fadeOut(tween(170)) + slideOutVertically(tween(200)) { it },
         ) {
             Row(
                 modifier = Modifier
@@ -963,6 +969,9 @@ private fun MessageBubble(
     message: ChatMessage,
     persona: PersonaEntry?,
     character: PersonaEntry?,
+    showAvatars: Boolean = true,
+    showNames: Boolean = true,
+    reduceMotion: Boolean = false,
     isStreaming: Boolean = false,
     isGenerating: Boolean = false,
     onRegenerate: (() -> Unit)? = null,
@@ -1074,8 +1083,8 @@ private fun MessageBubble(
     var regenProgress by remember { mutableStateOf(0f) }
 
     val shakeOffset = remember { Animatable(0f) }
-    LaunchedEffect(message.stoppedByUser) {
-        if (message.stoppedByUser) {
+    LaunchedEffect(message.stoppedByUser, reduceMotion) {
+        if (message.stoppedByUser && !reduceMotion) {
             repeat(3) {
                 shakeOffset.animateTo(6f, tween(40))
                 shakeOffset.animateTo(-6f, tween(40))
@@ -1157,7 +1166,7 @@ private fun MessageBubble(
                     } else Modifier
                 ),
         ) {
-            if (!isUser) {
+            if (!isUser && showAvatars) {
                 NokoAvatar(
                     name = name,
                     avatarFileName = avatarFileName,
@@ -1170,22 +1179,27 @@ private fun MessageBubble(
             Column(
                 horizontalAlignment = if (isUser) Alignment.End else Alignment.Start,
             ) {
-                Text(
-                    text = name,
-                    style = MaterialTheme.typography.labelSmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    modifier = Modifier.padding(horizontal = 4.dp, vertical = 2.dp),
-                )
+                if (showNames) {
+                    Text(
+                        text = name,
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.padding(horizontal = 4.dp, vertical = 2.dp),
+                    )
+                }
                 Box {
                     Surface(
                         shape = RoundedCornerShape(16.dp),
                         color = MaterialTheme.colorScheme.surfaceVariant,
                         modifier = Modifier
                             .widthIn(max = 280.dp)
-                            .animateContentSize(
-                                animationSpec = spring(
-                                    dampingRatio = Spring.DampingRatioNoBouncy,
-                                    stiffness = Spring.StiffnessHigh,
+                            .then(
+                                if (reduceMotion) Modifier
+                                else Modifier.animateContentSize(
+                                    animationSpec = spring(
+                                        dampingRatio = Spring.DampingRatioNoBouncy,
+                                        stiffness = Spring.StiffnessHigh,
+                                    )
                                 )
                             )
                             .then(if (canInteract) Modifier.clickable { showActions = !showActions } else Modifier),
@@ -1194,7 +1208,7 @@ private fun MessageBubble(
                         var wasStreaming by remember { mutableStateOf(false) }
                         if (isStreaming) wasStreaming = true
 
-                        if (wasStreaming) {
+                        if (wasStreaming && !reduceMotion) {
                             StreamingText(
                                 text = message.content,
                                 isStreaming = isStreaming,
@@ -1227,8 +1241,8 @@ private fun MessageBubble(
                 }
                 AnimatedVisibility(
                     visible = showActions && canInteract,
-                    enter = fadeIn(tween(200)) + expandVertically(tween(200)),
-                    exit = fadeOut(tween(100)) + shrinkVertically(tween(100)),
+                    enter = if (reduceMotion) expandVertically(tween(0)) else fadeIn(tween(200)) + expandVertically(tween(200)),
+                    exit = if (reduceMotion) shrinkVertically(tween(0)) else fadeOut(tween(100)) + shrinkVertically(tween(100)),
                 ) {
                     Row(
                         horizontalArrangement = Arrangement.spacedBy(6.dp),
@@ -1308,7 +1322,7 @@ private fun MessageBubble(
                 }
             }
 
-            if (isUser) {
+            if (isUser && showAvatars) {
                 Spacer(Modifier.width(8.dp))
                 NokoAvatar(
                     name = name,
