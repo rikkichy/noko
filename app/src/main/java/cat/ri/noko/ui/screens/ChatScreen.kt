@@ -1518,6 +1518,14 @@ private val actionPattern = Regex("(?<!\\*)\\*(?!\\*)((?:(?!\\*).)+?)\\*(?!\\*)"
 
 private fun structureActions(text: String): String {
     val result = actionPattern.replace(text) { match ->
+        val inner = match.groupValues[1].trim()
+        val wordCount = inner.split(Regex("\\s+")).size
+        val lineStart = text.lastIndexOf('\n', match.range.first).let { if (it == -1) 0 else it + 1 }
+        val lineEnd = text.indexOf('\n', match.range.last).let { if (it == -1) text.length else it }
+        val textBefore = text.substring(lineStart, match.range.first).trim()
+        val textAfter = text.substring(match.range.last + 1, lineEnd).trim()
+        val inSentence = textBefore.isNotEmpty() || textAfter.isNotEmpty()
+        if (wordCount <= 2 && inSentence) return@replace match.value
         val before = if (match.range.first > 0 && text[match.range.first - 1] != '\n') "\n" else ""
         val after = if (match.range.last < text.lastIndex && text[match.range.last + 1] != '\n') "\n" else ""
         "$before${match.value}$after"
