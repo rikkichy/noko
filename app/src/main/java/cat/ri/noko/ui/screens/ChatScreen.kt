@@ -22,7 +22,9 @@ import androidx.compose.runtime.withFrameMillis
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
+import androidx.compose.animation.slideInHorizontally
 import androidx.compose.animation.slideInVertically
+import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.animation.slideOutVertically
 import kotlinx.coroutines.delay
 import androidx.compose.foundation.clickable
@@ -51,6 +53,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.Send
 import androidx.compose.material.icons.automirrored.filled.NavigateBefore
 import androidx.compose.material.icons.automirrored.filled.NavigateNext
+import androidx.compose.material.icons.rounded.SendTimeExtension
 import androidx.compose.foundation.gestures.detectHorizontalDragGestures
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.rotate
@@ -1279,21 +1282,55 @@ private fun MessageBubble(
                         modifier = Modifier.padding(horizontal = 4.dp, vertical = 2.dp),
                     )
                 }
-                if (message.emojisTrimmed) {
-                    Text(
-                        text = "Emojis trimmed",
-                        style = MaterialTheme.typography.labelSmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f),
+                AnimatedVisibility(
+                    visible = message.emojisTrimmed,
+                    enter = if (reduceMotion) fadeIn(tween(0))
+                            else fadeIn(tween(300, delayMillis = 100)) + slideInHorizontally(tween(300, delayMillis = 100)) { if (isUser) it else -it },
+                    exit = if (reduceMotion) fadeOut(tween(0))
+                           else fadeOut(tween(200)) + slideOutHorizontally(tween(200)) { if (isUser) it else -it },
+                ) {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
                         modifier = Modifier.padding(horizontal = 4.dp, vertical = 2.dp),
-                    )
+                    ) {
+                        Icon(
+                            Icons.Rounded.SendTimeExtension,
+                            contentDescription = null,
+                            modifier = Modifier.size(12.dp),
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f),
+                        )
+                        Spacer(Modifier.size(3.dp))
+                        Text(
+                            text = "Emojis trimmed",
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f),
+                        )
+                    }
                 }
-                if (message.actionsStructured) {
-                    Text(
-                        text = "Actions structured",
-                        style = MaterialTheme.typography.labelSmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f),
+                AnimatedVisibility(
+                    visible = message.actionsStructured,
+                    enter = if (reduceMotion) fadeIn(tween(0))
+                            else fadeIn(tween(300, delayMillis = 100)) + slideInHorizontally(tween(300, delayMillis = 100)) { if (isUser) it else -it },
+                    exit = if (reduceMotion) fadeOut(tween(0))
+                           else fadeOut(tween(200)) + slideOutHorizontally(tween(200)) { if (isUser) it else -it },
+                ) {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
                         modifier = Modifier.padding(horizontal = 4.dp, vertical = 2.dp),
-                    )
+                    ) {
+                        Icon(
+                            Icons.Rounded.SendTimeExtension,
+                            contentDescription = null,
+                            modifier = Modifier.size(12.dp),
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f),
+                        )
+                        Spacer(Modifier.size(3.dp))
+                        Text(
+                            text = "Actions structured",
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f),
+                        )
+                    }
                 }
                 if (swipeCount > 1 && onSwipe != null && canInteract) {
                     Row(
@@ -1494,22 +1531,43 @@ private fun PersonaPickerSheet(
     }
 }
 
+private val emojiInvisibles = setOf(
+    0x200D,          // Zero-Width Joiner
+    0xFE0E, 0xFE0F, // Variation Selectors 15-16
+)
+
+private fun isVisibleEmoji(codePoint: Int): Boolean =
+    HallucinationDetector.isEmoji(codePoint) && codePoint !in emojiInvisibles
+
 private fun stripEmojis(text: String): String {
     val sb = StringBuilder()
     var prevWasSpace = false
-    text.codePoints().forEach { cp ->
-        if (!HallucinationDetector.isEmoji(cp)) {
-            val ch = String(Character.toChars(cp))
-            if (ch.isBlank()) {
-                if (!prevWasSpace) {
-                    sb.append(ch)
-                    prevWasSpace = true
-                }
-            } else {
-                sb.append(ch)
-                prevWasSpace = false
-            }
+    val codePoints = text.codePoints().toArray()
+    var i = 0
+    while (i < codePoints.size) {
+        val cp = codePoints[i]
+        if (isVisibleEmoji(cp)) {
+            // Skip the emoji and any trailing invisible joiners/selectors
+            i++
+            while (i < codePoints.size && codePoints[i] in emojiInvisibles) i++
+            continue
         }
+        if (cp in emojiInvisibles) {
+            // Orphan invisible — only skip if not adjacent to visible text
+            i++
+            continue
+        }
+        val ch = String(Character.toChars(cp))
+        if (ch.isBlank()) {
+            if (!prevWasSpace) {
+                sb.append(ch)
+                prevWasSpace = true
+            }
+        } else {
+            sb.append(ch)
+            prevWasSpace = false
+        }
+        i++
     }
     return sb.toString().trim()
 }
