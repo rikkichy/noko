@@ -111,7 +111,7 @@ fun ModelListContent(
         try {
             ApiClient.configure(apiKey, providerBaseUrl, providerId)
             val response = ApiClient.getModels()
-            models = response.data.sortedBy { it.name.lowercase() }
+            models = response.data.sortedBy { it.displayName.lowercase() }
         } catch (e: Exception) {
             error = humanizeException(e)
         }
@@ -122,7 +122,7 @@ fun ModelListContent(
         if (search.isBlank()) models
         else {
             val q = search.lowercase()
-            models.filter { it.name.lowercase().contains(q) || it.id.lowercase().contains(q) }
+            models.filter { it.displayName.lowercase().contains(q) || it.id.lowercase().contains(q) }
         }
     }
 
@@ -167,7 +167,7 @@ fun ModelListContent(
                                 try {
                                     ApiClient.configure(apiKey, providerBaseUrl, providerId)
                                     val response = ApiClient.getModels()
-                                    models = response.data.sortedBy { it.name.lowercase() }
+                                    models = response.data.sortedBy { it.displayName.lowercase() }
                                 } catch (e: Exception) {
                                     error = humanizeException(e)
                                 }
@@ -193,7 +193,7 @@ fun ModelListContent(
                                 .clickable {
                                     haptics.confirm()
                                     scope.launch {
-                                        SettingsManager.setSelectedModel(model.id, model.name)
+                                        SettingsManager.setSelectedModel(model.id, model.displayName)
                                         onModelSelected?.invoke()
                                     }
                                 },
@@ -212,7 +212,7 @@ fun ModelListContent(
                             ) {
                                 Column(modifier = Modifier.weight(1f)) {
                                     Text(
-                                        model.name,
+                                        model.displayName,
                                         style = MaterialTheme.typography.bodyLarge,
                                         maxLines = 1,
                                         overflow = TextOverflow.Ellipsis,

@@ -18,6 +18,7 @@ val builtInProviders = listOf(
         name = "OpenRouter",
         baseUrl = "https://openrouter.ai/api/v1/",
         requiresAuth = true,
+        urlEditable = false,
     ),
     ApiProvider(
         id = "openai",
@@ -40,6 +41,9 @@ val builtInProviders = listOf(
         requiresAuth = false,
         isLocal = true,
     ),
+)
+
+val legacyProviders = listOf(
     ApiProvider(
         id = "koboldcpp",
         name = "KoboldCPP",
@@ -50,4 +54,4 @@ val builtInProviders = listOf(
 )
 
 fun getProviderById(id: String): ApiProvider? =
-    builtInProviders.find { it.id == id }
+    builtInProviders.find { it.id == id } ?: legacyProviders.find { it.id == id }

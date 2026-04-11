@@ -61,12 +61,10 @@ import cat.ri.noko.core.api.ApiClient
 import cat.ri.noko.core.api.humanizeException
 import cat.ri.noko.model.PersonaEntry
 import cat.ri.noko.model.PersonaType
-import cat.ri.noko.model.builtInProviders
+import cat.ri.noko.ui.components.ProviderListContent
 import cat.ri.noko.model.getProviderById
 import cat.ri.noko.ui.components.ImageCropOverlay
-import cat.ri.noko.ui.components.CustomProviderCard
 import cat.ri.noko.ui.components.PersonaFormFields
-import cat.ri.noko.ui.components.ProviderCard
 import cat.ri.noko.ui.theme.nokoTopAppBarColors
 import cat.ri.noko.ui.util.rememberNokoHaptics
 import kotlinx.coroutines.Dispatchers
@@ -278,24 +276,10 @@ fun OnboardingScreen(onComplete: () -> Unit) {
 
                     Spacer(Modifier.height(4.dp))
 
-                    CustomProviderCard(
-                        isSelected = selectedProviderId == "custom",
-                        onSelect = {
-                            haptics.tap()
-                            selectedProviderId = "custom"
-                        },
+                    ProviderListContent(
+                        selectedProviderId = selectedProviderId,
+                        onProviderSelect = { selectedProviderId = it },
                     )
-
-                    builtInProviders.forEach { provider ->
-                        ProviderCard(
-                            provider = provider,
-                            isSelected = selectedProviderId == provider.id,
-                            onSelect = {
-                                haptics.tap()
-                                selectedProviderId = provider.id
-                            },
-                        )
-                    }
 
                     Button(
                         onClick = {

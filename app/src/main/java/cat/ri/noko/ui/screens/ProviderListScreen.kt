@@ -22,18 +22,14 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import cat.ri.noko.core.SettingsManager
-import cat.ri.noko.model.builtInProviders
-import cat.ri.noko.ui.components.CustomProviderCard
-import cat.ri.noko.ui.components.ProviderCard
+import cat.ri.noko.ui.components.ProviderListContent
 import cat.ri.noko.ui.theme.nokoTopAppBarColors
-import cat.ri.noko.ui.util.rememberNokoHaptics
 import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ProviderListScreen(onBack: () -> Unit) {
     val scope = rememberCoroutineScope()
-    val haptics = rememberNokoHaptics()
     val selectedProviderId by SettingsManager.selectedProviderId.collectAsState(initial = SettingsManager.getSelectedProviderId())
     Scaffold(
         topBar = {
@@ -62,28 +58,12 @@ fun ProviderListScreen(onBack: () -> Unit) {
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
 
-            CustomProviderCard(
-                isSelected = selectedProviderId == "custom",
-                onSelect = {
-                    haptics.tap()
-                    scope.launch {
-                        SettingsManager.setSelectedProvider("custom")
-                    }
+            ProviderListContent(
+                selectedProviderId = selectedProviderId,
+                onProviderSelect = {
+                    scope.launch { SettingsManager.setSelectedProvider(it) }
                 },
             )
-
-            builtInProviders.forEach { provider ->
-                ProviderCard(
-                    provider = provider,
-                    isSelected = selectedProviderId == provider.id,
-                    onSelect = {
-                        haptics.tap()
-                        scope.launch {
-                            SettingsManager.setSelectedProvider(provider.id)
-                        }
-                    },
-                )
-            }
         }
     }
 }

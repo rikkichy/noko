@@ -11,11 +11,13 @@ data class ModelsResponse(
 @Serializable
 data class ModelInfo(
     val id: String,
-    val name: String,
+    val name: String = "",
     val description: String? = null,
     @SerialName("context_length") val contextLength: Int? = null,
     val pricing: ModelPricing? = null,
-)
+) {
+    val displayName: String get() = name.ifBlank { id }
+}
 
 @Serializable
 data class ModelPricing(

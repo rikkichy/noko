@@ -1,5 +1,6 @@
 package cat.ri.noko.ui.components
 
+import android.net.Uri
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -12,11 +13,14 @@ import androidx.compose.foundation.layout.size
 import cat.ri.noko.ui.theme.NokoFieldShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Check
-import androidx.compose.material.icons.rounded.Cloud
 import androidx.compose.material.icons.rounded.Computer
+import androidx.compose.material.icons.rounded.Extension
+import androidx.compose.material.icons.rounded.WifiFind
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.Icon
+import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
@@ -29,7 +33,11 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
+import cat.ri.noko.R
+import cat.ri.noko.core.DiscoveredInstance
+import cat.ri.noko.core.NetworkDiscovery
 import cat.ri.noko.core.SettingsManager
 import androidx.compose.material3.Switch
 import cat.ri.noko.model.ApiProvider
@@ -65,6 +73,12 @@ fun CustomProviderCard(
                 modifier = Modifier.fillMaxWidth(),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
+                Icon(
+                    Icons.Rounded.Extension,
+                    contentDescription = null,
+                    modifier = Modifier.size(24.dp),
+                )
+                Spacer(Modifier.size(12.dp))
                 Column(modifier = Modifier.weight(1f)) {
                     Text("Custom", style = MaterialTheme.typography.titleMedium)
                     Text(
@@ -136,10 +150,16 @@ fun ProviderCard(
     showUrlEditor: Boolean = true,
 ) {
     val scope = rememberCoroutineScope()
+    val haptics = rememberNokoHaptics()
     val urlOverride by SettingsManager.getProviderUrlOverride(provider.id).collectAsState(initial = "")
     var urlInput by remember(urlOverride, provider.id) {
         mutableStateOf(urlOverride.ifBlank { provider.baseUrl })
     }
+
+    // Scan state for local providers
+    var isScanning by remember { mutableStateOf(false) }
+    var scanResults by remember { mutableStateOf<List<DiscoveredInstance>>(emptyList()) }
+    var scanError by remember { mutableStateOf<String?>(null) }
 
     Card(
         colors = CardDefaults.cardColors(
@@ -158,11 +178,26 @@ fun ProviderCard(
                 modifier = Modifier.fillMaxWidth(),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
-                Icon(
-                    if (provider.isLocal) Icons.Rounded.Computer else Icons.Rounded.Cloud,
-                    contentDescription = null,
-                    modifier = Modifier.size(24.dp),
-                )
+                val iconRes = when (provider.id) {
+                    "openrouter" -> R.drawable.ic_openrouter
+                    "openai" -> R.drawable.ic_openai
+                    "ollama" -> R.drawable.ic_ollama
+                    "lmstudio" -> R.drawable.ic_lmstudio
+                    else -> null
+                }
+                if (iconRes != null) {
+                    Icon(
+                        painter = painterResource(iconRes),
+                        contentDescription = null,
+                        modifier = Modifier.size(24.dp),
+                    )
+                } else {
+                    Icon(
+                        Icons.Rounded.Computer,
+                        contentDescription = null,
+                        modifier = Modifier.size(24.dp),
+                    )
+                }
                 Spacer(Modifier.size(12.dp))
                 Column(modifier = Modifier.weight(1f)) {
                     Row(
@@ -197,26 +232,125 @@ fun ProviderCard(
 
             if (showUrlEditor && provider.urlEditable) {
                 AnimatedVisibility(visible = isSelected) {
-                    val urlValid = urlInput.isBlank() || SettingsManager.validateProviderUrl(urlInput)
-                    OutlinedTextField(
-                        value = urlInput,
-                        onValueChange = {
-                            urlInput = it
-                            if (it.isBlank() || SettingsManager.validateProviderUrl(it)) {
-                                val override = if (it == provider.baseUrl) "" else it
-                                scope.launch { SettingsManager.setProviderUrlOverride(provider.id, override) }
+                    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                        val urlValid = urlInput.isBlank() || SettingsManager.validateProviderUrl(urlInput)
+                        OutlinedTextField(
+                            value = urlInput,
+                            onValueChange = {
+                                urlInput = it
+                                if (it.isBlank() || SettingsManager.validateProviderUrl(it)) {
+                                    val override = if (it == provider.baseUrl) "" else it
+                                    scope.launch { SettingsManager.setProviderUrlOverride(provider.id, override) }
+                                }
+                            },
+                            label = { Text("Base URL") },
+                            placeholder = { Text(provider.baseUrl) },
+                            singleLine = true,
+                            isError = !urlValid,
+                            supportingText = if (!urlValid) {
+                                { Text("Use https:// (or http:// for local networks)") }
+                            } else null,
+                            shape = NokoFieldShape,
+                            modifier = Modifier.fillMaxWidth(),
+                        )
+
+                        if (provider.isLocal) {
+                            FilledTonalButton(
+                                onClick = {
+                                    haptics.tap()
+                                    isScanning = true
+                                    scanError = null
+                                    scanResults = emptyList()
+                                    val port = Uri.parse(provider.baseUrl).port
+                                    scope.launch {
+                                        try {
+                                            val results = NetworkDiscovery.scanSubnet(
+                                                port = port,
+                                                providerName = provider.name,
+                                            )
+                                            scanResults = results
+                                            if (results.isEmpty()) {
+                                                scanError = "No ${provider.name} instances found on your network"
+                                            }
+                                        } catch (e: Exception) {
+                                            scanError = "Scan failed: ${e.message}"
+                                        } finally {
+                                            isScanning = false
+                                        }
+                                    }
+                                },
+                                enabled = !isScanning,
+                                modifier = Modifier.fillMaxWidth(),
+                            ) {
+                                Icon(
+                                    Icons.Rounded.WifiFind,
+                                    contentDescription = null,
+                                    modifier = Modifier.size(18.dp),
+                                )
+                                Spacer(Modifier.size(8.dp))
+                                Text(if (isScanning) "Scanning\u2026" else "Scan network")
                             }
-                        },
-                        label = { Text("Base URL") },
-                        placeholder = { Text(provider.baseUrl) },
-                        singleLine = true,
-                        isError = !urlValid,
-                        supportingText = if (!urlValid) {
-                            { Text("Use https:// (or http:// for local networks)") }
-                        } else null,
-                        shape = NokoFieldShape,
-                        modifier = Modifier.fillMaxWidth(),
-                    )
+
+                            AnimatedVisibility(visible = isScanning) {
+                                LinearProgressIndicator(modifier = Modifier.fillMaxWidth())
+                            }
+
+                            AnimatedVisibility(visible = scanError != null) {
+                                Text(
+                                    scanError ?: "",
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                )
+                            }
+
+                            AnimatedVisibility(visible = scanResults.isNotEmpty()) {
+                                Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                                    scanResults.forEach { result ->
+                                        Card(
+                                            colors = CardDefaults.cardColors(
+                                                containerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
+                                            ),
+                                            shape = NokoFieldShape,
+                                            modifier = Modifier.fillMaxWidth(),
+                                        ) {
+                                            Row(
+                                                modifier = Modifier
+                                                    .fillMaxWidth()
+                                                    .clickable {
+                                                        haptics.confirm()
+                                                        urlInput = result.baseUrl
+                                                        val override = if (result.baseUrl == provider.baseUrl) "" else result.baseUrl
+                                                        scope.launch { SettingsManager.setProviderUrlOverride(provider.id, override) }
+                                                        scanResults = emptyList()
+                                                    }
+                                                    .padding(12.dp),
+                                                verticalAlignment = Alignment.CenterVertically,
+                                                horizontalArrangement = Arrangement.SpaceBetween,
+                                            ) {
+                                                Column {
+                                                    Text(
+                                                        result.ip,
+                                                        style = MaterialTheme.typography.bodyMedium,
+                                                    )
+                                                    Text(
+                                                        "${result.models.size} model${if (result.models.size != 1) "s" else ""}",
+                                                        style = MaterialTheme.typography.bodySmall,
+                                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                                    )
+                                                }
+                                                Icon(
+                                                    Icons.Rounded.Computer,
+                                                    contentDescription = null,
+                                                    tint = MaterialTheme.colorScheme.primary,
+                                                    modifier = Modifier.size(20.dp),
+                                                )
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
                 }
             }
         }
