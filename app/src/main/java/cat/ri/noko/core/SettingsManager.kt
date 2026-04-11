@@ -318,7 +318,7 @@ object SettingsManager {
         return try {
             val parsed = URL(url)
             val host = parsed.host?.lowercase() ?: return false
-            val isLocal = host == "localhost" || host == "127.0.0.1"
+            val isLocal = host == "localhost" || host == "127.0.0.1" || isPrivateNetwork(host)
             when (parsed.protocol) {
                 "https" -> true
                 "http" -> isLocal
@@ -327,6 +327,14 @@ object SettingsManager {
         } catch (_: Exception) {
             false
         }
+    }
+
+    private fun isPrivateNetwork(host: String): Boolean {
+        val parts = host.split('.').mapNotNull { it.toIntOrNull() }
+        if (parts.size != 4) return host.endsWith(".local")
+        return parts[0] == 10 ||
+                (parts[0] == 172 && parts[1] in 16..31) ||
+                (parts[0] == 192 && parts[1] == 168)
     }
 
     suspend fun setCustomProviderUrl(url: String) {

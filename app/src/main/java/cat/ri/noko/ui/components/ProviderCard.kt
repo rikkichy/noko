@@ -98,7 +98,7 @@ fun CustomProviderCard(
                         singleLine = true,
                         isError = !customUrlValid,
                         supportingText = if (!customUrlValid) {
-                            { Text("Use https:// (or http:// for localhost)") }
+                            { Text("Use https:// (or http:// for local networks)") }
                         } else null,
                         shape = NokoFieldShape,
                         modifier = Modifier.fillMaxWidth(),
@@ -212,7 +212,7 @@ fun ProviderCard(
                         singleLine = true,
                         isError = !urlValid,
                         supportingText = if (!urlValid) {
-                            { Text("Use https:// (or http:// for localhost)") }
+                            { Text("Use https:// (or http:// for local networks)") }
                         } else null,
                         shape = NokoFieldShape,
                         modifier = Modifier.fillMaxWidth(),
