@@ -4,6 +4,8 @@ import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import java.util.UUID
 
+const val DEFAULT_CONTINUE_NUDGE = "Continue your last message without repeating its original content."
+
 @Serializable
 enum class PromptSectionType {
     MAIN_PROMPT,
@@ -31,6 +33,7 @@ data class PromptPreset(
     @SerialName("max_tokens") val maxTokens: Int? = null,
     @SerialName("frequency_penalty") val frequencyPenalty: Float? = null,
     @SerialName("presence_penalty") val presencePenalty: Float? = null,
+    @SerialName("continue_nudge_prompt") val continueNudgePrompt: String = DEFAULT_CONTINUE_NUDGE,
 )
 
 fun defaultSections(): List<PromptSection> = listOf(

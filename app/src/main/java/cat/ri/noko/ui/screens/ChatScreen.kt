@@ -296,7 +296,7 @@ fun ChatScreen(
     }
 
 
-    fun startStreaming(targetIdx: Int? = null) {
+    fun startStreaming(targetIdx: Int? = null, continueNudge: String? = null) {
         if ((providerRequiresAuth && apiKey.isBlank()) || modelId.isBlank() || providerBaseUrl.isBlank()) return
         isGenerating = true
         hasStreamedContent = false
@@ -330,6 +330,7 @@ fun ChatScreen(
                     persona = activePersona,
                     character = activeCharacter,
                     chatMessages = if (targetIdx != null) messages.take(targetIdx) else messages.dropLast(1),
+                    continueNudge = continueNudge,
                 )
                 val request = ChatRequest(
                     model = modelId,
@@ -880,6 +881,10 @@ fun ChatScreen(
                         haptics.tap()
                         keyboard?.hide()
                         startStreaming()
+                    } else if (messages.isNotEmpty() && messages.last().role == ChatMessage.Role.ASSISTANT) {
+                        haptics.tap()
+                        keyboard?.hide()
+                        startStreaming(continueNudge = activePreset.continueNudgePrompt)
                     }
                 },
                 shapes = IconButtonShapes(

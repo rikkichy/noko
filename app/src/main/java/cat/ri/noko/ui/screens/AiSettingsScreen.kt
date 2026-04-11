@@ -84,6 +84,7 @@ fun AiSettingsScreen(onBack: () -> Unit) {
     var maxTokens by remember(activePreset) { mutableStateOf(activePreset.maxTokens) }
     var frequencyPenalty by remember(activePreset) { mutableStateOf(activePreset.frequencyPenalty) }
     var presencePenalty by remember(activePreset) { mutableStateOf(activePreset.presencePenalty) }
+    var continueNudgePrompt by remember(activePreset) { mutableStateOf(activePreset.continueNudgePrompt) }
 
     val allEntries by SettingsManager.allEntries.collectAsState(initial = emptyList())
     val selectedPersonaId by SettingsManager.selectedPersonaId.collectAsState(initial = null)
@@ -108,6 +109,7 @@ fun AiSettingsScreen(onBack: () -> Unit) {
         maxTokens = maxTokens,
         frequencyPenalty = frequencyPenalty,
         presencePenalty = presencePenalty,
+        continueNudgePrompt = continueNudgePrompt,
     )
 
     Scaffold(
@@ -332,6 +334,39 @@ fun AiSettingsScreen(onBack: () -> Unit) {
                         enabled = !isBuiltIn,
                         onToggle = { presencePenalty = if (it) 0f else null },
                         onChange = { presencePenalty = it },
+                    )
+                }
+            }
+
+            Card(
+                colors = CardDefaults.cardColors(
+                    containerColor = MaterialTheme.colorScheme.surfaceContainer,
+                ),
+            ) {
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(16.dp)
+                        .alpha(if (isBuiltIn) 0.6f else 1f),
+                    verticalArrangement = Arrangement.spacedBy(8.dp),
+                ) {
+                    Text("Advanced", style = MaterialTheme.typography.titleMedium)
+                    Text(
+                        "Continue nudge prompt",
+                        style = MaterialTheme.typography.bodyMedium,
+                    )
+                    Text(
+                        "Sent when you tap Send with an empty message to continue the AI's response.",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                    OutlinedTextField(
+                        value = continueNudgePrompt,
+                        onValueChange = { continueNudgePrompt = it },
+                        modifier = Modifier.fillMaxWidth(),
+                        enabled = !isBuiltIn,
+                        minLines = 2,
+                        shape = NokoFieldShape,
                     )
                 }
             }

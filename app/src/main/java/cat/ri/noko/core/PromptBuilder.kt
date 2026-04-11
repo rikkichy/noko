@@ -19,6 +19,7 @@ object PromptBuilder {
         persona: PersonaEntry?,
         character: PersonaEntry?,
         chatMessages: List<ChatMessage>,
+        continueNudge: String? = null,
     ): List<ChatRequestMessage> {
         val userName = persona?.name ?: "User"
         val charName = character?.name ?: "Assistant"
@@ -63,6 +64,10 @@ object PromptBuilder {
                         ),
                     )
                 }
+            }
+
+            if (continueNudge != null) {
+                add(ChatRequestMessage(role = "user", content = continueNudge))
             }
         }
     }
