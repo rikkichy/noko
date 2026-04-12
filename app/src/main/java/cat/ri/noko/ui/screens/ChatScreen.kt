@@ -1195,7 +1195,7 @@ private fun MessageBubble(
                         else wasStreaming = false
 
                         AnimatedContent(
-                            targetState = swipeIndex to message.content,
+                            targetState = swipeIndex,
                             transitionSpec = {
                                 if (reduceMotion) {
                                     fadeIn(tween(0)) togetherWith fadeOut(tween(0)) using SizeTransform(clip = false)
@@ -1207,17 +1207,17 @@ private fun MessageBubble(
                                 }
                             },
                             label = "swipe_content",
-                        ) { (idx, content) ->
+                        ) { idx ->
                             if (wasStreaming && idx == swipeIndex && !reduceMotion) {
                                 StreamingText(
-                                    text = content,
+                                    text = message.content,
                                     isStreaming = isStreaming,
                                     modifier = Modifier.padding(12.dp),
                                     style = MaterialTheme.typography.bodyLarge,
                                 )
                             } else {
                                 Text(
-                                    text = parseMarkdown(content),
+                                    text = parseMarkdown(message.content),
                                     modifier = Modifier.padding(12.dp),
                                     style = MaterialTheme.typography.bodyLarge,
                                 )
