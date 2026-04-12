@@ -99,6 +99,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.rememberUpdatedState
@@ -1083,6 +1084,11 @@ private fun MessageBubble(
         }
     }
 
+    val currentSwipeIndex by rememberUpdatedState(swipeIndex)
+    val currentSwipeCount by rememberUpdatedState(swipeCount)
+    val currentEffectiveRegenerate by rememberUpdatedState(effectiveRegenerate)
+    val currentOnSwipe by rememberUpdatedState(onSwipe)
+
     val hasSwipeGesture = canInteract && (onSwipe != null || effectiveRegenerate != null)
 
     Box(
@@ -1104,26 +1110,26 @@ private fun MessageBubble(
                             detectHorizontalDragGestures(
                                 onDragStart = { },
                                 onDragEnd = {
-                                    val isLastSwipe = swipeIndex >= swipeCount - 1
-                                    val isFirstSwipe = swipeIndex <= 0
-                                    if (totalDrag < -swipeThreshold && onSwipe != null && !isLastSwipe) {
+                                    val isLastSwipe = currentSwipeIndex >= currentSwipeCount - 1
+                                    val isFirstSwipe = currentSwipeIndex <= 0
+                                    if (totalDrag < -swipeThreshold && currentOnSwipe != null && !isLastSwipe) {
                                         swipeDirection = 1
-                                        onSwipe(1)
+                                        currentOnSwipe?.invoke(1)
                                         swipeScope.launch {
                                             regenProgress = 0f
                                             swipeOffset.animateTo(0f, spring(stiffness = Spring.StiffnessMediumLow))
                                         }
-                                    } else if (totalDrag < -regenThreshold && isLastSwipe && effectiveRegenerate != null) {
+                                    } else if (totalDrag < -regenThreshold && isLastSwipe && currentEffectiveRegenerate != null) {
                                         haptics.confirm()
                                         swipeDirection = 1
-                                        effectiveRegenerate()
+                                        currentEffectiveRegenerate?.invoke()
                                         swipeScope.launch {
                                             regenProgress = 0f
                                             swipeOffset.animateTo(0f, spring(stiffness = Spring.StiffnessMediumLow))
                                         }
-                                    } else if (totalDrag > swipeThreshold && onSwipe != null && !isFirstSwipe) {
+                                    } else if (totalDrag > swipeThreshold && currentOnSwipe != null && !isFirstSwipe) {
                                         swipeDirection = -1
-                                        onSwipe(-1)
+                                        currentOnSwipe?.invoke(-1)
                                         swipeScope.launch {
                                             regenProgress = 0f
                                             swipeOffset.animateTo(0f, spring(stiffness = Spring.StiffnessMediumLow))
@@ -1140,8 +1146,8 @@ private fun MessageBubble(
                                     change.consume()
                                     totalDrag += dragAmount
                                     swipeScope.launch { swipeOffset.snapTo(swipeOffset.value + dragAmount) }
-                                    val isLastSwipe = swipeIndex >= swipeCount - 1
-                                    if (totalDrag < 0 && isLastSwipe && effectiveRegenerate != null) {
+                                    val isLastSwipe = currentSwipeIndex >= currentSwipeCount - 1
+                                    if (totalDrag < 0 && isLastSwipe && currentEffectiveRegenerate != null) {
                                         val progress = (-totalDrag / regenThreshold).coerceIn(0f, 1f)
                                         if (progress >= 1f && regenProgress < 1f) haptics.tick()
                                         regenProgress = progress
