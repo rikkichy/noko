@@ -678,7 +678,7 @@ fun ChatScreen(
                     reduceMotion = reduceMotion,
                     isStreaming = isStreamingThis,
                     isGenerating = isGenerating,
-                    onRegenerate = if (message.role == ChatMessage.Role.ASSISTANT && !message.isGreeting && message.activeIndex >= message.swipeCount - 1) {
+                    onRegenerate = if (message.role == ChatMessage.Role.ASSISTANT && !message.isGreeting) {
                         {
                             val idx = messages.indexOfFirst { it.id == message.id }
                             if (idx >= 0) {
@@ -968,6 +968,8 @@ private fun MessageBubble(
 ) {
     val swipeIndex = message.activeIndex
     val swipeCount = message.swipeCount
+    val isLastBranch = swipeIndex >= swipeCount - 1
+    val effectiveRegenerate = if (isLastBranch) onRegenerate else null
     if (message.isGreeting) {
         Surface(
             shape = RoundedCornerShape(16.dp),
@@ -1014,8 +1016,8 @@ private fun MessageBubble(
                         )
                     }
                 }
-                if (onRegenerate != null) {
-                    IconButton(onClick = onRegenerate) {
+                if (effectiveRegenerate != null) {
+                    IconButton(onClick = effectiveRegenerate) {
                         Icon(
                             Icons.Filled.Refresh,
                             contentDescription = "Regenerate",
@@ -1081,7 +1083,7 @@ private fun MessageBubble(
         }
     }
 
-    val hasSwipeGesture = canInteract && (onSwipe != null || onRegenerate != null)
+    val hasSwipeGesture = canInteract && (onSwipe != null || effectiveRegenerate != null)
 
     Box(
         modifier = Modifier.fillMaxWidth(),
@@ -1111,10 +1113,10 @@ private fun MessageBubble(
                                             regenProgress = 0f
                                             swipeOffset.animateTo(0f, spring(stiffness = Spring.StiffnessMediumLow))
                                         }
-                                    } else if (totalDrag < -regenThreshold && isLastSwipe && onRegenerate != null) {
+                                    } else if (totalDrag < -regenThreshold && isLastSwipe && effectiveRegenerate != null) {
                                         haptics.confirm()
                                         swipeDirection = 1
-                                        onRegenerate()
+                                        effectiveRegenerate()
                                         swipeScope.launch {
                                             regenProgress = 0f
                                             swipeOffset.animateTo(0f, spring(stiffness = Spring.StiffnessMediumLow))
@@ -1139,7 +1141,7 @@ private fun MessageBubble(
                                     totalDrag += dragAmount
                                     swipeScope.launch { swipeOffset.snapTo(swipeOffset.value + dragAmount) }
                                     val isLastSwipe = swipeIndex >= swipeCount - 1
-                                    if (totalDrag < 0 && isLastSwipe && onRegenerate != null) {
+                                    if (totalDrag < 0 && isLastSwipe && effectiveRegenerate != null) {
                                         val progress = (-totalDrag / regenThreshold).coerceIn(0f, 1f)
                                         if (progress >= 1f && regenProgress < 1f) haptics.tick()
                                         regenProgress = progress
@@ -1249,9 +1251,9 @@ private fun MessageBubble(
                         horizontalArrangement = Arrangement.spacedBy(6.dp),
                         modifier = Modifier.padding(top = 4.dp),
                     ) {
-                        if (!isUser && onRegenerate != null) {
+                        if (!isUser && effectiveRegenerate != null) {
                             AssistChip(
-                                onClick = { showActions = false; onRegenerate() },
+                                onClick = { showActions = false; effectiveRegenerate() },
                                 label = { Text("Regenerate", style = MaterialTheme.typography.labelSmall, maxLines = 1, softWrap = false) },
                                 leadingIcon = { Icon(Icons.Filled.Autorenew, contentDescription = null, modifier = Modifier.size(16.dp)) },
                             )
