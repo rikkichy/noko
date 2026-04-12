@@ -11,10 +11,13 @@ import cat.ri.noko.NokoApplication
 import cat.ri.noko.R
 import cat.ri.noko.core.replaceTemplateVars
 import cat.ri.noko.ui.components.NokoAvatar
+import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.SizeTransform
 import androidx.compose.animation.animateContentSize
 import androidx.compose.animation.expandVertically
 import androidx.compose.animation.shrinkVertically
+import androidx.compose.animation.togetherWith
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.spring
@@ -94,6 +97,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateListOf
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
@@ -423,18 +427,20 @@ fun ChatScreen(
                         actionsStructured = true
                     }
                 }
-                messages[assistantIdx] = messages[assistantIdx].copy(
+                val updated = messages[assistantIdx].copy(
                     content = processed,
                     emojisTrimmed = emojisTrimmed,
                     actionsStructured = actionsStructured,
                 )
+                messages[assistantIdx] = updated.syncActiveAlternative()
                 haptics.confirm()
             } catch (e: kotlinx.coroutines.CancellationException) {
                 if (assistantIdx < messages.size && !messages[assistantIdx].guardBlocked) {
-                    messages[assistantIdx] = messages[assistantIdx].copy(
+                    val stopped = messages[assistantIdx].copy(
                         content = buffer.toString(),
                         stoppedByUser = true,
                     )
+                    messages[assistantIdx] = stopped.syncActiveAlternative()
                 }
             } catch (e: Exception) {
                 val errorMsg = cat.ri.noko.core.api.humanizeException(e)
@@ -676,13 +682,7 @@ fun ChatScreen(
                         {
                             val idx = messages.indexOfFirst { it.id == message.id }
                             if (idx >= 0) {
-                                val current = messages[idx]
-                                val updatedAlts = current.alternatives.toMutableList()
-                                updatedAlts.add(current.toAlternative())
-                                messages[idx] = current.copy(
-                                    activeIndex = updatedAlts.size,
-                                    alternatives = updatedAlts,
-                                )
+                                messages[idx] = messages[idx].addRegeneration()
                                 startStreaming(targetIdx = idx)
                             }
                         }
@@ -711,21 +711,9 @@ fun ChatScreen(
                             val msgIdx = messages.indexOfFirst { it.id == message.id }
                             if (msgIdx >= 0) {
                                 val current = messages[msgIdx]
-                                val targetIndex = current.activeIndex + direction
-                                if (targetIndex in 0 until current.swipeCount) {
-                                    val updatedAlts = current.alternatives.toMutableList()
-                                    updatedAlts[current.activeIndex] = current.toAlternative()
-                                    val target = updatedAlts[targetIndex]
-                                    messages[msgIdx] = current.copy(
-                                        content = target.content,
-                                        stoppedByUser = target.stoppedByUser,
-                                        guardBlocked = target.guardBlocked,
-                                        guardReason = target.guardReason,
-                                        emojisTrimmed = target.emojisTrimmed,
-                                        actionsStructured = target.actionsStructured,
-                                        activeIndex = targetIndex,
-                                        alternatives = updatedAlts,
-                                    )
+                                val swiped = current.swipeTo(current.activeIndex + direction)
+                                if (swiped !== current) {
+                                    messages[msgIdx] = swiped
                                     saveCurrentChat()
                                 }
                             }
@@ -1080,6 +1068,7 @@ private fun MessageBubble(
     val swipeScope = rememberCoroutineScope()
     val haptics = rememberNokoHaptics()
     var regenProgress by remember { mutableStateOf(0f) }
+    var swipeDirection by remember { mutableIntStateOf(0) }
 
     val shakeOffset = remember { Animatable(0f) }
     LaunchedEffect(message.stoppedByUser, reduceMotion) {
@@ -1116,28 +1105,26 @@ private fun MessageBubble(
                                     val isLastSwipe = swipeIndex >= swipeCount - 1
                                     val isFirstSwipe = swipeIndex <= 0
                                     if (totalDrag < -swipeThreshold && onSwipe != null && !isLastSwipe) {
+                                        swipeDirection = 1
+                                        onSwipe(1)
                                         swipeScope.launch {
                                             regenProgress = 0f
-                                            swipeOffset.animateTo(-500f, tween(180))
-                                            onSwipe(1)
-                                            swipeOffset.snapTo(500f)
-                                            swipeOffset.animateTo(0f, tween(150))
+                                            swipeOffset.animateTo(0f, spring(stiffness = Spring.StiffnessMediumLow))
                                         }
                                     } else if (totalDrag < -regenThreshold && isLastSwipe && onRegenerate != null) {
                                         haptics.confirm()
+                                        swipeDirection = 1
+                                        onRegenerate()
                                         swipeScope.launch {
                                             regenProgress = 0f
-                                            swipeOffset.animateTo(-500f, tween(180))
-                                            onRegenerate()
-                                            swipeOffset.snapTo(0f)
+                                            swipeOffset.animateTo(0f, spring(stiffness = Spring.StiffnessMediumLow))
                                         }
                                     } else if (totalDrag > swipeThreshold && onSwipe != null && !isFirstSwipe) {
+                                        swipeDirection = -1
+                                        onSwipe(-1)
                                         swipeScope.launch {
                                             regenProgress = 0f
-                                            swipeOffset.animateTo(500f, tween(180))
-                                            onSwipe(-1)
-                                            swipeOffset.snapTo(-500f)
-                                            swipeOffset.animateTo(0f, tween(150))
+                                            swipeOffset.animateTo(0f, spring(stiffness = Spring.StiffnessMediumLow))
                                         }
                                     } else {
                                         swipeScope.launch {
@@ -1203,23 +1190,38 @@ private fun MessageBubble(
                             )
                             .then(if (canInteract) Modifier.clickable { showActions = !showActions } else Modifier),
                     ) {
-
                         var wasStreaming by remember { mutableStateOf(false) }
                         if (isStreaming) wasStreaming = true
+                        else wasStreaming = false
 
-                        if (wasStreaming && !reduceMotion) {
-                            StreamingText(
-                                text = message.content,
-                                isStreaming = isStreaming,
-                                modifier = Modifier.padding(12.dp),
-                                style = MaterialTheme.typography.bodyLarge,
-                            )
-                        } else {
-                            Text(
-                                text = parseMarkdown(message.content),
-                                modifier = Modifier.padding(12.dp),
-                                style = MaterialTheme.typography.bodyLarge,
-                            )
+                        AnimatedContent(
+                            targetState = swipeIndex to message.content,
+                            transitionSpec = {
+                                if (reduceMotion) {
+                                    fadeIn(tween(0)) togetherWith fadeOut(tween(0)) using SizeTransform(clip = false)
+                                } else {
+                                    val dir = swipeDirection
+                                    (slideInHorizontally(tween(250)) { it * dir } + fadeIn(tween(200))) togetherWith
+                                        (slideOutHorizontally(tween(250)) { -it * dir } + fadeOut(tween(150))) using
+                                        SizeTransform(clip = false)
+                                }
+                            },
+                            label = "swipe_content",
+                        ) { (idx, content) ->
+                            if (wasStreaming && idx == swipeIndex && !reduceMotion) {
+                                StreamingText(
+                                    text = content,
+                                    isStreaming = isStreaming,
+                                    modifier = Modifier.padding(12.dp),
+                                    style = MaterialTheme.typography.bodyLarge,
+                                )
+                            } else {
+                                Text(
+                                    text = parseMarkdown(content),
+                                    modifier = Modifier.padding(12.dp),
+                                    style = MaterialTheme.typography.bodyLarge,
+                                )
+                            }
                         }
                     }
                     if (regenProgress > 0f && !isUser) {

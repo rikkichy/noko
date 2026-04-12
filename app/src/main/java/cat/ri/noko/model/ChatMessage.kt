@@ -33,7 +33,7 @@ data class ChatMessage(
     @Serializable
     enum class Role { USER, ASSISTANT }
 
-    val swipeCount: Int get() = alternatives.size.coerceAtLeast(1)
+    val swipeCount: Int get() = if (alternatives.isEmpty()) 1 else alternatives.size
 
     fun toAlternative() = SwipeAlternative(
         content = content,
@@ -44,17 +44,46 @@ data class ChatMessage(
         actionsStructured = actionsStructured,
     )
 
-    fun applyAlternative(index: Int): ChatMessage {
-        if (index < 0 || index >= alternatives.size) return this
-        val alt = alternatives[index]
+    fun swipeTo(targetIndex: Int): ChatMessage {
+        if (alternatives.isEmpty() || targetIndex == activeIndex) return this
+        if (targetIndex !in 0 until alternatives.size) return this
+        val updatedAlts = alternatives.toMutableList()
+        if (activeIndex in updatedAlts.indices) {
+            updatedAlts[activeIndex] = toAlternative()
+        }
+        val target = updatedAlts[targetIndex]
         return copy(
-            content = alt.content,
-            stoppedByUser = alt.stoppedByUser,
-            guardBlocked = alt.guardBlocked,
-            guardReason = alt.guardReason,
-            emojisTrimmed = alt.emojisTrimmed,
-            actionsStructured = alt.actionsStructured,
-            activeIndex = index,
+            content = target.content,
+            stoppedByUser = target.stoppedByUser,
+            guardBlocked = target.guardBlocked,
+            guardReason = target.guardReason,
+            emojisTrimmed = target.emojisTrimmed,
+            actionsStructured = target.actionsStructured,
+            activeIndex = targetIndex,
+            alternatives = updatedAlts,
+        )
+    }
+
+    fun syncActiveAlternative(): ChatMessage {
+        if (alternatives.isEmpty() || activeIndex !in alternatives.indices) return this
+        val updatedAlts = alternatives.toMutableList()
+        updatedAlts[activeIndex] = toAlternative()
+        return copy(alternatives = updatedAlts)
+    }
+
+    fun addRegeneration(): ChatMessage {
+        val updatedAlts = alternatives.toMutableList()
+        if (activeIndex in updatedAlts.indices) {
+            updatedAlts[activeIndex] = toAlternative()
+        } else {
+            updatedAlts.add(toAlternative())
+        }
+        val newIndex = updatedAlts.size
+        updatedAlts.add(SwipeAlternative(content = ""))
+        return copy(
+            content = "",
+            activeIndex = newIndex,
+            alternatives = updatedAlts,
         )
     }
 }
