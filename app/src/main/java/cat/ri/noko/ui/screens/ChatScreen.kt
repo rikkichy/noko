@@ -663,7 +663,6 @@ fun ChatScreen(
                     && message.role == ChatMessage.Role.ASSISTANT
                     && message.content.isNotBlank()
 
-                val altCount = message.alternatives.size + 1
                 MessageBubble(
                     message = message,
                     persona = activePersona,
@@ -678,10 +677,10 @@ fun ChatScreen(
                             val idx = messages.indexOfFirst { it.id == message.id }
                             if (idx >= 0) {
                                 val current = messages[idx]
-                                val newSwipeIndex = current.alternatives.size + 1
-                                val updatedAlts = current.alternatives + current.copy(alternatives = emptyList())
+                                val updatedAlts = current.alternatives.toMutableList()
+                                updatedAlts.add(current.toAlternative())
                                 messages[idx] = current.copy(
-                                    swipeIndex = newSwipeIndex,
+                                    activeIndex = updatedAlts.size,
                                     alternatives = updatedAlts,
                                 )
                                 startStreaming(targetIdx = idx)
@@ -701,40 +700,37 @@ fun ChatScreen(
                         {
                             val idx = messages.indexOfFirst { it.id == message.id }
                             if (idx >= 0) {
-
                                 while (messages.size > idx + 1) {
                                     messages.removeAt(messages.lastIndex)
                                 }
                             }
                         }
                     } else null,
-                    onSwipe = if (message.role == ChatMessage.Role.ASSISTANT && !message.isGreeting && altCount > 1 && !isGenerating) {
+                    onSwipe = if (message.role == ChatMessage.Role.ASSISTANT && !message.isGreeting && message.swipeCount > 1 && !isGenerating) {
                         { direction ->
                             val msgIdx = messages.indexOfFirst { it.id == message.id }
                             if (msgIdx >= 0) {
                                 val current = messages[msgIdx]
-                                val targetSwipeIndex = current.swipeIndex + direction
-                                val targetContent = current.alternatives.find { it.swipeIndex == targetSwipeIndex }
-                                if (targetContent != null) {
-                                    val remainingAlts = current.alternatives.filter { it.swipeIndex != targetSwipeIndex } +
-                                        current.copy(alternatives = emptyList())
+                                val targetIndex = current.activeIndex + direction
+                                if (targetIndex in 0 until current.swipeCount) {
+                                    val updatedAlts = current.alternatives.toMutableList()
+                                    updatedAlts[current.activeIndex] = current.toAlternative()
+                                    val target = updatedAlts[targetIndex]
                                     messages[msgIdx] = current.copy(
-                                        content = targetContent.content,
-                                        stoppedByUser = targetContent.stoppedByUser,
-                                        guardBlocked = targetContent.guardBlocked,
-                                        guardReason = targetContent.guardReason,
-                                        emojisTrimmed = targetContent.emojisTrimmed,
-                                        actionsStructured = targetContent.actionsStructured,
-                                        swipeIndex = targetSwipeIndex,
-                                        alternatives = remainingAlts,
+                                        content = target.content,
+                                        stoppedByUser = target.stoppedByUser,
+                                        guardBlocked = target.guardBlocked,
+                                        guardReason = target.guardReason,
+                                        emojisTrimmed = target.emojisTrimmed,
+                                        actionsStructured = target.actionsStructured,
+                                        activeIndex = targetIndex,
+                                        alternatives = updatedAlts,
                                     )
                                     saveCurrentChat()
                                 }
                             }
                         }
                     } else null,
-                    swipeIndex = message.swipeIndex,
-                    swipeCount = altCount,
                 )
             }
         }
@@ -981,9 +977,9 @@ private fun MessageBubble(
     onEdit: (() -> Unit)? = null,
     onRollback: (() -> Unit)? = null,
     onSwipe: ((Int) -> Unit)? = null,
-    swipeIndex: Int = 0,
-    swipeCount: Int = 1,
 ) {
+    val swipeIndex = message.activeIndex
+    val swipeCount = message.swipeCount
     if (message.isGreeting) {
         Surface(
             shape = RoundedCornerShape(16.dp),
@@ -1110,7 +1106,7 @@ private fun MessageBubble(
                 .offset { IntOffset(swipeOffset.value.toInt(), 0) }
                 .then(
                     if (hasSwipeGesture) {
-                        Modifier.pointerInput(onSwipe, onRegenerate, swipeIndex, swipeCount) {
+                        Modifier.pointerInput(message.id) {
                             var totalDrag = 0f
                             val swipeThreshold = 80.dp.toPx()
                             val regenThreshold = 80.dp.toPx()
@@ -1122,26 +1118,26 @@ private fun MessageBubble(
                                     if (totalDrag < -swipeThreshold && onSwipe != null && !isLastSwipe) {
                                         swipeScope.launch {
                                             regenProgress = 0f
-                                            swipeOffset.animateTo(-500f, tween(200))
+                                            swipeOffset.animateTo(-500f, tween(180))
                                             onSwipe(1)
                                             swipeOffset.snapTo(500f)
-                                            swipeOffset.animateTo(0f, tween(170))
+                                            swipeOffset.animateTo(0f, tween(150))
                                         }
                                     } else if (totalDrag < -regenThreshold && isLastSwipe && onRegenerate != null) {
                                         haptics.confirm()
                                         swipeScope.launch {
                                             regenProgress = 0f
-                                            swipeOffset.animateTo(-500f, tween(200))
+                                            swipeOffset.animateTo(-500f, tween(180))
                                             onRegenerate()
                                             swipeOffset.snapTo(0f)
                                         }
                                     } else if (totalDrag > swipeThreshold && onSwipe != null && !isFirstSwipe) {
                                         swipeScope.launch {
                                             regenProgress = 0f
-                                            swipeOffset.animateTo(500f, tween(200))
+                                            swipeOffset.animateTo(500f, tween(180))
                                             onSwipe(-1)
                                             swipeOffset.snapTo(-500f)
-                                            swipeOffset.animateTo(0f, tween(170))
+                                            swipeOffset.animateTo(0f, tween(150))
                                         }
                                     } else {
                                         swipeScope.launch {

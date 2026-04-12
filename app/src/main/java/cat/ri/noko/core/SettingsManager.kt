@@ -9,6 +9,9 @@ import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
 import androidx.security.crypto.EncryptedSharedPreferences
 import androidx.security.crypto.MasterKeys
+import cat.ri.noko.model.ChatMessage
+import cat.ri.noko.model.ChatSessionMeta
+import cat.ri.noko.model.SwipeAlternative
 import cat.ri.noko.model.PersonaEntry
 import cat.ri.noko.model.PersonaType
 import cat.ri.noko.model.PromptPreset
@@ -112,6 +115,61 @@ object SettingsManager {
             }
             securePrefs.edit().putString(KEY_PERSONAS_JSON, json.encodeToString(seed)).commit()
             _personasFlow.value = seed
+
+            val userPresets = loadEncryptedList<PromptPreset>(KEY_PRESETS_JSON)
+                .filterNot { it.builtIn }
+            _presetsFlow.value = builtInPresets() + userPresets
+            ChatStorage.init(appContext)
+
+            val personas = seed.filter { it.type == PersonaType.PERSONA }
+            val characters = seed.filter { it.type == PersonaType.CHARACTER }
+            runBlocking {
+                for (i in 0 until 5) {
+                    val persona = personas[i]
+                    val character = characters[i]
+                    val chatId = java.util.UUID.randomUUID().toString()
+                    val now = System.currentTimeMillis() - (4 - i) * 60_000L
+                    val messages = listOf(
+                        ChatMessage(
+                            role = ChatMessage.Role.USER,
+                            content = "*looks at you in surprise*\n\"Doing great! But where are we..\"",
+                            senderName = persona.name,
+                            senderAvatarFileName = persona.avatarFileName,
+                            timestamp = now,
+                        ),
+                        ChatMessage(
+                            role = ChatMessage.Role.ASSISTANT,
+                            content = "\"We are in Debug chat! This is for testing Noko app, the best AI roleplay frontend!\"",
+                            senderName = character.name,
+                            senderAvatarFileName = character.avatarFileName,
+                            timestamp = now + 1000L,
+                            alternatives = listOf(
+                                SwipeAlternative(
+                                    content = "\"We are in Debug chat! This is for testing Noko app, the best AI roleplay frontend!\"",
+                                ),
+                                SwipeAlternative(
+                                    content = "\"Oh! That's weird. Someone just decided to change what I'm saying!\"",
+                                ),
+                            ),
+                        ),
+                    )
+                    val meta = ChatSessionMeta(
+                        id = chatId,
+                        characterId = character.id,
+                        characterName = character.name,
+                        characterAvatarFileName = character.avatarFileName,
+                        lastMessagePreview = messages.last().content,
+                        lastMessageRole = "ASSISTANT",
+                        updatedAt = now + 1000L,
+                        messageCount = messages.size,
+                        personaName = persona.name,
+                        personaAvatarFileName = persona.avatarFileName,
+                    )
+                    ChatStorage.saveChat(chatId, messages, meta)
+                }
+            }
+            _secureInitDone = true
+            return
         }
         val userPresets = loadEncryptedList<PromptPreset>(KEY_PRESETS_JSON)
             .filterNot { it.builtIn }
