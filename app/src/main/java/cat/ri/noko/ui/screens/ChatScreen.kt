@@ -678,7 +678,7 @@ fun ChatScreen(
                     reduceMotion = reduceMotion,
                     isStreaming = isStreamingThis,
                     isGenerating = isGenerating,
-                    onRegenerate = if (message.role == ChatMessage.Role.ASSISTANT && !message.isGreeting) {
+                    onRegenerate = if (message.role == ChatMessage.Role.ASSISTANT && !message.isGreeting && message.activeIndex >= message.swipeCount - 1) {
                         {
                             val idx = messages.indexOfFirst { it.id == message.id }
                             if (idx >= 0) {
