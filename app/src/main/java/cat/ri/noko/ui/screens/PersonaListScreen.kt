@@ -4,8 +4,6 @@ import android.net.Uri
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.biometric.BiometricPrompt
-import androidx.compose.animation.core.Animatable
-import cat.ri.noko.ui.util.shake
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.combinedClickable
@@ -16,17 +14,16 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
-import cat.ri.noko.ui.theme.NokoFieldShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Add
 import cat.ri.noko.ui.components.CountdownDeleteDialog
+import cat.ri.noko.ui.components.ExportPassphraseDialog
 import cat.ri.noko.ui.components.NokoAvatar
 import cat.ri.noko.ui.components.NokoSearchField
 import androidx.compose.material.icons.filled.Close
@@ -44,7 +41,6 @@ import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -66,9 +62,7 @@ import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.buildAnnotatedString
-import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.withStyle
-import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
 import androidx.fragment.app.FragmentActivity
@@ -113,9 +107,6 @@ fun PersonaListScreen(
     BackHandler(enabled = selection.isActive) { selection.clear() }
     var showPassphraseDialog by remember { mutableStateOf(false) }
     var exportPassphrase by remember { mutableStateOf("") }
-    var exportPassphraseConfirm by remember { mutableStateOf("") }
-    var passphraseError by remember { mutableStateOf<String?>(null) }
-    val passphraseShakeOffset = remember { Animatable(0f) }
 
     val importLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.OpenDocument(),
@@ -129,7 +120,6 @@ fun PersonaListScreen(
         if (uri != null && exportTargets.isNotEmpty() && exportPassphrase.isNotBlank()) {
             val passChars = exportPassphrase.toCharArray()
             exportPassphrase = ""
-            exportPassphraseConfirm = ""
             scope.launch {
                 try {
                     withContext(Dispatchers.IO) {
@@ -146,9 +136,6 @@ fun PersonaListScreen(
 
     fun startExport(targets: List<PersonaEntry>) {
         exportTargets = targets
-        exportPassphrase = ""
-        exportPassphraseConfirm = ""
-        passphraseError = null
         showPassphraseDialog = true
     }
 
@@ -547,108 +534,24 @@ fun PersonaListScreen(
     }
 
     if (showPassphraseDialog && exportTargets.isNotEmpty()) {
-        val exportCount = exportTargets.size
-        AlertDialog(
-            onDismissRequest = {
+        ExportPassphraseDialog(
+            exportCount = exportTargets.size,
+            onConfirm = { passphrase ->
+                exportPassphrase = passphrase
+                showPassphraseDialog = false
+                SettingsManager.suppressBiometricRelock = true
+                val safeName = if (exportTargets.size == 1) {
+                    exportTargets.first().name
+                        .replace(Regex("[^a-zA-Z0-9._-]"), "_")
+                        .take(50)
+                } else {
+                    "noko_characters_${exportTargets.size}"
+                }
+                exportLauncher.launch("$safeName.nokc")
+            },
+            onDismiss = {
                 showPassphraseDialog = false
                 exportTargets = emptyList()
-            },
-            title = {
-                Text(
-                    if (exportCount == 1) "Export as .nokc"
-                    else "Export $exportCount characters as .nokc",
-                )
-            },
-            text = {
-                Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                    Text(
-                        if (exportCount == 1) "Set a passphrase to encrypt this character."
-                        else "Set a passphrase to encrypt ${exportCount} characters.",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
-                    OutlinedTextField(
-                        value = exportPassphrase,
-                        onValueChange = {
-                            if (it.length <= 256) {
-                                exportPassphrase = it
-                                passphraseError = null
-                            }
-                        },
-                        label = { Text("Passphrase") },
-                        visualTransformation = PasswordVisualTransformation(),
-                        singleLine = true,
-                        isError = passphraseError != null,
-                        shape = NokoFieldShape,
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .offset { IntOffset(passphraseShakeOffset.value.toInt(), 0) },
-                    )
-                    OutlinedTextField(
-                        value = exportPassphraseConfirm,
-                        onValueChange = {
-                            if (it.length <= 256) {
-                                exportPassphraseConfirm = it
-                                passphraseError = null
-                            }
-                        },
-                        label = { Text("Confirm passphrase") },
-                        visualTransformation = PasswordVisualTransformation(),
-                        singleLine = true,
-                        isError = passphraseError != null,
-                        supportingText = passphraseError?.let { err -> { Text(err) } },
-                        shape = NokoFieldShape,
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .offset { IntOffset(passphraseShakeOffset.value.toInt(), 0) },
-                    )
-                }
-            },
-            confirmButton = {
-                TextButton(
-                    onClick = {
-                        when {
-                            exportPassphrase.length < 8 -> {
-                                passphraseError = "At least 8 characters"
-                                scope.launch {
-                                    haptics.reject()
-                                    passphraseShakeOffset.shake()
-                                }
-                            }
-                            exportPassphrase != exportPassphraseConfirm -> {
-                                passphraseError = "Passphrases don't match"
-                                scope.launch {
-                                    haptics.reject()
-                                    passphraseShakeOffset.shake()
-                                }
-                            }
-                            else -> {
-                                showPassphraseDialog = false
-                                SettingsManager.suppressBiometricRelock = true
-                                val safeName = if (exportCount == 1) {
-                                    exportTargets.first().name
-                                        .replace(Regex("[^a-zA-Z0-9._-]"), "_")
-                                        .take(50)
-                                } else {
-                                    "noko_characters_$exportCount"
-                                }
-                                exportLauncher.launch("$safeName.nokc")
-                            }
-                        }
-                    },
-                ) {
-                    Text("Export")
-                }
-            },
-            dismissButton = {
-                TextButton(
-                    onClick = {
-                        showPassphraseDialog = false
-                        exportTargets = emptyList()
-                    },
-                ) {
-                    Text("Cancel")
-                }
             },
         )
     }

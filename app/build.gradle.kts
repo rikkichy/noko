@@ -21,13 +21,16 @@ android {
         }
     }
     signingConfigs {
+        fun propOrEnv(name: String, default: String? = null): String? =
+            findProperty(name)?.toString() ?: System.getenv(name) ?: default
+
         create("release") {
-            val ksPath = findProperty("ANDROID_KEYSTORE_PATH")?.toString() ?: System.getenv("ANDROID_KEYSTORE_PATH")
+            val ksPath = propOrEnv("ANDROID_KEYSTORE_PATH")
             if (!ksPath.isNullOrBlank()) {
                 storeFile = file(ksPath)
-                storePassword = findProperty("ANDROID_KEYSTORE_PASSWORD")?.toString() ?: System.getenv("ANDROID_KEYSTORE_PASSWORD")
-                keyAlias = findProperty("ANDROID_KEY_ALIAS")?.toString() ?: System.getenv("ANDROID_KEY_ALIAS") ?: "noko"
-                keyPassword = findProperty("ANDROID_KEY_PASSWORD")?.toString() ?: System.getenv("ANDROID_KEY_PASSWORD")
+                storePassword = propOrEnv("ANDROID_KEYSTORE_PASSWORD")
+                keyAlias = propOrEnv("ANDROID_KEY_ALIAS", "noko")
+                keyPassword = propOrEnv("ANDROID_KEY_PASSWORD")
             }
         }
     }
