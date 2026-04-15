@@ -5,7 +5,12 @@ import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.SizeTransform
 import androidx.compose.animation.animateContentSize
 import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.animation.core.RepeatMode
 import androidx.compose.animation.core.Spring
+import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.expandVertically
@@ -15,6 +20,7 @@ import androidx.compose.animation.shrinkVertically
 import androidx.compose.animation.slideInHorizontally
 import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.animation.togetherWith
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectHorizontalDragGestures
 import androidx.compose.foundation.layout.Arrangement
@@ -28,6 +34,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.NavigateBefore
@@ -41,10 +48,8 @@ import androidx.compose.material.icons.filled.SmartToy
 import androidx.compose.material.icons.rounded.SendTimeExtension
 import androidx.compose.material.icons.rounded.Warning
 import androidx.compose.material3.AssistChip
-import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
-import androidx.compose.material3.LoadingIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -57,10 +62,10 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
-import androidx.compose.runtime.withFrameMillis
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.rotate
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.text.TextStyle
@@ -69,24 +74,98 @@ import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import cat.ri.noko.model.ChatMessage
 import cat.ri.noko.model.PersonaEntry
+import cat.ri.noko.ui.components.streaming.StreamingTextSlideUp
 import cat.ri.noko.ui.util.parseMarkdown
 import cat.ri.noko.ui.util.rememberNokoHaptics
 import kotlinx.coroutines.launch
 
-@OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
-fun TypingIndicator(characterName: String) {
+fun TypingIndicator(
+    characterName: String,
+    avatarFileName: String? = null,
+    showAvatar: Boolean = true,
+    reduceMotion: Boolean = false,
+) {
+    val infiniteTransition = rememberInfiniteTransition(label = "typing")
+
+    val avatarScale = if (!reduceMotion) {
+        infiniteTransition.animateFloat(
+            initialValue = 1f,
+            targetValue = 1.08f,
+            animationSpec = infiniteRepeatable(
+                animation = tween(900, easing = FastOutSlowInEasing),
+                repeatMode = RepeatMode.Reverse,
+            ),
+            label = "pulse",
+        ).value
+    } else 1f
+
+    val dotCount = 3
+    val dotAlphas = (0 until dotCount).map { i ->
+        if (!reduceMotion) {
+            infiniteTransition.animateFloat(
+                initialValue = 0.3f,
+                targetValue = 1f,
+                animationSpec = infiniteRepeatable(
+                    animation = tween(500, delayMillis = i * 180, easing = FastOutSlowInEasing),
+                    repeatMode = RepeatMode.Reverse,
+                ),
+                label = "dot_$i",
+            ).value
+        } else 1f
+    }
+    val dotOffsets = (0 until dotCount).map { i ->
+        if (!reduceMotion) {
+            infiniteTransition.animateFloat(
+                initialValue = 0f,
+                targetValue = -4f,
+                animationSpec = infiniteRepeatable(
+                    animation = tween(500, delayMillis = i * 180, easing = FastOutSlowInEasing),
+                    repeatMode = RepeatMode.Reverse,
+                ),
+                label = "dotY_$i",
+            ).value
+        } else 0f
+    }
+
     Row(
         verticalAlignment = Alignment.CenterVertically,
         modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp),
     ) {
-        LoadingIndicator(modifier = Modifier.size(16.dp))
-        Spacer(Modifier.width(8.dp))
-        Text(
-            text = "$characterName is typing…",
-            style = MaterialTheme.typography.bodySmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-        )
+        if (showAvatar) {
+            Box(modifier = Modifier.scale(avatarScale)) {
+                NokoAvatar(
+                    name = characterName,
+                    avatarFileName = avatarFileName,
+                    fallbackIcon = Icons.Filled.SmartToy,
+                    size = 32,
+                )
+            }
+            Spacer(Modifier.width(8.dp))
+        }
+
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Text(
+                text = "$characterName is typing",
+                style = MaterialTheme.typography.bodySmall,
+                fontWeight = FontWeight.Medium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+            Spacer(Modifier.width(6.dp))
+            val dotColor = MaterialTheme.colorScheme.primary
+            (0 until dotCount).forEach { i ->
+                Box(
+                    modifier = Modifier
+                        .padding(horizontal = 1.5.dp)
+                        .size(5.dp)
+                        .offset { IntOffset(0, dotOffsets[i].dp.roundToPx()) }
+                        .graphicsLayer { alpha = dotAlphas[i] }
+                        .background(dotColor, CircleShape),
+                )
+            }
+        }
     }
 }
 
@@ -355,7 +434,7 @@ fun MessageBubble(
                             label = "swipe_content",
                         ) { idx ->
                             if (wasStreaming && idx == swipeIndex && !reduceMotion) {
-                                StreamingText(
+                                StreamingTextSlideUp(
                                     text = message.content,
                                     isStreaming = isStreaming,
                                     modifier = Modifier.padding(12.dp),
@@ -514,65 +593,4 @@ fun MessageBubble(
             }
         }
     }
-}
-
-
-@Composable
-private fun StreamingText(
-    text: String,
-    isStreaming: Boolean,
-    modifier: Modifier = Modifier,
-    style: TextStyle,
-) {
-    val targetText by rememberUpdatedState(text)
-    var displayed by remember { mutableStateOf("") }
-
-    LaunchedEffect(Unit) {
-        var lastFrameMs = 0L
-        while (true) {
-            withFrameMillis { frameMs ->
-                val target = targetText
-                if (displayed.length < target.length) {
-                    val behind = target.length - displayed.length
-
-
-                    val dt = if (lastFrameMs == 0L) 16f else (frameMs - lastFrameMs).toFloat()
-                    val scale = dt / 16f
-                    val baseChunk = when {
-                        behind > 200 -> 30
-                        behind > 100 -> 15
-                        behind > 50 -> 8
-                        behind > 20 -> 4
-                        else -> 1
-                    }
-                    val chunk = (baseChunk * scale).toInt().coerceAtLeast(1)
-                    displayed = target.substring(0, (displayed.length + chunk).coerceAtMost(target.length))
-                }
-                lastFrameMs = frameMs
-            }
-        }
-    }
-
-    if (displayed.length > text.length) displayed = text
-
-
-    val renderText = if (isStreaming && displayed.length < text.length) {
-        stripTrailingDelimiters(displayed)
-    } else {
-        displayed
-    }
-
-    Text(
-        text = parseMarkdown(renderText),
-        modifier = modifier,
-        style = style,
-    )
-}
-
-private fun stripTrailingDelimiters(text: String): String {
-    val trailing = listOf("***", "**", "~~", "*", "`")
-    for (d in trailing) {
-        if (text.endsWith(d)) return text.dropLast(d.length)
-    }
-    return text
 }

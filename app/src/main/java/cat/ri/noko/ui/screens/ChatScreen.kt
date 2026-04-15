@@ -69,6 +69,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
@@ -155,6 +156,7 @@ fun ChatScreen(
 ) {
     val context = LocalContext.current
     val messages = remember { mutableStateListOf<ChatMessage>() }
+    val reversedMessages by remember { derivedStateOf { messages.toList().asReversed() } }
     var input by remember { mutableStateOf(TextFieldValue()) }
     val listState = rememberLazyListState()
     val scope = rememberCoroutineScope()
@@ -613,19 +615,23 @@ fun ChatScreen(
                 (lastMsg == null || lastMsg.role != ChatMessage.Role.ASSISTANT || lastMsg.content.isBlank())
             if (showTyping) {
                 item(key = "typing_indicator") {
-                    val charName = activeCharacter?.name ?: "Assistant"
-                    TypingIndicator(characterName = charName)
+                    TypingIndicator(
+                        characterName = activeCharacter?.name ?: "Assistant",
+                        avatarFileName = activeCharacter?.avatarFileName,
+                        showAvatar = showAvatars,
+                        reduceMotion = reduceMotion,
+                    )
                 }
             }
 
-            items(messages.asReversed(), key = { it.id }) { message ->
+            items(reversedMessages, key = { it.id }) { message ->
 
-                if (isGenerating && message == messages.lastOrNull()
+                if (isGenerating && message == lastMsg
                     && message.role == ChatMessage.Role.ASSISTANT && message.content.isBlank()
                 ) return@items
 
                 val isStreamingThis = isGenerating
-                    && message == messages.lastOrNull()
+                    && message == lastMsg
                     && message.role == ChatMessage.Role.ASSISTANT
                     && message.content.isNotBlank()
 
