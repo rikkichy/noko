@@ -46,6 +46,7 @@ object ApiClient {
     private var currentBaseUrl: String = ""
     private var currentProviderId: String = ""
     private var api: ChatApi? = null
+    private var okHttpClient: OkHttpClient? = null
 
     fun configure(key: String, baseUrl: String, providerId: String) {
         if (key == apiKey && baseUrl == currentBaseUrl && providerId == currentProviderId && api != null) return
@@ -53,7 +54,7 @@ object ApiClient {
         currentBaseUrl = baseUrl
         currentProviderId = providerId
 
-        val okHttpClient = OkHttpClient.Builder()
+        val client = OkHttpClient.Builder()
             .addInterceptor { chain ->
                 val builder = chain.request().newBuilder()
                 if (apiKey.isNotBlank()) {
@@ -73,12 +74,17 @@ object ApiClient {
             .writeTimeout(30, TimeUnit.SECONDS)
             .build()
 
+        okHttpClient = client
         api = Retrofit.Builder()
             .baseUrl(baseUrl)
-            .client(okHttpClient)
+            .client(client)
             .addConverterFactory(json.asConverterFactory("application/json".toMediaType()))
             .build()
             .create(ChatApi::class.java)
+    }
+
+    fun evictConnectionPool() {
+        okHttpClient?.connectionPool?.evictAll()
     }
 
     val isConfigured: Boolean get() = currentBaseUrl.isNotBlank() && api != null
@@ -143,9 +149,8 @@ object ApiClient {
                     body.close()
                 }
                 channel.close()
-            } catch (_: java.io.IOException) {
-
-                channel.close()
+            } catch (e: java.io.IOException) {
+                channel.close(e)
             }
         }
 
