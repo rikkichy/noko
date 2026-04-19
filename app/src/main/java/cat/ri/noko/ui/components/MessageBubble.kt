@@ -48,6 +48,7 @@ import androidx.compose.material.icons.filled.SmartToy
 import androidx.compose.material.icons.rounded.SendTimeExtension
 import androidx.compose.material.icons.rounded.Warning
 import androidx.compose.material3.AssistChip
+import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -401,11 +402,14 @@ fun MessageBubble(
                 val showEmptyStoppedRegen = !isUser && message.content.isBlank() && message.stoppedByUser && effectiveRegenerate != null
                 Box {
                     if (showEmptyStoppedRegen) {
-                        AssistChip(
+                        FilledTonalButton(
                             onClick = { effectiveRegenerate() },
-                            label = { Text("Regenerate", style = MaterialTheme.typography.labelSmall, maxLines = 1, softWrap = false) },
-                            leadingIcon = { Icon(Icons.Filled.Autorenew, contentDescription = null, modifier = Modifier.size(16.dp)) },
-                        )
+                            shape = RoundedCornerShape(16.dp),
+                        ) {
+                            Icon(Icons.Filled.Autorenew, contentDescription = null, modifier = Modifier.size(18.dp))
+                            Spacer(Modifier.width(8.dp))
+                            Text("Regenerate")
+                        }
                     } else {
                     Surface(
                         shape = RoundedCornerShape(16.dp),
