@@ -398,7 +398,15 @@ fun MessageBubble(
                         modifier = Modifier.padding(horizontal = 4.dp, vertical = 2.dp),
                     )
                 }
+                val showEmptyStoppedRegen = !isUser && message.content.isBlank() && message.stoppedByUser && effectiveRegenerate != null
                 Box {
+                    if (showEmptyStoppedRegen) {
+                        AssistChip(
+                            onClick = { effectiveRegenerate() },
+                            label = { Text("Regenerate", style = MaterialTheme.typography.labelSmall, maxLines = 1, softWrap = false) },
+                            leadingIcon = { Icon(Icons.Filled.Autorenew, contentDescription = null, modifier = Modifier.size(16.dp)) },
+                        )
+                    } else {
                     Surface(
                         shape = RoundedCornerShape(16.dp),
                         color = MaterialTheme.colorScheme.surfaceVariant,
@@ -448,6 +456,7 @@ fun MessageBubble(
                                 )
                             }
                         }
+                    }
                     }
                     if (regenProgress > 0f && !isUser) {
                         val p = regenProgress
