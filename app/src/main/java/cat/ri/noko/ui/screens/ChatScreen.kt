@@ -200,7 +200,6 @@ fun ChatScreen(
     var showCharacterPicker by remember { mutableStateOf(false) }
     var showPersonaPicker by remember { mutableStateOf(false) }
     var isGenerating by remember { mutableStateOf(false) }
-    var hasStreamedContent by remember { mutableStateOf(false) }
     var streamJob by remember { mutableStateOf<kotlinx.coroutines.Job?>(null) }
 
     val showAvatars by SettingsManager.showAvatars.collectAsState(initial = true)
@@ -271,7 +270,6 @@ fun ChatScreen(
     fun startStreaming(targetIdx: Int? = null, continueNudge: String? = null) {
         if ((providerRequiresAuth && apiKey.isBlank()) || modelId.isBlank() || providerBaseUrl.isBlank()) return
         isGenerating = true
-        hasStreamedContent = false
         val assistantIdx: Int
         if (targetIdx != null) {
             assistantIdx = targetIdx
@@ -344,7 +342,6 @@ fun ChatScreen(
                     val now = System.currentTimeMillis()
                     if (now - lastUiUpdate > 32) {
                         lastUiUpdate = now
-                        if (!hasStreamedContent) hasStreamedContent = true
                         messages[assistantIdx] = messages[assistantIdx].copy(
                             content = buffer.toString(),
                         )
@@ -813,12 +810,11 @@ fun ChatScreen(
             Spacer(Modifier.width(8.dp))
             FilledIconButton(
                 onClick = {
-                    if (isGenerating && hasStreamedContent) {
+                    if (isGenerating) {
                         haptics.reject()
                         streamJob?.cancel()
                         return@FilledIconButton
                     }
-                    if (isGenerating) return@FilledIconButton
                     val text = input.text.trim()
                     if (text.isNotEmpty()) {
                         haptics.tap()
@@ -851,7 +847,7 @@ fun ChatScreen(
                     pressedShape = RoundedCornerShape(8.dp),
                 ),
             ) {
-                if (isGenerating && hasStreamedContent) {
+                if (isGenerating) {
                     Icon(Icons.Filled.Stop, contentDescription = "Stop")
                 } else {
                     Icon(Icons.AutoMirrored.Filled.Send, contentDescription = "Send")
