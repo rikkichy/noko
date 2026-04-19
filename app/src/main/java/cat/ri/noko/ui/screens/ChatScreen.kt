@@ -24,7 +24,7 @@ import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
 import kotlinx.coroutines.delay
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.horizontalScroll
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -39,7 +39,6 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
-import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import cat.ri.noko.ui.theme.NokoFieldShape
@@ -57,7 +56,8 @@ import androidx.compose.material.icons.filled.VisibilityOff
 import androidx.compose.material.icons.outlined.Info
 import androidx.compose.material.icons.outlined.Lightbulb
 import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.AssistChip
+import androidx.compose.material3.ButtonGroup
+import androidx.compose.material3.ButtonGroupDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.DropdownMenuItem
@@ -74,6 +74,7 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextField
 import androidx.compose.material3.TextFieldDefaults
+import androidx.compose.material3.ToggleButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.ui.graphics.Color
 import androidx.compose.runtime.Composable
@@ -250,6 +251,7 @@ fun ChatScreen(
     var editingMessageIdx by remember { mutableStateOf(-1) }
     var editingText by remember { mutableStateOf("") }
     var showStatsSheet by remember { mutableStateOf(false) }
+    var activeFormatIdx by remember { mutableStateOf(-1) }
 
 
     fun saveCurrentChat() {
@@ -313,6 +315,7 @@ fun ChatScreen(
 
         streamJob = scope.launch {
             val buffer = StringBuilder()
+            var recoveredFromBlank = false
             try {
                 ApiClient.configure(apiKey, providerBaseUrl, providerId)
                 val apiMessages = PromptBuilder.buildMessages(
@@ -415,11 +418,22 @@ fun ChatScreen(
                 haptics.confirm()
             } catch (e: kotlinx.coroutines.CancellationException) {
                 if (assistantIdx < messages.size && !messages[assistantIdx].guardBlocked) {
-                    val stopped = messages[assistantIdx].copy(
-                        content = buffer.toString(),
-                        stoppedByUser = true,
-                    )
-                    messages[assistantIdx] = stopped.syncActiveAlternative()
+                    val msg = messages[assistantIdx]
+                    if (buffer.isBlank()) {
+                        recoveredFromBlank = true
+                        val recovered = msg.recoverFromBlankRegeneration()
+                        if (recovered != null) {
+                            messages[assistantIdx] = recovered
+                        } else {
+                            messages.removeAt(assistantIdx)
+                        }
+                    } else {
+                        val stopped = msg.copy(
+                            content = buffer.toString(),
+                            stoppedByUser = true,
+                        )
+                        messages[assistantIdx] = stopped.syncActiveAlternative()
+                    }
                 }
             } catch (e: Exception) {
                 val errorMsg = cat.ri.noko.core.api.humanizeException(e)
@@ -434,7 +448,7 @@ fun ChatScreen(
                 isGenerating = false
                 streamJob = null
                 saveCurrentChat()
-                if (streamNotifications && assistantIdx < messages.size) {
+                if (streamNotifications && !recoveredFromBlank && assistantIdx < messages.size) {
                     val msg = messages[assistantIdx]
                     val isBackground = !ProcessLifecycleOwner.get().lifecycle.currentState.isAtLeast(Lifecycle.State.RESUMED)
                     if (isBackground && msg.content.isNotBlank() && !msg.stoppedByUser && !msg.guardBlocked) {
@@ -705,7 +719,7 @@ fun ChatScreen(
                             }
                         }
                     } else null,
-                    onRollback = if (!message.isGreeting) {
+                    onRollback = if (!message.isGreeting && message != lastMsg) {
                         {
                             val idx = messages.indexOfFirst { it.id == message.id }
                             if (idx >= 0) {
@@ -713,6 +727,12 @@ fun ChatScreen(
                                     messages.removeAt(messages.lastIndex)
                                 }
                             }
+                        }
+                    } else null,
+                    onDelete = if (!message.isGreeting && message == lastMsg) {
+                        {
+                            val idx = messages.indexOfFirst { it.id == message.id }
+                            if (idx >= 0) messages.removeAt(idx)
                         }
                     } else null,
                     onSwipe = if (message.role == ChatMessage.Role.ASSISTANT && !message.isGreeting && message.swipeCount > 1 && !isGenerating) {
@@ -781,17 +801,23 @@ fun ChatScreen(
             exit = if (reduceMotion) shrinkVertically(tween(0))
                    else fadeOut(tween(170)) + slideOutVertically(tween(200)) { it },
         ) {
-            Row(
+            ButtonGroup(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .horizontalScroll(rememberScrollState())
                     .padding(horizontal = 8.dp, vertical = 4.dp),
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
             ) {
-                rpFormats.forEach { fmt ->
-                    AssistChip(
-                        onClick = {
+                rpFormats.forEachIndexed { idx, fmt ->
+                    val shapes = when (idx) {
+                        0 -> ButtonGroupDefaults.connectedLeadingButtonShapes()
+                        rpFormats.lastIndex -> ButtonGroupDefaults.connectedTrailingButtonShapes()
+                        else -> ButtonGroupDefaults.connectedMiddleButtonShapes()
+                    }
+                    val interactionSource = remember { MutableInteractionSource() }
+                    ToggleButton(
+                        checked = activeFormatIdx == idx,
+                        onCheckedChange = {
                             haptics.tap()
+                            activeFormatIdx = idx
                             val text = input.text
                             val cursor = input.selection.min
                             val lineStart = text.lastIndexOf('\n', cursor - 1) + 1
@@ -806,8 +832,14 @@ fun ChatScreen(
                                 selection = TextRange(newCursor),
                             )
                         },
-                        label = { Text(fmt.label) },
-                    )
+                        shapes = shapes,
+                        interactionSource = interactionSource,
+                        modifier = Modifier
+                            .weight(1f)
+                            .then(if (reduceMotion) Modifier else Modifier.animateWidth(interactionSource)),
+                    ) {
+                        Text(fmt.label, maxLines = 1)
+                    }
                 }
             }
         }

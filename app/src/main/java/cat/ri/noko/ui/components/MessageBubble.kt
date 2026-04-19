@@ -24,6 +24,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectHorizontalDragGestures
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -43,6 +44,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.NavigateBefore
 import androidx.compose.material.icons.automirrored.filled.NavigateNext
 import androidx.compose.material.icons.filled.Autorenew
+import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.ModeEdit
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Refresh
@@ -50,13 +52,16 @@ import androidx.compose.material.icons.filled.Replay
 import androidx.compose.material.icons.filled.SmartToy
 import androidx.compose.material.icons.rounded.SendTimeExtension
 import androidx.compose.material.icons.rounded.Warning
-import androidx.compose.material3.AssistChip
-import androidx.compose.material3.FilledTonalButton
+import androidx.compose.material3.ButtonGroup
+import androidx.compose.material3.ButtonGroupDefaults
+import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.ToggleButton
+import androidx.compose.material3.ToggleButtonDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -176,6 +181,7 @@ fun TypingIndicator(
     }
 }
 
+@OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 fun MessageBubble(
     message: ChatMessage,
@@ -189,6 +195,7 @@ fun MessageBubble(
     onRegenerate: (() -> Unit)? = null,
     onEdit: (() -> Unit)? = null,
     onRollback: (() -> Unit)? = null,
+    onDelete: (() -> Unit)? = null,
     onSwipe: ((Int) -> Unit)? = null,
 ) {
     val swipeIndex = message.activeIndex
@@ -405,7 +412,6 @@ fun MessageBubble(
                         modifier = Modifier.padding(horizontal = 4.dp, vertical = 2.dp),
                     )
                 }
-                val showEmptyStoppedRegen = !isUser && message.content.isBlank() && message.stoppedByUser && onRegenerate != null
                 Box {
                     if (regenProgress > 0f && !isUser) {
                         val p = regenProgress
@@ -450,16 +456,6 @@ fun MessageBubble(
                             }
                         }
                     }
-                    if (showEmptyStoppedRegen) {
-                        FilledTonalButton(
-                            onClick = { onRegenerate() },
-                            shape = RoundedCornerShape(16.dp),
-                        ) {
-                            Icon(Icons.Filled.Autorenew, contentDescription = null, modifier = Modifier.size(18.dp))
-                            Spacer(Modifier.width(8.dp))
-                            Text("Regenerate")
-                        }
-                    } else {
                     Surface(
                         shape = RoundedCornerShape(16.dp),
                         color = MaterialTheme.colorScheme.surfaceVariant,
@@ -510,30 +506,42 @@ fun MessageBubble(
                             }
                         }
                     }
-                    }
                 }
                 AnimatedVisibility(
                     visible = showActions && canInteract,
                     enter = if (reduceMotion) expandVertically(tween(0)) else fadeIn(tween(200)) + expandVertically(tween(200)),
                     exit = if (reduceMotion) shrinkVertically(tween(0)) else fadeOut(tween(100)) + shrinkVertically(tween(100)),
                 ) {
-                    Row(
-                        horizontalArrangement = Arrangement.spacedBy(6.dp),
-                        modifier = Modifier.padding(top = 4.dp),
-                    ) {
-                        if (onEdit != null) {
-                            AssistChip(
-                                onClick = { showActions = false; onEdit() },
-                                label = { Text("Edit", style = MaterialTheme.typography.labelSmall, maxLines = 1, softWrap = false) },
-                                leadingIcon = { Icon(Icons.Filled.ModeEdit, contentDescription = null, modifier = Modifier.size(16.dp)) },
-                            )
-                        }
-                        if (onRollback != null) {
-                            AssistChip(
-                                onClick = { showActions = false; onRollback() },
-                                label = { Text("Rollback", style = MaterialTheme.typography.labelSmall, maxLines = 1, softWrap = false) },
-                                leadingIcon = { Icon(Icons.Filled.Replay, contentDescription = null, modifier = Modifier.size(16.dp)) },
-                            )
+                    val actions = listOfNotNull(
+                        onEdit?.let { Triple("Edit", Icons.Filled.ModeEdit, it) },
+                        onRollback?.let { Triple("Rollback", Icons.Filled.Replay, it) },
+                        onDelete?.let { Triple("Delete", Icons.Filled.Delete, it) },
+                    )
+                    if (actions.isNotEmpty()) {
+                        ButtonGroup(modifier = Modifier.padding(top = 4.dp)) {
+                            actions.forEachIndexed { idx, (label, icon, onClick) ->
+                                val shapes = when {
+                                    actions.size == 1 -> ToggleButtonDefaults.shapes()
+                                    idx == 0 -> ButtonGroupDefaults.connectedLeadingButtonShapes()
+                                    idx == actions.lastIndex -> ButtonGroupDefaults.connectedTrailingButtonShapes()
+                                    else -> ButtonGroupDefaults.connectedMiddleButtonShapes()
+                                }
+                                val interactionSource = remember { MutableInteractionSource() }
+                                ToggleButton(
+                                    checked = false,
+                                    onCheckedChange = {
+                                        showActions = false
+                                        onClick()
+                                    },
+                                    shapes = shapes,
+                                    interactionSource = interactionSource,
+                                    modifier = if (reduceMotion) Modifier else Modifier.animateWidth(interactionSource),
+                                ) {
+                                    Icon(icon, contentDescription = null, modifier = Modifier.size(16.dp))
+                                    Spacer(Modifier.width(6.dp))
+                                    Text(label, style = MaterialTheme.typography.labelSmall, maxLines = 1, softWrap = false)
+                                }
+                            }
                         }
                     }
                 }

@@ -71,6 +71,33 @@ data class ChatMessage(
         return copy(alternatives = updatedAlts)
     }
 
+    /**
+     * When the current (blank) regeneration was cancelled, drop the empty branch and
+     * fall back to the most recent non-blank alternative in the tree. Returns `null`
+     * if there is no prior response to return to — callers should then remove the
+     * message entirely rather than leaving an empty stopped bubble in the chat.
+     */
+    fun recoverFromBlankRegeneration(): ChatMessage? {
+        if (content.isNotBlank()) return this
+        val withoutCurrent = alternatives.filterIndexed { i, _ -> i != activeIndex }
+        val fallbackIdx = withoutCurrent.indexOfLast { it.content.isNotBlank() }
+        if (fallbackIdx < 0) return null
+        val target = withoutCurrent[fallbackIdx]
+        // Collapse back to the fresh no-branch shape when only one branch remains.
+        val finalAlts = if (withoutCurrent.size == 1) emptyList() else withoutCurrent
+        val finalIdx = if (finalAlts.isEmpty()) 0 else fallbackIdx
+        return copy(
+            content = target.content,
+            stoppedByUser = target.stoppedByUser,
+            guardBlocked = target.guardBlocked,
+            guardReason = target.guardReason,
+            emojisTrimmed = target.emojisTrimmed,
+            actionsStructured = target.actionsStructured,
+            activeIndex = finalIdx,
+            alternatives = finalAlts,
+        )
+    }
+
     fun addRegeneration(): ChatMessage {
         val updatedAlts = alternatives.toMutableList()
         if (content.isNotBlank()) {
