@@ -399,11 +399,11 @@ fun MessageBubble(
                         modifier = Modifier.padding(horizontal = 4.dp, vertical = 2.dp),
                     )
                 }
-                val showEmptyStoppedRegen = !isUser && message.content.isBlank() && message.stoppedByUser && effectiveRegenerate != null
+                val showEmptyStoppedRegen = !isUser && message.content.isBlank() && message.stoppedByUser && onRegenerate != null
                 Box {
                     if (showEmptyStoppedRegen) {
                         FilledTonalButton(
-                            onClick = { effectiveRegenerate() },
+                            onClick = { onRegenerate() },
                             shape = RoundedCornerShape(16.dp),
                         ) {
                             Icon(Icons.Filled.Autorenew, contentDescription = null, modifier = Modifier.size(18.dp))

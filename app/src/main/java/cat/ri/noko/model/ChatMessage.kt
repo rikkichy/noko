@@ -73,17 +73,22 @@ data class ChatMessage(
 
     fun addRegeneration(): ChatMessage {
         val updatedAlts = alternatives.toMutableList()
-        if (activeIndex in updatedAlts.indices) {
-            updatedAlts[activeIndex] = toAlternative()
-        } else {
-            updatedAlts.add(toAlternative())
+        if (content.isNotBlank()) {
+            if (activeIndex in updatedAlts.indices) {
+                updatedAlts[activeIndex] = toAlternative()
+            } else {
+                updatedAlts.add(toAlternative())
+            }
+        } else if (activeIndex in updatedAlts.indices) {
+            updatedAlts.removeAt(activeIndex)
         }
-        val newIndex = updatedAlts.size
-        updatedAlts.add(SwipeAlternative(content = ""))
+        val pruned = updatedAlts.filter { it.content.isNotBlank() }.toMutableList()
+        val newIndex = pruned.size
+        pruned.add(SwipeAlternative(content = ""))
         return copy(
             content = "",
             activeIndex = newIndex,
-            alternatives = updatedAlts,
+            alternatives = pruned,
         )
     }
 }
