@@ -193,7 +193,7 @@ fun ModelListContent(
                                 .clickable {
                                     haptics.confirm()
                                     scope.launch {
-                                        SettingsManager.setSelectedModel(model.id, model.displayName)
+                                        SettingsManager.setSelectedModel(model.id, model.displayName, model.contextLength)
                                         onModelSelected?.invoke()
                                     }
                                 },

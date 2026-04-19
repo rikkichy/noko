@@ -5,6 +5,7 @@ import android.content.SharedPreferences
 import cat.ri.noko.BuildConfig
 import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.edit
+import androidx.datastore.preferences.core.intPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
 import androidx.security.crypto.EncryptedSharedPreferences
@@ -58,6 +59,7 @@ object SettingsManager {
     private val SELECTED_CHARACTER_ID = stringPreferencesKey("selected_character_id")
     private val SELECTED_MODEL_ID = stringPreferencesKey("selected_model_id")
     private val SELECTED_MODEL_NAME = stringPreferencesKey("selected_model_name")
+    private val SELECTED_MODEL_CONTEXT_LENGTH = intPreferencesKey("selected_model_context_length")
     private val SELECTED_PRESET_ID = stringPreferencesKey("selected_preset_id")
 
     private val BIOMETRIC_AUTH = booleanPreferencesKey("biometric_auth")
@@ -389,6 +391,7 @@ object SettingsManager {
             prefs[SELECTED_PROVIDER_ID] = providerId
             prefs.remove(SELECTED_MODEL_ID)
             prefs.remove(SELECTED_MODEL_NAME)
+            prefs.remove(SELECTED_MODEL_CONTEXT_LENGTH)
         }
         _apiKeyFlow.value = getApiKeyForProvider(providerId)
     }
@@ -448,10 +451,18 @@ object SettingsManager {
     val selectedModelName: Flow<String>
         get() = appContext.dataStore.data.map { it[SELECTED_MODEL_NAME] ?: "" }
 
-    suspend fun setSelectedModel(id: String, name: String) {
+    val selectedModelContextLength: Flow<Int>
+        get() = appContext.dataStore.data.map { it[SELECTED_MODEL_CONTEXT_LENGTH] ?: 0 }
+
+    suspend fun setSelectedModel(id: String, name: String, contextLength: Int? = null) {
         appContext.dataStore.edit { prefs ->
             prefs[SELECTED_MODEL_ID] = id
             prefs[SELECTED_MODEL_NAME] = name
+            if (contextLength != null && contextLength > 0) {
+                prefs[SELECTED_MODEL_CONTEXT_LENGTH] = contextLength
+            } else {
+                prefs.remove(SELECTED_MODEL_CONTEXT_LENGTH)
+            }
         }
     }
 

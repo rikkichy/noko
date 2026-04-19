@@ -21,6 +21,7 @@ import androidx.compose.animation.slideInHorizontally
 import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectHorizontalDragGestures
 import androidx.compose.foundation.layout.Arrangement
@@ -28,7 +29,9 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -65,14 +68,17 @@ import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.rotate
-import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.draw.scale
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.graphics.lerp
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.lerp
 import cat.ri.noko.model.ChatMessage
 import cat.ri.noko.model.PersonaEntry
 import cat.ri.noko.ui.components.streaming.StreamingTextSlideUp
@@ -401,6 +407,49 @@ fun MessageBubble(
                 }
                 val showEmptyStoppedRegen = !isUser && message.content.isBlank() && message.stoppedByUser && onRegenerate != null
                 Box {
+                    if (regenProgress > 0f && !isUser) {
+                        val p = regenProgress
+                        val containerWidth = lerp(36.dp, 56.dp, p)
+                        val cornerPercent = if (p <= 0.5f) {
+                            (50f - 60f * p).toInt().coerceAtLeast(20)
+                        } else {
+                            (20f + 60f * (p - 0.5f)).toInt().coerceAtMost(50)
+                        }
+                        val borderColor = lerp(
+                            MaterialTheme.colorScheme.outline,
+                            MaterialTheme.colorScheme.primary,
+                            p,
+                        )
+                        val fillColor = MaterialTheme.colorScheme.primary.copy(alpha = p * 0.12f)
+                        val iconTint = lerp(
+                            MaterialTheme.colorScheme.onSurfaceVariant,
+                            MaterialTheme.colorScheme.primary,
+                            p,
+                        )
+                        val pillShape = RoundedCornerShape(cornerPercent)
+                        Box(modifier = Modifier.matchParentSize()) {
+                            Box(
+                                modifier = Modifier
+                                    .align(Alignment.CenterEnd)
+                                    .offset { IntOffset((containerWidth.toPx() * p).toInt(), 0) }
+                                    .width(containerWidth)
+                                    .fillMaxHeight()
+                                    .clip(pillShape)
+                                    .background(fillColor)
+                                    .border(width = 1.5.dp, color = borderColor, shape = pillShape),
+                                contentAlignment = Alignment.Center,
+                            ) {
+                                Icon(
+                                    Icons.Filled.Autorenew,
+                                    contentDescription = null,
+                                    tint = iconTint,
+                                    modifier = Modifier
+                                        .size(20.dp)
+                                        .rotate(360f * p),
+                                )
+                            }
+                        }
+                    }
                     if (showEmptyStoppedRegen) {
                         FilledTonalButton(
                             onClick = { onRegenerate() },
@@ -462,21 +511,6 @@ fun MessageBubble(
                         }
                     }
                     }
-                    if (regenProgress > 0f && !isUser) {
-                        val p = regenProgress
-                        val pop = 1f - (1f - p) * (1f - p) * (1f - p)
-                        Icon(
-                            Icons.Filled.Autorenew,
-                            contentDescription = null,
-                            tint = MaterialTheme.colorScheme.primary,
-                            modifier = Modifier
-                                .align(Alignment.CenterEnd)
-                                .offset { IntOffset((24.dp.toPx() + 18.dp.toPx() * pop).toInt(), 0) }
-                                .size(35.dp)
-                                .scale(pop)
-                                .rotate(360f * p),
-                        )
-                    }
                 }
                 AnimatedVisibility(
                     visible = showActions && canInteract,
@@ -487,13 +521,6 @@ fun MessageBubble(
                         horizontalArrangement = Arrangement.spacedBy(6.dp),
                         modifier = Modifier.padding(top = 4.dp),
                     ) {
-                        if (!isUser && effectiveRegenerate != null) {
-                            AssistChip(
-                                onClick = { showActions = false; effectiveRegenerate() },
-                                label = { Text("Regenerate", style = MaterialTheme.typography.labelSmall, maxLines = 1, softWrap = false) },
-                                leadingIcon = { Icon(Icons.Filled.Autorenew, contentDescription = null, modifier = Modifier.size(16.dp)) },
-                            )
-                        }
                         if (onEdit != null) {
                             AssistChip(
                                 onClick = { showActions = false; onEdit() },

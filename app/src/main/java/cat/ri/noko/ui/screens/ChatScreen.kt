@@ -43,23 +43,33 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import cat.ri.noko.ui.theme.NokoFieldShape
+import androidx.compose.foundation.border
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.Send
+import androidx.compose.material.icons.filled.SwapHoriz
 import androidx.compose.ui.draw.alpha
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.SmartToy
 import androidx.compose.material.icons.filled.Stop
 import androidx.compose.material.icons.filled.VisibilityOff
+import androidx.compose.material.icons.outlined.Info
+import androidx.compose.material.icons.outlined.Lightbulb
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.AssistChip
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
+import androidx.compose.material3.DropdownMenuItem
+import cat.ri.noko.ui.components.NokoDropdown
 import androidx.compose.material3.FilledIconButton
 import androidx.compose.material3.IconButtonShapes
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.Icon
+import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.ModalBottomSheet
+import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextField
@@ -92,7 +102,9 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PlatformImeOptions
 import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.unit.dp
 import cat.ri.noko.core.ChatStorage
 import cat.ri.noko.core.HallucinationDetector
@@ -120,6 +132,11 @@ private data class RpFormat(
     val label: String,
     val prefix: String,
     val suffix: String,
+)
+
+private data class Participant(
+    val name: String?,
+    val avatarFileName: String?,
 )
 
 private fun randomPlaceholder(personaName: String?): String {
@@ -211,6 +228,8 @@ fun ChatScreen(
     val streamNotifications by SettingsManager.nokoPolkitStreamNotifications.collectAsState(initial = false)
     val apiKey by SettingsManager.apiKey.collectAsState(initial = "")
     val modelId by SettingsManager.selectedModelId.collectAsState(initial = "")
+    val modelName by SettingsManager.selectedModelName.collectAsState(initial = "")
+    val modelContextLength by SettingsManager.selectedModelContextLength.collectAsState(initial = 0)
     val presets by SettingsManager.promptPresets.collectAsState(initial = listOf(defaultPromptPreset()))
     val selectedPresetId by SettingsManager.selectedPresetId.collectAsState(initial = "default")
     val providerId by SettingsManager.selectedProviderId.collectAsState(initial = SettingsManager.getSelectedProviderId())
@@ -230,6 +249,7 @@ fun ChatScreen(
 
     var editingMessageIdx by remember { mutableStateOf(-1) }
     var editingText by remember { mutableStateOf("") }
+    var showStatsSheet by remember { mutableStateOf(false) }
 
 
     fun saveCurrentChat() {
@@ -569,27 +589,53 @@ fun ChatScreen(
                 }
             },
             actions = {
-                IconButton(onClick = {
-                    haptics.tap()
-                    streamJob?.cancel()
-                    messages.clear()
-                    currentChatId = UUID.randomUUID().toString()
-                    isSecretChat = false
+                var menuOpen by remember { mutableStateOf(false) }
+                Box {
+                    IconButton(onClick = {
+                        haptics.tap()
+                        menuOpen = true
+                    }) {
+                        Icon(Icons.Filled.MoreVert, contentDescription = "More")
+                    }
+                    NokoDropdown(
+                        expanded = menuOpen,
+                        onDismissRequest = { menuOpen = false },
+                    ) {
+                        DropdownMenuItem(
+                            text = { Text("New chat") },
+                            leadingIcon = { Icon(Icons.Filled.Add, contentDescription = null) },
+                            onClick = {
+                                menuOpen = false
+                                haptics.tap()
+                                streamJob?.cancel()
+                                messages.clear()
+                                currentChatId = UUID.randomUUID().toString()
+                                isSecretChat = false
 
-                    if (activeCharacter?.greetingMessage != null) {
-                        messages.add(
-                            ChatMessage(
-                                role = ChatMessage.Role.ASSISTANT,
-                                content = activeCharacter.greetingMessage
-                                    .replaceTemplateVars(activeCharacter.name, activePersona?.name ?: "User"),
-                                isGreeting = true,
-                                senderName = activeCharacter.name,
-                                senderAvatarFileName = activeCharacter.avatarFileName,
-                            ),
+                                if (activeCharacter?.greetingMessage != null) {
+                                    messages.add(
+                                        ChatMessage(
+                                            role = ChatMessage.Role.ASSISTANT,
+                                            content = activeCharacter.greetingMessage
+                                                .replaceTemplateVars(activeCharacter.name, activePersona?.name ?: "User"),
+                                            isGreeting = true,
+                                            senderName = activeCharacter.name,
+                                            senderAvatarFileName = activeCharacter.avatarFileName,
+                                        ),
+                                    )
+                                }
+                            },
+                        )
+                        DropdownMenuItem(
+                            text = { Text("Chat info") },
+                            leadingIcon = { Icon(Icons.Outlined.Info, contentDescription = null) },
+                            onClick = {
+                                menuOpen = false
+                                haptics.tap()
+                                showStatsSheet = true
+                            },
                         )
                     }
-                }) {
-                    Icon(Icons.Filled.Add, contentDescription = "New chat")
                 }
             },
             colors = nokoTopAppBarColors(),
@@ -893,6 +939,357 @@ fun ChatScreen(
             onDismiss = { showPersonaPicker = false },
         )
     }
+
+
+    if (showStatsSheet) {
+        val statsSheetState = rememberModalBottomSheetState()
+        val userMsgs = messages.count { !it.isGreeting && it.role == cat.ri.noko.model.ChatMessage.Role.USER }
+        val assistantMsgs = messages.count { !it.isGreeting && it.role == cat.ri.noko.model.ChatMessage.Role.ASSISTANT }
+        val totalChars = messages.filter { !it.isGreeting }.sumOf { it.content.length }
+        val estimatedTokens = totalChars / 4
+        val contextPct = if (modelContextLength > 0) {
+            (estimatedTokens.toFloat() / modelContextLength).coerceIn(0f, 1f)
+        } else 0f
+        val guardBlocks = messages.count { it.guardBlocked }
+        val stoppedCount = messages.count { it.stoppedByUser }
+
+        val userParticipants = remember(messages.size, activePersona?.id) {
+            val fromMessages = messages
+                .filter { it.role == ChatMessage.Role.USER && !it.isGreeting }
+                .map { Participant(it.senderName, it.senderAvatarFileName) }
+                .filter { it.name != null || it.avatarFileName != null }
+                .distinct()
+            fromMessages.ifEmpty {
+                activePersona?.let { listOf(Participant(it.name, it.avatarFileName)) } ?: emptyList()
+            }
+        }
+        val characterParticipant = activeCharacter?.let { Participant(it.name, it.avatarFileName) }
+
+        val tips = buildList {
+            if (modelId.isBlank()) {
+                add("Pick a model in Settings → Configuration.")
+            }
+            if (modelId.isNotBlank() && modelContextLength == 0) {
+                add("Context limit unknown. Re-select your model to populate it.")
+            }
+            if (modelContextLength > 0 && contextPct > 0.8f) {
+                add("Context is ${(contextPct * 100).toInt()}% full. Consider starting a fresh chat.")
+            }
+            if (activePersona == null) {
+                add("No persona selected — add one for more personal replies.")
+            }
+            if (guardBlocks >= 3) {
+                add("NokoGuard stepped in $guardBlocks times. Tweaking your preset may help.")
+            }
+            if (userMsgs == 0 && assistantMsgs <= 1) {
+                add("Say something to kick off the roleplay!")
+            }
+        }
+
+        ModalBottomSheet(
+            onDismissRequest = { showStatsSheet = false },
+            sheetState = statsSheetState,
+        ) {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 24.dp)
+                    .padding(bottom = 32.dp),
+                verticalArrangement = Arrangement.spacedBy(22.dp),
+            ) {
+                Text("Chat info", style = MaterialTheme.typography.titleLarge)
+
+                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Row(
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically,
+                        modifier = Modifier.fillMaxWidth(),
+                    ) {
+                        Text(
+                            "Context usage",
+                            style = MaterialTheme.typography.titleSmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                        Text(
+                            text = if (modelContextLength > 0) {
+                                "~${formatCount(estimatedTokens)} / ${formatCount(modelContextLength)}"
+                            } else {
+                                "~${formatCount(estimatedTokens)} tokens"
+                            },
+                            style = MaterialTheme.typography.labelMedium,
+                        )
+                    }
+                    if (modelContextLength > 0) {
+                        LinearProgressIndicator(
+                            progress = { contextPct },
+                            modifier = Modifier.fillMaxWidth(),
+                        )
+                    }
+                    Text(
+                        "Token count is a rough estimate (~4 chars per token).",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
+                    )
+                }
+
+                Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                    Text("Messages", style = MaterialTheme.typography.titleSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    if (userParticipants.isNotEmpty() || characterParticipant != null) {
+                        ParticipantsCard(userParticipants, characterParticipant)
+                    }
+                    if (guardBlocks > 0 || stoppedCount > 0) {
+                        Row(
+                            horizontalArrangement = Arrangement.spacedBy(12.dp),
+                            modifier = Modifier.fillMaxWidth(),
+                        ) {
+                            if (guardBlocks > 0) StatTile("Guards", guardBlocks.toString(), Modifier.weight(1f))
+                            if (stoppedCount > 0) StatTile("Stops", stoppedCount.toString(), Modifier.weight(1f))
+                        }
+                    }
+                }
+
+                Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                    Text("Setup", style = MaterialTheme.typography.titleSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    InfoRow("Model", modelName.ifBlank { modelId.ifBlank { "Not selected" } })
+                    InfoRow("Provider", provider?.name ?: "Custom")
+                    InfoRow("Preset", activePreset.name)
+                    if (isSecretChat) InfoRow("Mode", "Secret chat")
+                }
+
+                if (tips.isNotEmpty()) {
+                    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                        Text("Tips", style = MaterialTheme.typography.titleSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        tips.forEach { TipCard(it) }
+                    }
+                }
+            }
+        }
+    }
+}
+
+private fun formatUserNames(participants: List<Participant>): String {
+    val names = participants.map { it.name?.takeIf { n -> n.isNotBlank() } ?: "Anonymous" }
+    return when (names.size) {
+        0 -> "No persona"
+        1 -> names[0]
+        2 -> "${names[0]} & ${names[1]}"
+        else -> "${names[0]}, ${names[1]} and ${names.size - 2} more"
+    }
+}
+
+@Composable
+private fun StackedAvatars(
+    avatars: List<Participant>,
+    fallbackIcon: ImageVector,
+    ringColor: Color,
+    maxShown: Int = 2,
+    size: Int = 40,
+) {
+    val shown = avatars.take(maxShown)
+    val overflow = (avatars.size - maxShown).coerceAtLeast(0)
+    Row(
+        horizontalArrangement = Arrangement.spacedBy((-12).dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        if (shown.isEmpty()) {
+            Box(
+                modifier = Modifier
+                    .size(size.dp)
+                    .border(2.dp, ringColor, CircleShape),
+            ) {
+                NokoAvatar(
+                    name = null,
+                    avatarFileName = null,
+                    fallbackIcon = fallbackIcon,
+                    size = size,
+                )
+            }
+        } else {
+            shown.forEach { p ->
+                Box(
+                    modifier = Modifier
+                        .size(size.dp)
+                        .border(2.dp, ringColor, CircleShape),
+                ) {
+                    NokoAvatar(
+                        name = p.name,
+                        avatarFileName = p.avatarFileName,
+                        fallbackIcon = fallbackIcon,
+                        size = size,
+                    )
+                }
+            }
+            if (overflow > 0) {
+                Surface(
+                    shape = CircleShape,
+                    color = MaterialTheme.colorScheme.secondaryContainer,
+                    modifier = Modifier
+                        .size(size.dp)
+                        .border(2.dp, ringColor, CircleShape),
+                ) {
+                    Box(contentAlignment = Alignment.Center) {
+                        Text(
+                            "+$overflow",
+                            style = MaterialTheme.typography.labelMedium,
+                            color = MaterialTheme.colorScheme.onSecondaryContainer,
+                        )
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun ParticipantsCard(
+    userParticipants: List<Participant>,
+    character: Participant?,
+) {
+    val ringColor = MaterialTheme.colorScheme.surfaceContainer
+    Surface(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(20.dp),
+        color = MaterialTheme.colorScheme.surfaceContainer,
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 16.dp, vertical = 18.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Column(
+                modifier = Modifier.weight(1f),
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.spacedBy(8.dp),
+            ) {
+                StackedAvatars(
+                    avatars = userParticipants,
+                    fallbackIcon = Icons.Filled.Person,
+                    ringColor = ringColor,
+                )
+                Text(
+                    text = formatUserNames(userParticipants),
+                    style = MaterialTheme.typography.labelLarge,
+                    textAlign = TextAlign.Center,
+                    maxLines = 2,
+                    overflow = TextOverflow.Ellipsis,
+                )
+                Text(
+                    text = "You",
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+            Icon(
+                imageVector = Icons.Filled.SwapHoriz,
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier
+                    .padding(horizontal = 12.dp)
+                    .size(24.dp),
+            )
+            Column(
+                modifier = Modifier.weight(1f),
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.spacedBy(8.dp),
+            ) {
+                StackedAvatars(
+                    avatars = listOfNotNull(character),
+                    fallbackIcon = Icons.Filled.SmartToy,
+                    ringColor = ringColor,
+                )
+                Text(
+                    text = character?.name?.takeIf { it.isNotBlank() } ?: "No character",
+                    style = MaterialTheme.typography.labelLarge,
+                    textAlign = TextAlign.Center,
+                    maxLines = 2,
+                    overflow = TextOverflow.Ellipsis,
+                )
+                Text(
+                    text = "AI",
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun StatTile(label: String, value: String, modifier: Modifier = Modifier) {
+    Surface(
+        modifier = modifier,
+        shape = RoundedCornerShape(16.dp),
+        color = MaterialTheme.colorScheme.surfaceContainer,
+    ) {
+        Column(
+            modifier = Modifier.padding(16.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(2.dp),
+        ) {
+            Text(value, style = MaterialTheme.typography.headlineSmall)
+            Text(
+                label,
+                style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
+    }
+}
+
+@Composable
+private fun InfoRow(label: String, value: String) {
+    Row(
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically,
+        modifier = Modifier.fillMaxWidth(),
+    ) {
+        Text(
+            label,
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+        Text(
+            value,
+            style = MaterialTheme.typography.bodyMedium,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
+            modifier = Modifier.padding(start = 12.dp),
+        )
+    }
+}
+
+@Composable
+private fun TipCard(text: String) {
+    Surface(
+        shape = RoundedCornerShape(14.dp),
+        color = MaterialTheme.colorScheme.secondaryContainer,
+        modifier = Modifier.fillMaxWidth(),
+    ) {
+        Row(
+            modifier = Modifier.padding(horizontal = 14.dp, vertical = 12.dp),
+            verticalAlignment = Alignment.Top,
+            horizontalArrangement = Arrangement.spacedBy(10.dp),
+        ) {
+            Icon(
+                Icons.Outlined.Lightbulb,
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.onSecondaryContainer,
+                modifier = Modifier.size(18.dp),
+            )
+            Text(
+                text = text,
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSecondaryContainer,
+            )
+        }
+    }
+}
+
+private fun formatCount(n: Int): String = when {
+    n >= 1_000_000 -> "%.1fM".format(n / 1_000_000f)
+    n >= 1_000 -> "%.1fk".format(n / 1_000f)
+    else -> n.toString()
 }
 
 
