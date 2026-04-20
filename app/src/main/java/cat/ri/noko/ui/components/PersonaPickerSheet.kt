@@ -3,11 +3,14 @@ package cat.ri.noko.ui.components
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -49,45 +52,50 @@ fun PersonaPickerSheet(
             else entries.filter { it.name.contains(searchQuery, ignoreCase = true) }
         }
 
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(bottom = 24.dp),
+        LazyColumn(
+            modifier = Modifier.fillMaxWidth(),
+            contentPadding = PaddingValues(bottom = 24.dp),
         ) {
-            Text(
-                text = title,
-                style = MaterialTheme.typography.titleMedium,
-                modifier = Modifier.padding(horizontal = 24.dp, vertical = 12.dp),
-            )
-
-            if (entries.size >= 5) {
-                NokoSearchField(
-                    value = searchQuery,
-                    onValueChange = { searchQuery = it },
-                    placeholder = "Search..",
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = 24.dp, vertical = 4.dp),
-                    showLeadingIcon = false,
-                    showClearButton = false,
+            item {
+                Text(
+                    text = title,
+                    style = MaterialTheme.typography.titleMedium,
+                    modifier = Modifier.padding(horizontal = 24.dp, vertical = 12.dp),
                 )
             }
 
-            if (entries.isEmpty()) {
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(vertical = 32.dp),
-                    contentAlignment = Alignment.Center,
-                ) {
-                    Text(
-                        "No entries yet. Create one in Settings.",
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+            if (entries.size >= 5) {
+                item {
+                    NokoSearchField(
+                        value = searchQuery,
+                        onValueChange = { searchQuery = it },
+                        placeholder = "Search..",
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 24.dp, vertical = 4.dp),
+                        showLeadingIcon = false,
+                        showClearButton = false,
                     )
                 }
+            }
+
+            if (entries.isEmpty()) {
+                item {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(vertical = 32.dp),
+                        contentAlignment = Alignment.Center,
+                    ) {
+                        Text(
+                            "No entries yet. Create one in Settings.",
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    }
+                }
             } else {
-                filtered.forEach { entry ->
+                items(filtered, key = { it.id }) { entry ->
                     val isSelected = entry.id == selectedId
                     Surface(
                         modifier = Modifier
