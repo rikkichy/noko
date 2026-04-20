@@ -13,8 +13,8 @@ android {
         applicationId = "cat.ri.noko"
         minSdk = 26
         targetSdk = 36
-        versionCode = 41
-        versionName = "0.9.0"
+        versionCode = 42
+        versionName = "0.9.1"
 
         vectorDrawables {
             useSupportLibrary = true
