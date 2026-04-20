@@ -61,7 +61,7 @@ object HallucinationDetector {
                 bigrams[key] = (bigrams[key] ?: 0) + 1
             }
             val topBigram = bigrams.values.maxOrNull() ?: 0
-            if (topBigram >= 4) return Violation.REPETITION_LOOP
+            if (topBigram >= 4 && topBigram.toFloat() / (words.size - 1) > 0.05f) return Violation.REPETITION_LOOP
         }
 
         val lines = content.lines().map { it.trim() }.filter { it.isNotBlank() }
