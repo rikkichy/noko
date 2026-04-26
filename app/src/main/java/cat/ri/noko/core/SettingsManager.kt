@@ -51,6 +51,8 @@ object SettingsManager {
     private val NOKO_POLKIT_TRIM_EMOJIS = booleanPreferencesKey("noko_polkit_trim_emojis")
     private val NOKO_POLKIT_STRUCTURE_ACTIONS = booleanPreferencesKey("noko_polkit_structure_actions")
     private val NOKO_POLKIT_STREAM_NOTIFICATIONS = booleanPreferencesKey("noko_polkit_stream_notifications")
+    private val NOKO_POLKIT_SHOW_REASONING = booleanPreferencesKey("noko_polkit_show_reasoning")
+    private val CHARACTER_POLICY_HTML_STRIP = booleanPreferencesKey("character_policy_html_strip")
     private val SCREEN_SECURITY = booleanPreferencesKey("screen_security")
     private val INCOGNITO_KEYBOARD = booleanPreferencesKey("incognito_keyboard")
     private val CLEAR_CLIPBOARD = booleanPreferencesKey("clear_clipboard")
@@ -256,6 +258,24 @@ object SettingsManager {
 
     suspend fun setNokoPolkitStreamNotifications(enabled: Boolean) {
         appContext.dataStore.edit { it[NOKO_POLKIT_STREAM_NOTIFICATIONS] = enabled }
+    }
+
+    val nokoPolkitShowReasoning: Flow<Boolean>
+        get() = appContext.dataStore.data.map { it[NOKO_POLKIT_SHOW_REASONING] ?: true }
+
+    suspend fun setNokoPolkitShowReasoning(enabled: Boolean) {
+        appContext.dataStore.edit { it[NOKO_POLKIT_SHOW_REASONING] = enabled }
+    }
+
+    val characterPolicyHtmlStrip: Flow<Boolean>
+        get() = appContext.dataStore.data.map { it[CHARACTER_POLICY_HTML_STRIP] ?: true }
+
+    fun isCharacterHtmlStripEnabled(): Boolean = runBlocking {
+        appContext.dataStore.data.first()[CHARACTER_POLICY_HTML_STRIP] ?: true
+    }
+
+    suspend fun setCharacterPolicyHtmlStrip(enabled: Boolean) {
+        appContext.dataStore.edit { it[CHARACTER_POLICY_HTML_STRIP] = enabled }
     }
 
     val screenSecurity: Flow<Boolean>

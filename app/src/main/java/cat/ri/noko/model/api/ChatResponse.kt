@@ -39,4 +39,8 @@ data class StreamChoice(
 data class StreamDelta(
     val content: String? = null,
     val role: String? = null,
+    @kotlinx.serialization.SerialName("reasoning_content")
+    val reasoningContent: String? = null,
+    val reasoning: String? = null,
+    val thinking: String? = null,
 )

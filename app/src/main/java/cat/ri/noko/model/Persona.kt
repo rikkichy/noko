@@ -12,6 +12,8 @@ data class PersonaEntry(
     val type: PersonaType,
     val name: String,
     val description: String,
+    val personality: String = "",
+    val scenario: String = "",
     val greetingMessage: String? = null,
     val avatarFileName: String? = null,
     val createdAt: Long = System.currentTimeMillis(),

@@ -112,6 +112,7 @@ import cat.ri.noko.core.HallucinationDetector
 import cat.ri.noko.core.PromptBuilder
 import cat.ri.noko.core.SettingsManager
 import cat.ri.noko.core.api.ApiClient
+import cat.ri.noko.core.api.StreamEvent
 import cat.ri.noko.model.getProviderById
 import cat.ri.noko.model.defaultPromptPreset
 import cat.ri.noko.model.ChatMessage
@@ -119,6 +120,7 @@ import cat.ri.noko.model.ChatSessionMeta
 import cat.ri.noko.model.PersonaEntry
 import cat.ri.noko.model.PersonaType
 import cat.ri.noko.model.api.ChatRequest
+import cat.ri.noko.model.api.ReasoningParam
 import cat.ri.noko.ui.ChatAction
 import cat.ri.noko.ui.theme.nokoTopAppBarColors
 import cat.ri.noko.ui.util.stripEmojis
@@ -227,6 +229,7 @@ fun ChatScreen(
     val nokoPolkitTrimEmojis by SettingsManager.nokoPolkitTrimEmojis.collectAsState(initial = true)
     val nokoPolkitStructureActions by SettingsManager.nokoPolkitStructureActions.collectAsState(initial = true)
     val streamNotifications by SettingsManager.nokoPolkitStreamNotifications.collectAsState(initial = false)
+    val showReasoning by SettingsManager.nokoPolkitShowReasoning.collectAsState(initial = true)
     val apiKey by SettingsManager.apiKey.collectAsState(initial = "")
     val modelId by SettingsManager.selectedModelId.collectAsState(initial = "")
     val modelName by SettingsManager.selectedModelName.collectAsState(initial = "")
@@ -302,6 +305,8 @@ fun ChatScreen(
                 guardReason = null,
                 emojisTrimmed = false,
                 actionsStructured = false,
+                reasoningContent = null,
+                reasoningDurationMs = null,
             )
         } else {
             assistantIdx = messages.size
@@ -314,7 +319,10 @@ fun ChatScreen(
         }
 
         streamJob = scope.launch {
-            val buffer = StringBuilder()
+            val contentBuffer = StringBuilder()
+            val reasoningBuffer = StringBuilder()
+            var reasoningStartMs: Long? = null
+            var reasoningDurationMs: Long? = null
             var recoveredFromBlank = false
             try {
                 ApiClient.configure(apiKey, providerBaseUrl, providerId)
@@ -335,47 +343,73 @@ fun ChatScreen(
                     topK = activePreset.topK,
                     frequencyPenalty = activePreset.frequencyPenalty,
                     presencePenalty = activePreset.presencePenalty,
+                    reasoning = if (providerId == "openrouter") ReasoningParam(enabled = true) else null,
                 )
                 var lastUiUpdate = 0L
                 var wordCount = 0
-                var tokenCount = 0
+                var contentTokenCount = 0
                 var lastGuardCheck = 0
-                ApiClient.streamChat(request).collect { token ->
-                    buffer.append(token)
-                    tokenCount++
-
-                    if (nokoGuard && tokenCount >= 50 && tokenCount - lastGuardCheck >= 50) {
-                        lastGuardCheck = tokenCount
-                        val violation = HallucinationDetector.scan(
-                            content = buffer.toString(),
-                            userName = activePersona?.name,
-                            previousMessages = messages.subList(0, assistantIdx),
-                        )
-                        if (violation != null) {
-                            messages[assistantIdx] = messages[assistantIdx].copy(
-                                content = buffer.toString(),
-                                guardBlocked = true,
-                                guardReason = "${violation.label} [${violation.code}]",
-                            )
-                            haptics.reject()
-                            throw kotlinx.coroutines.CancellationException("NokoGuard")
+                ApiClient.streamChat(request).collect { event ->
+                    when (event) {
+                        is StreamEvent.Reasoning -> {
+                            if (reasoningStartMs == null) reasoningStartMs = System.currentTimeMillis()
+                            reasoningBuffer.append(event.text)
+                            val now = System.currentTimeMillis()
+                            if (now - lastUiUpdate > 32) {
+                                lastUiUpdate = now
+                                messages[assistantIdx] = messages[assistantIdx].copy(
+                                    reasoningContent = reasoningBuffer.toString(),
+                                )
+                            }
                         }
-                    }
+                        is StreamEvent.Content -> {
+                            if (reasoningDurationMs == null && reasoningStartMs != null) {
+                                reasoningDurationMs = System.currentTimeMillis() - reasoningStartMs!!
+                            }
+                            contentBuffer.append(event.text)
+                            contentTokenCount++
 
-                    val now = System.currentTimeMillis()
-                    if (now - lastUiUpdate > 32) {
-                        lastUiUpdate = now
-                        messages[assistantIdx] = messages[assistantIdx].copy(
-                            content = buffer.toString(),
-                        )
-                    }
-                    if (token.contains(' ') || token.contains('\n')) {
-                        wordCount++
-                        if (wordCount % 2 == 0) haptics.tick()
+                            if (nokoGuard && contentTokenCount >= 50 && contentTokenCount - lastGuardCheck >= 50) {
+                                lastGuardCheck = contentTokenCount
+                                val violation = HallucinationDetector.scan(
+                                    content = contentBuffer.toString(),
+                                    userName = activePersona?.name,
+                                    previousMessages = messages.subList(0, assistantIdx),
+                                )
+                                if (violation != null) {
+                                    messages[assistantIdx] = messages[assistantIdx].copy(
+                                        content = contentBuffer.toString(),
+                                        guardBlocked = true,
+                                        guardReason = "${violation.label} [${violation.code}]",
+                                        reasoningContent = reasoningBuffer.toString().ifEmpty { null },
+                                        reasoningDurationMs = reasoningDurationMs,
+                                    )
+                                    haptics.reject()
+                                    throw kotlinx.coroutines.CancellationException("NokoGuard")
+                                }
+                            }
+
+                            val now = System.currentTimeMillis()
+                            if (now - lastUiUpdate > 32) {
+                                lastUiUpdate = now
+                                messages[assistantIdx] = messages[assistantIdx].copy(
+                                    content = contentBuffer.toString(),
+                                    reasoningContent = reasoningBuffer.toString().ifEmpty { null },
+                                    reasoningDurationMs = reasoningDurationMs,
+                                )
+                            }
+                            if (event.text.contains(' ') || event.text.contains('\n')) {
+                                wordCount++
+                                if (wordCount % 2 == 0) haptics.tick()
+                            }
+                        }
                     }
                 }
 
-                val finalContent = buffer.toString()
+                val finalContent = contentBuffer.toString()
+                val finalReasoning = reasoningBuffer.toString().ifEmpty { null }
+                val finalReasoningDuration = reasoningDurationMs
+                    ?: reasoningStartMs?.let { System.currentTimeMillis() - it }
                 if (nokoGuard) {
                     val violation = HallucinationDetector.scan(
                         content = finalContent,
@@ -387,6 +421,8 @@ fun ChatScreen(
                             content = finalContent,
                             guardBlocked = true,
                             guardReason = "${violation.label} [${violation.code}]",
+                            reasoningContent = finalReasoning,
+                            reasoningDurationMs = finalReasoningDuration,
                         )
                         haptics.reject()
                         return@launch
@@ -413,13 +449,17 @@ fun ChatScreen(
                     content = processed,
                     emojisTrimmed = emojisTrimmed,
                     actionsStructured = actionsStructured,
+                    reasoningContent = finalReasoning,
+                    reasoningDurationMs = finalReasoningDuration,
                 )
                 messages[assistantIdx] = updated.syncActiveAlternative()
                 haptics.confirm()
             } catch (e: kotlinx.coroutines.CancellationException) {
                 if (assistantIdx < messages.size && !messages[assistantIdx].guardBlocked) {
                     val msg = messages[assistantIdx]
-                    if (buffer.isBlank()) {
+                    val hasContent = contentBuffer.isNotBlank()
+                    val hasReasoning = reasoningBuffer.isNotEmpty()
+                    if (!hasContent && !hasReasoning) {
                         recoveredFromBlank = true
                         val recovered = msg.recoverFromBlankRegeneration()
                         if (recovered != null) {
@@ -428,9 +468,13 @@ fun ChatScreen(
                             messages.removeAt(assistantIdx)
                         }
                     } else {
+                        val finalReasoningDuration = reasoningDurationMs
+                            ?: reasoningStartMs?.let { System.currentTimeMillis() - it }
                         val stopped = msg.copy(
-                            content = buffer.toString(),
+                            content = contentBuffer.toString(),
                             stoppedByUser = true,
+                            reasoningContent = reasoningBuffer.toString().ifEmpty { null },
+                            reasoningDurationMs = finalReasoningDuration,
                         )
                         messages[assistantIdx] = stopped.syncActiveAlternative()
                     }
@@ -668,8 +712,11 @@ fun ChatScreen(
         ) {
 
             val lastMsg = messages.lastOrNull()
+            val lastHasVisibleReasoning = lastMsg != null &&
+                showReasoning && !lastMsg.reasoningContent.isNullOrEmpty()
             val showTyping = isGenerating &&
-                (lastMsg == null || lastMsg.role != ChatMessage.Role.ASSISTANT || lastMsg.content.isBlank())
+                (lastMsg == null || lastMsg.role != ChatMessage.Role.ASSISTANT ||
+                    (lastMsg.content.isBlank() && !lastHasVisibleReasoning))
             if (showTyping) {
                 item(key = "typing_indicator") {
                     TypingIndicator(
@@ -683,8 +730,10 @@ fun ChatScreen(
 
             items(reversedMessages, key = { it.id }) { message ->
 
+                val hasVisibleReasoning = showReasoning && !message.reasoningContent.isNullOrEmpty()
                 if (isGenerating && message == lastMsg
-                    && message.role == ChatMessage.Role.ASSISTANT && message.content.isBlank()
+                    && message.role == ChatMessage.Role.ASSISTANT
+                    && message.content.isBlank() && !hasVisibleReasoning
                 ) return@items
 
                 val isStreamingThis = isGenerating
@@ -701,6 +750,7 @@ fun ChatScreen(
                     reduceMotion = reduceMotion,
                     isStreaming = isStreamingThis,
                     isGenerating = isGenerating,
+                    showReasoning = showReasoning,
                     onRegenerate = if (message.role == ChatMessage.Role.ASSISTANT && !message.isGreeting) {
                         {
                             val idx = messages.indexOfFirst { it.id == message.id }

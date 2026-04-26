@@ -14,6 +14,12 @@ data class ChatRequest(
     @SerialName("top_k") val topK: Int? = null,
     @SerialName("frequency_penalty") val frequencyPenalty: Float? = null,
     @SerialName("presence_penalty") val presencePenalty: Float? = null,
+    val reasoning: ReasoningParam? = null,
+)
+
+@Serializable
+data class ReasoningParam(
+    val enabled: Boolean = true,
 )
 
 @Serializable

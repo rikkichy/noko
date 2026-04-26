@@ -67,6 +67,8 @@ fun PersonaEditScreen(
             },
         )
     }
+    var personality by remember(existing) { mutableStateOf(existing?.personality ?: "") }
+    var scenario by remember(existing) { mutableStateOf(existing?.scenario ?: "") }
     var greetingMessage by remember(existing) {
         mutableStateOf(existing?.greetingMessage ?: "")
     }
@@ -124,6 +126,8 @@ fun PersonaEditScreen(
                                     type = type,
                                     name = name.trim(),
                                     description = description.trim(),
+                                    personality = if (type == PersonaType.CHARACTER) personality.trim() else "",
+                                    scenario = if (type == PersonaType.CHARACTER) scenario.trim() else "",
                                     greetingMessage = if (type == PersonaType.CHARACTER && greetingMessage.isNotBlank())
                                         greetingMessage.trim() else null,
                                     avatarFileName = avatarFileName,
@@ -164,6 +168,11 @@ fun PersonaEditScreen(
                 onNameChange = { name = it },
                 description = description,
                 onDescriptionChange = { description = it },
+                personality = personality,
+                onPersonalityChange = { personality = it },
+                scenario = scenario,
+                onScenarioChange = { scenario = it },
+                showPersonalityScenario = type == PersonaType.CHARACTER,
                 greetingMessage = greetingMessage,
                 onGreetingChange = { greetingMessage = it },
             )

@@ -16,10 +16,13 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.rounded.SendTimeExtension
 import androidx.compose.material.icons.rounded.DisabledVisible
+import androidx.compose.material.icons.rounded.TheaterComedy
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -55,6 +58,8 @@ fun NokoPolkitScreen(onBack: () -> Unit) {
     val trimEmojis by SettingsManager.nokoPolkitTrimEmojis.collectAsState(initial = true)
     val structureActions by SettingsManager.nokoPolkitStructureActions.collectAsState(initial = true)
     val streamNotifications by SettingsManager.nokoPolkitStreamNotifications.collectAsState(initial = false)
+    val showReasoning by SettingsManager.nokoPolkitShowReasoning.collectAsState(initial = true)
+    val characterHtmlStrip by SettingsManager.characterPolicyHtmlStrip.collectAsState(initial = true)
     val biometricAuth by SettingsManager.biometricAuth.collectAsState(initial = false)
     val screenSecurity by SettingsManager.screenSecurity.collectAsState(initial = false)
     val incognitoKeyboard by SettingsManager.incognitoKeyboard.collectAsState(initial = false)
@@ -83,7 +88,9 @@ fun NokoPolkitScreen(onBack: () -> Unit) {
             modifier = Modifier
                 .fillMaxSize()
                 .padding(padding)
-                .padding(horizontal = 16.dp),
+                .padding(horizontal = 16.dp)
+                .verticalScroll(rememberScrollState())
+                .padding(bottom = 16.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp),
         ) {
             Card(
@@ -153,6 +160,31 @@ fun NokoPolkitScreen(onBack: () -> Unit) {
 
                     HorizontalDivider()
 
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                    ) {
+                        Column(modifier = Modifier.weight(1f)) {
+                            Text("Show thinking")
+                            Text(
+                                "Reveal the model's thinking above each reply.",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            )
+                        }
+                        Spacer(Modifier.size(12.dp))
+                        Switch(
+                            checked = showReasoning,
+                            onCheckedChange = { value ->
+                                if (value) haptics.toggleOn() else haptics.toggleOff()
+                                scope.launch { SettingsManager.setNokoPolkitShowReasoning(value) }
+                            },
+                        )
+                    }
+
+                    HorizontalDivider()
+
                     val notifPermissionLauncher = rememberLauncherForActivityResult(
                         ActivityResultContracts.RequestPermission(),
                     ) { granted ->
@@ -194,6 +226,48 @@ fun NokoPolkitScreen(onBack: () -> Unit) {
                                     haptics.toggleOff()
                                     scope.launch { SettingsManager.setNokoPolkitStreamNotifications(false) }
                                 }
+                            },
+                        )
+                    }
+                }
+            }
+
+            Card(
+                colors = CardDefaults.cardColors(
+                    containerColor = MaterialTheme.colorScheme.surfaceContainer,
+                ),
+            ) {
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(16.dp),
+                    verticalArrangement = Arrangement.spacedBy(12.dp),
+                ) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Icon(Icons.Rounded.TheaterComedy, contentDescription = null)
+                        Spacer(Modifier.size(8.dp))
+                        Text("Character Policies", style = MaterialTheme.typography.titleMedium)
+                    }
+
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                    ) {
+                        Column(modifier = Modifier.weight(1f)) {
+                            Text("Strip HTML on import")
+                            Text(
+                                "Remove HTML tags from imported character cards.",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            )
+                        }
+                        Spacer(Modifier.size(12.dp))
+                        Switch(
+                            checked = characterHtmlStrip,
+                            onCheckedChange = { value ->
+                                if (value) haptics.toggleOn() else haptics.toggleOff()
+                                scope.launch { SettingsManager.setCharacterPolicyHtmlStrip(value) }
                             },
                         )
                     }

@@ -376,6 +376,8 @@ fun CharacterImportContent(
                                         type = PersonaType.CHARACTER,
                                         name = char.name,
                                         description = char.description,
+                                        personality = char.personality,
+                                        scenario = char.scenario,
                                         greetingMessage = char.greetingMessage,
                                         avatarFileName = avatarFileName,
                                     )

@@ -9,6 +9,7 @@ import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.RepeatMode
 import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.infiniteRepeatable
 import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.spring
@@ -50,6 +51,8 @@ import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Replay
 import androidx.compose.material.icons.filled.SmartToy
+import androidx.compose.material.icons.rounded.ExpandMore
+import androidx.compose.material.icons.rounded.Psychology
 import androidx.compose.material.icons.rounded.SendTimeExtension
 import androidx.compose.material.icons.rounded.Warning
 import androidx.compose.material3.ButtonGroup
@@ -80,6 +83,8 @@ import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.lerp
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.font.FontFamily
+import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
@@ -89,6 +94,7 @@ import cat.ri.noko.model.PersonaEntry
 import cat.ri.noko.ui.components.streaming.StreamingTextSlideUp
 import cat.ri.noko.ui.util.parseMarkdown
 import cat.ri.noko.ui.util.rememberNokoHaptics
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
 @Composable
@@ -192,6 +198,7 @@ fun MessageBubble(
     reduceMotion: Boolean = false,
     isStreaming: Boolean = false,
     isGenerating: Boolean = false,
+    showReasoning: Boolean = false,
     onRegenerate: (() -> Unit)? = null,
     onEdit: (() -> Unit)? = null,
     onRollback: (() -> Unit)? = null,
@@ -412,7 +419,106 @@ fun MessageBubble(
                         modifier = Modifier.padding(horizontal = 4.dp, vertical = 2.dp),
                     )
                 }
-                Box {
+                val reasoningText = message.reasoningContent
+                if (showReasoning && !isUser && !reasoningText.isNullOrEmpty()) {
+                    val isReasoningActive = message.reasoningDurationMs == null
+                    val pulseAlpha = if (isReasoningActive && !reduceMotion) {
+                        val transition = rememberInfiniteTransition(label = "reasoning_pulse")
+                        transition.animateFloat(
+                            initialValue = 0.55f,
+                            targetValue = 1f,
+                            animationSpec = infiniteRepeatable(
+                                animation = tween(700, easing = FastOutSlowInEasing),
+                                repeatMode = RepeatMode.Reverse,
+                            ),
+                            label = "reasoning_alpha",
+                        ).value
+                    } else 1f
+                    var reasoningExpanded by remember(message.id, message.activeIndex) {
+                        mutableStateOf(isReasoningActive)
+                    }
+                    var userToggledReasoning by remember(message.id, message.activeIndex) {
+                        mutableStateOf(false)
+                    }
+                    LaunchedEffect(message.id, message.activeIndex, isReasoningActive) {
+                        if (!isReasoningActive && !userToggledReasoning && !message.stoppedByUser) {
+                            delay(600)
+                            reasoningExpanded = false
+                        }
+                    }
+                    val chevronRotation by animateFloatAsState(
+                        targetValue = if (reasoningExpanded) 180f else 0f,
+                        animationSpec = if (reduceMotion) tween(0) else tween(220, easing = FastOutSlowInEasing),
+                        label = "reasoning_chevron",
+                    )
+                    val label = message.reasoningDurationMs
+                        ?.let { "Thought for ${formatReasoningDuration(it)}" }
+                        ?: "Thinking…"
+                    Column(modifier = Modifier.widthIn(max = 280.dp).padding(bottom = 4.dp)) {
+                        Surface(
+                            shape = RoundedCornerShape(50),
+                            color = MaterialTheme.colorScheme.surfaceContainerHigh,
+                            modifier = Modifier
+                                .graphicsLayer { alpha = pulseAlpha }
+                                .clickable {
+                                    userToggledReasoning = true
+                                    reasoningExpanded = !reasoningExpanded
+                                },
+                        ) {
+                            Row(
+                                modifier = Modifier.padding(start = 10.dp, end = 6.dp, top = 5.dp, bottom = 5.dp),
+                                verticalAlignment = Alignment.CenterVertically,
+                            ) {
+                                Icon(
+                                    Icons.Rounded.Psychology,
+                                    contentDescription = null,
+                                    modifier = Modifier.size(14.dp),
+                                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                                )
+                                Spacer(Modifier.width(6.dp))
+                                Text(
+                                    text = label,
+                                    style = MaterialTheme.typography.labelSmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                )
+                                Spacer(Modifier.width(2.dp))
+                                Icon(
+                                    Icons.Rounded.ExpandMore,
+                                    contentDescription = if (reasoningExpanded) "Collapse" else "Expand",
+                                    modifier = Modifier.size(14.dp).rotate(chevronRotation),
+                                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                                )
+                            }
+                        }
+                        AnimatedVisibility(
+                            visible = reasoningExpanded,
+                            enter = if (reduceMotion) fadeIn(tween(0))
+                                    else fadeIn(tween(180)) + expandVertically(tween(220, easing = FastOutSlowInEasing)),
+                            exit = if (reduceMotion) fadeOut(tween(0))
+                                   else fadeOut(tween(120)) + shrinkVertically(tween(160, easing = FastOutSlowInEasing)),
+                        ) {
+                            Surface(
+                                shape = RoundedCornerShape(12.dp),
+                                color = MaterialTheme.colorScheme.surfaceContainer,
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(top = 6.dp),
+                            ) {
+                                Text(
+                                    text = reasoningText,
+                                    modifier = Modifier.padding(horizontal = 12.dp, vertical = 10.dp),
+                                    style = MaterialTheme.typography.bodySmall.copy(
+                                        fontFamily = FontFamily.Monospace,
+                                        fontStyle = FontStyle.Italic,
+                                        lineHeight = MaterialTheme.typography.bodySmall.lineHeight * 1.15f,
+                                    ),
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                )
+                            }
+                        }
+                    }
+                }
+                if (message.content.isNotBlank() || message.stoppedByUser) Box {
                     if (regenProgress > 0f && !isUser) {
                         val p = regenProgress
                         val containerWidth = lerp(36.dp, 56.dp, p)
@@ -496,6 +602,13 @@ fun MessageBubble(
                                     isStreaming = isStreaming,
                                     modifier = Modifier.padding(12.dp),
                                     style = MaterialTheme.typography.bodyLarge,
+                                )
+                            } else if (message.content.isBlank()) {
+                                Text(
+                                    text = "(no reply)",
+                                    modifier = Modifier.padding(12.dp),
+                                    style = MaterialTheme.typography.bodyLarge.copy(fontStyle = FontStyle.Italic),
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f),
                                 )
                             } else {
                                 Text(
@@ -640,5 +753,19 @@ fun MessageBubble(
                 )
             }
         }
+    }
+}
+
+private fun formatReasoningDuration(ms: Long): String = when {
+    ms < 10_000 -> {
+        val secs = (ms / 1000).toInt()
+        val tenths = ((ms % 1000) / 100).toInt()
+        "${secs}.${tenths}s"
+    }
+    ms < 60_000 -> "${(ms / 1000).toInt()}s"
+    else -> {
+        val m = (ms / 60_000).toInt()
+        val s = ((ms % 60_000) / 1000).toInt()
+        "${m}m ${s}s"
     }
 }

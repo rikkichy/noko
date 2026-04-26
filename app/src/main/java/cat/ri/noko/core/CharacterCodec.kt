@@ -27,8 +27,33 @@ object CharacterCodec {
 
     private const val MAX_NAME_LENGTH = 255
     private const val MAX_DESCRIPTION_LENGTH = 10_000
+    private const val MAX_PERSONALITY_LENGTH = 5_000
+    private const val MAX_SCENARIO_LENGTH = 5_000
     private const val MAX_GREETING_LENGTH = 5_000
     private const val MAX_AVATAR_BYTES = 10 * 1024 * 1024
+
+    private val HTML_TAG_REGEX = Regex("<[^>]+>")
+    private val HTML_ENTITIES = mapOf(
+        "&amp;" to "&",
+        "&lt;" to "<",
+        "&gt;" to ">",
+        "&quot;" to "\"",
+        "&apos;" to "'",
+        "&#39;" to "'",
+        "&nbsp;" to " ",
+    )
+
+    private fun stripHtml(input: String): String {
+        val noTags = HTML_TAG_REGEX.replace(input, "")
+        var result = noTags
+        HTML_ENTITIES.forEach { (entity, replacement) ->
+            result = result.replace(entity, replacement)
+        }
+        return result.replace(Regex("\\s{3,}"), "\n\n").trim()
+    }
+
+    private fun String.maybeStripHtml(strip: Boolean): String =
+        if (strip && contains('<')) stripHtml(this) else this
 
     private val PNG_SIGNATURE = byteArrayOf(
         0x89.toByte(), 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A,
@@ -46,6 +71,8 @@ object CharacterCodec {
     data class ImportedCharacter(
         val name: String,
         val description: String,
+        val personality: String = "",
+        val scenario: String = "",
         val greetingMessage: String?,
         val avatarBytes: ByteArray?,
     )
@@ -97,10 +124,12 @@ object CharacterCodec {
                 root["data"] is JsonObject &&
                 root["data"]!!.jsonObject.containsKey("name")
 
+            val stripHtml = SettingsManager.isCharacterHtmlStripEnabled()
+
             val char = if (isV2) {
-                parseTavernData(root["data"]!!.jsonObject, allBytes)
+                parseTavernData(root["data"]!!.jsonObject, allBytes, stripHtml)
             } else {
-                parseTavernData(root, allBytes)
+                parseTavernData(root, allBytes, stripHtml)
             } ?: return ImportResult.Error("Character card has no name")
 
             ImportResult.Success(listOf(char))
@@ -116,22 +145,25 @@ object CharacterCodec {
             } ?: return ImportResult.Error("Could not read file")
 
             val obj = json.parseToJsonElement(text).jsonObject
+            val stripHtml = SettingsManager.isCharacterHtmlStripEnabled()
 
-            val name = obj.str("name")?.take(MAX_NAME_LENGTH)
+            val name = obj.str("name")?.maybeStripHtml(stripHtml)?.take(MAX_NAME_LENGTH)
                 ?: return ImportResult.Error("Character has no name")
 
-            val parts = mutableListOf<String>()
-            obj.str("description")?.takeIf { it.isNotBlank() }?.let { parts.add(it) }
-            obj.str("definition")?.takeIf { it.isNotBlank() }?.let {
-                parts.add("Definition:\n$it")
-            }
+            val description = obj.str("description").orEmpty().maybeStripHtml(stripHtml)
+                .take(MAX_DESCRIPTION_LENGTH)
+            val personality = obj.str("definition").orEmpty().maybeStripHtml(stripHtml)
+                .take(MAX_PERSONALITY_LENGTH)
+            val greeting = obj.str("greeting")?.maybeStripHtml(stripHtml)?.take(MAX_GREETING_LENGTH)
 
             ImportResult.Success(
                 listOf(
                     ImportedCharacter(
                         name = name,
-                        description = parts.joinToString("\n\n").take(MAX_DESCRIPTION_LENGTH),
-                        greetingMessage = obj.str("greeting")?.take(MAX_GREETING_LENGTH),
+                        description = description,
+                        personality = personality,
+                        scenario = "",
+                        greetingMessage = greeting,
                         avatarBytes = null,
                     ),
                 ),
@@ -232,27 +264,34 @@ object CharacterCodec {
         return ImportedCharacter(
             name = entry.name.take(MAX_NAME_LENGTH),
             description = entry.description.take(MAX_DESCRIPTION_LENGTH),
+            personality = entry.personality.take(MAX_PERSONALITY_LENGTH),
+            scenario = entry.scenario.take(MAX_SCENARIO_LENGTH),
             greetingMessage = entry.greetingMessage?.take(MAX_GREETING_LENGTH),
             avatarBytes = decoded?.takeIf { it.size <= MAX_AVATAR_BYTES },
         )
     }
 
-    private fun parseTavernData(data: JsonObject, pngBytes: ByteArray): ImportedCharacter? {
-        val name = data.str("name")?.take(MAX_NAME_LENGTH) ?: return null
+    private fun parseTavernData(
+        data: JsonObject,
+        pngBytes: ByteArray,
+        stripHtml: Boolean,
+    ): ImportedCharacter? {
+        val name = data.str("name")?.maybeStripHtml(stripHtml)?.take(MAX_NAME_LENGTH) ?: return null
 
-        val parts = mutableListOf<String>()
-        data.str("description")?.takeIf { it.isNotBlank() }?.let { parts.add(it) }
-        data.str("personality")?.takeIf { it.isNotBlank() }?.let {
-            parts.add("Personality: $it")
-        }
-        data.str("scenario")?.takeIf { it.isNotBlank() }?.let {
-            parts.add("Scenario: $it")
-        }
+        val description = data.str("description").orEmpty().maybeStripHtml(stripHtml)
+            .take(MAX_DESCRIPTION_LENGTH)
+        val personality = data.str("personality").orEmpty().maybeStripHtml(stripHtml)
+            .take(MAX_PERSONALITY_LENGTH)
+        val scenario = data.str("scenario").orEmpty().maybeStripHtml(stripHtml)
+            .take(MAX_SCENARIO_LENGTH)
+        val greeting = data.str("first_mes")?.maybeStripHtml(stripHtml)?.take(MAX_GREETING_LENGTH)
 
         return ImportedCharacter(
             name = name,
-            description = parts.joinToString("\n\n").take(MAX_DESCRIPTION_LENGTH),
-            greetingMessage = data.str("first_mes")?.take(MAX_GREETING_LENGTH),
+            description = description,
+            personality = personality,
+            scenario = scenario,
+            greetingMessage = greeting,
             avatarBytes = pngBytes.takeIf { it.size <= MAX_AVATAR_BYTES },
         )
     }

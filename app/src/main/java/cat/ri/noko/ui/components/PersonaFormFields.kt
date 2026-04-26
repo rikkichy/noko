@@ -46,6 +46,11 @@ fun PersonaFormFields(
     onDescriptionChange: (String) -> Unit,
     descError: Boolean = false,
     descShakeOffset: Float = 0f,
+    personality: String = "",
+    onPersonalityChange: (String) -> Unit = {},
+    scenario: String = "",
+    onScenarioChange: (String) -> Unit = {},
+    showPersonalityScenario: Boolean = false,
     greetingMessage: String = "",
     onGreetingChange: (String) -> Unit = {},
     avatarSize: Dp = 128.dp,
@@ -129,6 +134,30 @@ fun PersonaFormFields(
     )
 
     if (type == PersonaType.CHARACTER) {
+        if (showPersonalityScenario) {
+            OutlinedTextField(
+                value = personality,
+                onValueChange = { if (it.length <= 5_000) onPersonalityChange(it) },
+                label = { Text("Personality") },
+                placeholder = { Text("Traits, speech patterns, quirks...") },
+                shape = NokoFieldShape,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .heightIn(min = 120.dp),
+            )
+
+            OutlinedTextField(
+                value = scenario,
+                onValueChange = { if (it.length <= 5_000) onScenarioChange(it) },
+                label = { Text("Scenario") },
+                placeholder = { Text("Setting and circumstances of the conversation...") },
+                shape = NokoFieldShape,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .heightIn(min = 120.dp),
+            )
+        }
+
         OutlinedTextField(
             value = greetingMessage,
             onValueChange = { if (it.length <= 5_000) onGreetingChange(it) },

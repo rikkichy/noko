@@ -11,6 +11,8 @@ data class SwipeAlternative(
     val guardReason: String? = null,
     val emojisTrimmed: Boolean = false,
     val actionsStructured: Boolean = false,
+    val reasoningContent: String? = null,
+    val reasoningDurationMs: Long? = null,
 )
 
 @Serializable
@@ -29,6 +31,8 @@ data class ChatMessage(
     val senderAvatarFileName: String? = null,
     val alternatives: List<SwipeAlternative> = emptyList(),
     val activeIndex: Int = 0,
+    val reasoningContent: String? = null,
+    val reasoningDurationMs: Long? = null,
 ) {
     @Serializable
     enum class Role { USER, ASSISTANT }
@@ -42,6 +46,8 @@ data class ChatMessage(
         guardReason = guardReason,
         emojisTrimmed = emojisTrimmed,
         actionsStructured = actionsStructured,
+        reasoningContent = reasoningContent,
+        reasoningDurationMs = reasoningDurationMs,
     )
 
     fun swipeTo(targetIndex: Int): ChatMessage {
@@ -59,6 +65,8 @@ data class ChatMessage(
             guardReason = target.guardReason,
             emojisTrimmed = target.emojisTrimmed,
             actionsStructured = target.actionsStructured,
+            reasoningContent = target.reasoningContent,
+            reasoningDurationMs = target.reasoningDurationMs,
             activeIndex = targetIndex,
             alternatives = updatedAlts,
         )
@@ -93,6 +101,8 @@ data class ChatMessage(
             guardReason = target.guardReason,
             emojisTrimmed = target.emojisTrimmed,
             actionsStructured = target.actionsStructured,
+            reasoningContent = target.reasoningContent,
+            reasoningDurationMs = target.reasoningDurationMs,
             activeIndex = finalIdx,
             alternatives = finalAlts,
         )
@@ -114,6 +124,8 @@ data class ChatMessage(
         pruned.add(SwipeAlternative(content = ""))
         return copy(
             content = "",
+            reasoningContent = null,
+            reasoningDurationMs = null,
             activeIndex = newIndex,
             alternatives = pruned,
         )

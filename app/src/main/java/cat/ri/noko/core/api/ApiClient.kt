@@ -1,6 +1,7 @@
 package cat.ri.noko.core.api
 
 import cat.ri.noko.BuildConfig
+import cat.ri.noko.core.ThinkTagStripper
 import cat.ri.noko.model.api.ChatRequest
 import cat.ri.noko.model.api.ModelsResponse
 import cat.ri.noko.model.api.StreamChunk
@@ -99,11 +100,12 @@ object ApiClient {
         api!!.getModels()
     }
 
-    fun streamChat(request: ChatRequest): Flow<String> = callbackFlow {
+    fun streamChat(request: ChatRequest): Flow<StreamEvent> = callbackFlow {
         requireConfigured()
         val streamRequest = request.copy(stream = true)
 
         val call = api!!.chatCompletionStream(streamRequest)
+        val stripper = ThinkTagStripper()
 
         launch(Dispatchers.IO) {
             try {
@@ -134,9 +136,22 @@ object ApiClient {
                                 close(ApiException(humanizeApiError(error.code, error.message)))
                                 return@launch
                             }
-                            val content = chunk.choices.firstOrNull()?.delta?.content
-                            if (content != null) {
-                                trySend(content)
+                            val delta = chunk.choices.firstOrNull()?.delta ?: continue
+                            val explicitReasoning = delta.reasoningContent
+                                ?: delta.reasoning
+                                ?: delta.thinking
+                            if (!explicitReasoning.isNullOrEmpty()) {
+                                trySend(StreamEvent.Reasoning(explicitReasoning))
+                            }
+                            val content = delta.content
+                            if (!content.isNullOrEmpty()) {
+                                val parsed = stripper.feed(content)
+                                if (parsed.reasoning.isNotEmpty()) {
+                                    trySend(StreamEvent.Reasoning(parsed.reasoning))
+                                }
+                                if (parsed.content.isNotEmpty()) {
+                                    trySend(StreamEvent.Content(parsed.content))
+                                }
                             }
                         } catch (e: ApiException) {
                             close(e)
@@ -145,6 +160,9 @@ object ApiClient {
 
                         }
                     }
+                    val tail = stripper.flush()
+                    if (tail.reasoning.isNotEmpty()) trySend(StreamEvent.Reasoning(tail.reasoning))
+                    if (tail.content.isNotEmpty()) trySend(StreamEvent.Content(tail.content))
                 } finally {
                     body.close()
                 }
@@ -194,3 +212,8 @@ fun humanizeException(e: Throwable): String = when (e) {
 }
 
 class ApiException(message: String) : Exception(message)
+
+sealed class StreamEvent {
+    data class Content(val text: String) : StreamEvent()
+    data class Reasoning(val text: String) : StreamEvent()
+}

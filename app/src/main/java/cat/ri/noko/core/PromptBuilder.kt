@@ -41,7 +41,15 @@ object PromptBuilder {
                     }
                     PromptSectionType.CHARACTER_DESCRIPTION -> {
                         character?.let {
-                            "${it.name}: ${it.description}".replaceTemplateVars(charName, userName)
+                            buildString {
+                                append("${it.name}: ${it.description}")
+                                if (it.personality.isNotBlank()) {
+                                    append("\n\n[${it.name}'s Personality: ${it.personality}]")
+                                }
+                                if (it.scenario.isNotBlank()) {
+                                    append("\n\n[Circumstances and context of the dialogue: ${it.scenario}]")
+                                }
+                            }.replaceTemplateVars(charName, userName)
                         }
                     }
                     PromptSectionType.CHAT_HISTORY -> null
