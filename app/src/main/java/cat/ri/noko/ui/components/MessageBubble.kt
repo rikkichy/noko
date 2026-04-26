@@ -82,6 +82,7 @@ import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.lerp
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontStyle
@@ -89,6 +90,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.lerp
+import cat.ri.noko.R
 import cat.ri.noko.model.ChatMessage
 import cat.ri.noko.model.PersonaEntry
 import cat.ri.noko.ui.components.streaming.StreamingTextSlideUp
@@ -166,7 +168,7 @@ fun TypingIndicator(
             verticalAlignment = Alignment.CenterVertically,
         ) {
             Text(
-                text = "$characterName is typing",
+                text = stringResource(R.string.bubble_typing, characterName),
                 style = MaterialTheme.typography.bodySmall,
                 fontWeight = FontWeight.Medium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
@@ -242,14 +244,14 @@ fun MessageBubble(
                 )
                 Column(modifier = Modifier.weight(1f)) {
                     Text(
-                        text = "NokoGuard interrupted this response.",
+                        text = stringResource(R.string.bubble_guard_blocked),
                         style = MaterialTheme.typography.bodyMedium,
                         fontWeight = FontWeight.SemiBold,
                         color = MaterialTheme.colorScheme.onErrorContainer,
                     )
                     if (message.guardReason != null) {
                         Text(
-                            text = "Reason: ${message.guardReason}",
+                            text = stringResource(R.string.bubble_guard_reason, message.guardReason),
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onErrorContainer.copy(alpha = 0.7f),
                         )
@@ -259,7 +261,7 @@ fun MessageBubble(
                     IconButton(onClick = effectiveRegenerate) {
                         Icon(
                             Icons.Filled.Refresh,
-                            contentDescription = "Regenerate",
+                            contentDescription = stringResource(R.string.bubble_regenerate),
                             tint = MaterialTheme.colorScheme.onErrorContainer,
                         )
                     }
@@ -276,7 +278,7 @@ fun MessageBubble(
                     enabled = swipeIndex > 0,
                     modifier = Modifier.size(32.dp),
                 ) {
-                    Icon(Icons.AutoMirrored.Filled.NavigateBefore, contentDescription = "Previous", modifier = Modifier.size(16.dp))
+                    Icon(Icons.AutoMirrored.Filled.NavigateBefore, contentDescription = stringResource(R.string.bubble_swipe_previous), modifier = Modifier.size(16.dp))
                 }
                 Text(
                     text = "${swipeIndex + 1}/$swipeCount",
@@ -288,7 +290,7 @@ fun MessageBubble(
                     enabled = swipeIndex < swipeCount - 1,
                     modifier = Modifier.size(32.dp),
                 ) {
-                    Icon(Icons.AutoMirrored.Filled.NavigateNext, contentDescription = "Next", modifier = Modifier.size(16.dp))
+                    Icon(Icons.AutoMirrored.Filled.NavigateNext, contentDescription = stringResource(R.string.bubble_swipe_next), modifier = Modifier.size(16.dp))
                 }
             }
         }
@@ -452,8 +454,8 @@ fun MessageBubble(
                         label = "reasoning_chevron",
                     )
                     val label = message.reasoningDurationMs
-                        ?.let { "Thought for ${formatReasoningDuration(it)}" }
-                        ?: "Thinking…"
+                        ?.let { stringResource(R.string.bubble_reasoning_thought_for, formatReasoningDuration(it)) }
+                        ?: stringResource(R.string.bubble_reasoning_thinking)
                     Column(modifier = Modifier.widthIn(max = 280.dp).padding(bottom = 4.dp)) {
                         Surface(
                             shape = RoundedCornerShape(50),
@@ -484,7 +486,10 @@ fun MessageBubble(
                                 Spacer(Modifier.width(2.dp))
                                 Icon(
                                     Icons.Rounded.ExpandMore,
-                                    contentDescription = if (reasoningExpanded) "Collapse" else "Expand",
+                                    contentDescription = if (reasoningExpanded)
+                                        stringResource(R.string.bubble_reasoning_collapse)
+                                    else
+                                        stringResource(R.string.bubble_reasoning_expand),
                                     modifier = Modifier.size(14.dp).rotate(chevronRotation),
                                     tint = MaterialTheme.colorScheme.onSurfaceVariant,
                                 )
@@ -605,7 +610,7 @@ fun MessageBubble(
                                 )
                             } else if (message.content.isBlank()) {
                                 Text(
-                                    text = "(no reply)",
+                                    text = stringResource(R.string.bubble_no_reply),
                                     modifier = Modifier.padding(12.dp),
                                     style = MaterialTheme.typography.bodyLarge.copy(fontStyle = FontStyle.Italic),
                                     color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f),
@@ -660,7 +665,7 @@ fun MessageBubble(
                 }
                 if (message.stoppedByUser) {
                     Text(
-                        text = "Stopped by you",
+                        text = stringResource(R.string.bubble_stopped_by_you),
                         style = MaterialTheme.typography.labelSmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f),
                         modifier = Modifier.padding(horizontal = 4.dp, vertical = 2.dp),
@@ -685,7 +690,7 @@ fun MessageBubble(
                         )
                         Spacer(Modifier.size(3.dp))
                         Text(
-                            text = "Emojis trimmed",
+                            text = stringResource(R.string.bubble_emojis_trimmed),
                             style = MaterialTheme.typography.labelSmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f),
                         )
@@ -710,7 +715,7 @@ fun MessageBubble(
                         )
                         Spacer(Modifier.size(3.dp))
                         Text(
-                            text = "Actions structured",
+                            text = stringResource(R.string.bubble_actions_structured),
                             style = MaterialTheme.typography.labelSmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f),
                         )
@@ -725,7 +730,7 @@ fun MessageBubble(
                             enabled = swipeIndex > 0,
                             modifier = Modifier.size(32.dp),
                         ) {
-                            Icon(Icons.AutoMirrored.Filled.NavigateBefore, contentDescription = "Previous", modifier = Modifier.size(16.dp))
+                            Icon(Icons.AutoMirrored.Filled.NavigateBefore, contentDescription = stringResource(R.string.bubble_swipe_previous), modifier = Modifier.size(16.dp))
                         }
                         Text(
                             text = "${swipeIndex + 1}/$swipeCount",
@@ -737,7 +742,7 @@ fun MessageBubble(
                             enabled = swipeIndex < swipeCount - 1,
                             modifier = Modifier.size(32.dp),
                         ) {
-                            Icon(Icons.AutoMirrored.Filled.NavigateNext, contentDescription = "Next", modifier = Modifier.size(16.dp))
+                            Icon(Icons.AutoMirrored.Filled.NavigateNext, contentDescription = stringResource(R.string.bubble_swipe_next), modifier = Modifier.size(16.dp))
                         }
                     }
                 }

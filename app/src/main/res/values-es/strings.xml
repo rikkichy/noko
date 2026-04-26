@@ -1,0 +1,24 @@
+<resources xmlns:xliff="urn:oasis:names:tc:xliff:document:1.2">
+    <!-- Example Spanish translation. Add or update entries below; missing keys
+         fall back to the English source in res/values/strings.xml. Do NOT
+         translate the `name=` attribute or the contents of <xliff:g> tags. -->
+
+    <!-- Common -->
+    <string name="common_back">Atrás</string>
+    <string name="common_cancel">Cancelar</string>
+
+    <!-- NokoPolkit screen -->
+    <string name="polkit_title">NokoPolkit</string>
+    <string name="polkit_card_chat">Políticas de chat</string>
+    <string name="polkit_card_character">Políticas de personaje</string>
+    <string name="polkit_card_app">Políticas de la app</string>
+
+    <string name="polkit_show_thinking">Mostrar pensamiento</string>
+    <string name="polkit_show_thinking_desc">Mostrar el pensamiento del modelo encima de cada respuesta.</string>
+
+    <!-- Message bubble -->
+    <string name="bubble_typing"><xliff:g id="character" example="Alice">%1$s</xliff:g> está escribiendo</string>
+    <string name="bubble_reasoning_thinking">Pensando…</string>
+    <string name="bubble_reasoning_thought_for">Pensó durante <xliff:g id="duration" example="2.3s">%1$s</xliff:g></string>
+    <string name="bubble_no_reply">(sin respuesta)</string>
+</resources>

@@ -42,9 +42,11 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
 import androidx.fragment.app.FragmentActivity
+import cat.ri.noko.R
 import cat.ri.noko.core.SettingsManager
 import cat.ri.noko.ui.theme.nokoTopAppBarColors
 import cat.ri.noko.ui.util.rememberNokoHaptics
@@ -74,10 +76,10 @@ fun NokoPolkitScreen(onBack: () -> Unit) {
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("NokoPolkit") },
+                title = { Text(stringResource(R.string.polkit_title)) },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(R.string.common_back))
                     }
                 },
                 colors = nokoTopAppBarColors(),
@@ -107,7 +109,7 @@ fun NokoPolkitScreen(onBack: () -> Unit) {
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Icon(Icons.Rounded.SendTimeExtension, contentDescription = null)
                         Spacer(Modifier.size(8.dp))
-                        Text("Chat Policies", style = MaterialTheme.typography.titleMedium)
+                        Text(stringResource(R.string.polkit_card_chat), style = MaterialTheme.typography.titleMedium)
                     }
 
                     Row(
@@ -116,9 +118,9 @@ fun NokoPolkitScreen(onBack: () -> Unit) {
                         horizontalArrangement = Arrangement.SpaceBetween,
                     ) {
                         Column(modifier = Modifier.weight(1f)) {
-                            Text("Trim emojis")
+                            Text(stringResource(R.string.polkit_trim_emojis))
                             Text(
-                                "Remove emojis from AI responses.",
+                                stringResource(R.string.polkit_trim_emojis_desc),
                                 style = MaterialTheme.typography.bodySmall,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                             )
@@ -141,9 +143,9 @@ fun NokoPolkitScreen(onBack: () -> Unit) {
                         horizontalArrangement = Arrangement.SpaceBetween,
                     ) {
                         Column(modifier = Modifier.weight(1f)) {
-                            Text("Structure actions")
+                            Text(stringResource(R.string.polkit_structure_actions))
                             Text(
-                                "Add newlines before and after *action* blocks.",
+                                stringResource(R.string.polkit_structure_actions_desc),
                                 style = MaterialTheme.typography.bodySmall,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                             )
@@ -166,9 +168,9 @@ fun NokoPolkitScreen(onBack: () -> Unit) {
                         horizontalArrangement = Arrangement.SpaceBetween,
                     ) {
                         Column(modifier = Modifier.weight(1f)) {
-                            Text("Show thinking")
+                            Text(stringResource(R.string.polkit_show_thinking))
                             Text(
-                                "Reveal the model's thinking above each reply.",
+                                stringResource(R.string.polkit_show_thinking_desc),
                                 style = MaterialTheme.typography.bodySmall,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                             )
@@ -200,10 +202,10 @@ fun NokoPolkitScreen(onBack: () -> Unit) {
                         horizontalArrangement = Arrangement.SpaceBetween,
                     ) {
                         Column(modifier = Modifier.weight(1f)) {
-                            Text("Stream notifications")
+                            Text(stringResource(R.string.polkit_stream_notifications))
                             Text(
-                                if (biometricAuth) "Incompatible with Biometric Authentication."
-                                else "Notify when AI finishes replying in the background.",
+                                if (biometricAuth) stringResource(R.string.polkit_stream_notifications_desc_blocked)
+                                else stringResource(R.string.polkit_stream_notifications_desc),
                                 style = MaterialTheme.typography.bodySmall,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                             )
@@ -246,7 +248,7 @@ fun NokoPolkitScreen(onBack: () -> Unit) {
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Icon(Icons.Rounded.TheaterComedy, contentDescription = null)
                         Spacer(Modifier.size(8.dp))
-                        Text("Character Policies", style = MaterialTheme.typography.titleMedium)
+                        Text(stringResource(R.string.polkit_card_character), style = MaterialTheme.typography.titleMedium)
                     }
 
                     Row(
@@ -255,9 +257,9 @@ fun NokoPolkitScreen(onBack: () -> Unit) {
                         horizontalArrangement = Arrangement.SpaceBetween,
                     ) {
                         Column(modifier = Modifier.weight(1f)) {
-                            Text("Strip HTML on import")
+                            Text(stringResource(R.string.polkit_strip_html))
                             Text(
-                                "Remove HTML tags from imported character cards.",
+                                stringResource(R.string.polkit_strip_html_desc),
                                 style = MaterialTheme.typography.bodySmall,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                             )
@@ -288,7 +290,7 @@ fun NokoPolkitScreen(onBack: () -> Unit) {
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Icon(Icons.Rounded.DisabledVisible, contentDescription = null)
                         Spacer(Modifier.size(8.dp))
-                        Text("App Policies", style = MaterialTheme.typography.titleMedium)
+                        Text(stringResource(R.string.polkit_card_app), style = MaterialTheme.typography.titleMedium)
                     }
 
                     Row(
@@ -297,10 +299,10 @@ fun NokoPolkitScreen(onBack: () -> Unit) {
                         horizontalArrangement = Arrangement.SpaceBetween,
                     ) {
                         Column(modifier = Modifier.weight(1f)) {
-                            Text("Biometric authentication")
+                            Text(stringResource(R.string.polkit_biometric_auth))
                             Text(
-                                if (biometricAvailable) "Require biometric to access the app."
-                                else "Biometric hardware not available.",
+                                if (biometricAvailable) stringResource(R.string.polkit_biometric_auth_desc)
+                                else stringResource(R.string.polkit_biometric_auth_desc_unavailable),
                                 style = MaterialTheme.typography.bodySmall,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                             )
@@ -332,10 +334,14 @@ fun NokoPolkitScreen(onBack: () -> Unit) {
                                     }
                                 }
                                 val prompt = BiometricPrompt(activity, executor, callback)
+                                val titleText = if (value)
+                                    context.getString(R.string.polkit_biometric_prompt_title_enable)
+                                else
+                                    context.getString(R.string.polkit_biometric_prompt_title_disable)
                                 val info = BiometricPrompt.PromptInfo.Builder()
-                                    .setTitle(if (value) "Enable biometric lock" else "Disable biometric lock")
-                                    .setSubtitle("Verify your identity")
-                                    .setNegativeButtonText("Cancel")
+                                    .setTitle(titleText)
+                                    .setSubtitle(context.getString(R.string.polkit_biometric_prompt_subtitle))
+                                    .setNegativeButtonText(context.getString(R.string.common_cancel))
                                     .setAllowedAuthenticators(BIOMETRIC_STRONG)
                                     .build()
                                 prompt.authenticate(info)
@@ -351,9 +357,9 @@ fun NokoPolkitScreen(onBack: () -> Unit) {
                         horizontalArrangement = Arrangement.SpaceBetween,
                     ) {
                         Column(modifier = Modifier.weight(1f)) {
-                            Text("Screen security")
+                            Text(stringResource(R.string.polkit_screen_security))
                             Text(
-                                "Prevent screenshots and screen recording.",
+                                stringResource(R.string.polkit_screen_security_desc),
                                 style = MaterialTheme.typography.bodySmall,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                             )
@@ -376,9 +382,9 @@ fun NokoPolkitScreen(onBack: () -> Unit) {
                         horizontalArrangement = Arrangement.SpaceBetween,
                     ) {
                         Column(modifier = Modifier.weight(1f)) {
-                            Text("Incognito keyboard")
+                            Text(stringResource(R.string.polkit_incognito_keyboard))
                             Text(
-                                "Ask keyboards to disable learning and suggestions.",
+                                stringResource(R.string.polkit_incognito_keyboard_desc),
                                 style = MaterialTheme.typography.bodySmall,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                             )
@@ -401,9 +407,9 @@ fun NokoPolkitScreen(onBack: () -> Unit) {
                         horizontalArrangement = Arrangement.SpaceBetween,
                     ) {
                         Column(modifier = Modifier.weight(1f)) {
-                            Text("Clear clipboard on exit")
+                            Text(stringResource(R.string.polkit_clear_clipboard))
                             Text(
-                                "Wipe clipboard when the app goes to background.",
+                                stringResource(R.string.polkit_clear_clipboard_desc),
                                 style = MaterialTheme.typography.bodySmall,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                             )
@@ -426,9 +432,9 @@ fun NokoPolkitScreen(onBack: () -> Unit) {
                         horizontalArrangement = Arrangement.SpaceBetween,
                     ) {
                         Column(modifier = Modifier.weight(1f)) {
-                            Text("Hide from recents")
+                            Text(stringResource(R.string.polkit_hide_from_recents))
                             Text(
-                                "Exclude the app from the recent apps list.",
+                                stringResource(R.string.polkit_hide_from_recents_desc),
                                 style = MaterialTheme.typography.bodySmall,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                             )

@@ -1,3 +1,59 @@
-<resources>
+<resources xmlns:xliff="urn:oasis:names:tc:xliff:document:1.2">
     <string name="app_name">Noko</string>
+
+    <!-- Common -->
+    <string name="common_back">Back</string>
+    <string name="common_cancel">Cancel</string>
+
+    <!-- NokoPolkit screen -->
+    <string name="polkit_title">NokoPolkit</string>
+    <string name="polkit_card_chat">Chat Policies</string>
+    <string name="polkit_card_character">Character Policies</string>
+    <string name="polkit_card_app">App Policies</string>
+
+    <string name="polkit_trim_emojis">Trim emojis</string>
+    <string name="polkit_trim_emojis_desc">Remove emojis from AI responses.</string>
+    <string name="polkit_structure_actions">Structure actions</string>
+    <string name="polkit_structure_actions_desc">Add newlines before and after *action* blocks.</string>
+    <string name="polkit_show_thinking">Show thinking</string>
+    <string name="polkit_show_thinking_desc">Reveal the model\'s thinking above each reply.</string>
+    <string name="polkit_stream_notifications">Stream notifications</string>
+    <string name="polkit_stream_notifications_desc">Notify when AI finishes replying in the background.</string>
+    <string name="polkit_stream_notifications_desc_blocked">Incompatible with Biometric Authentication.</string>
+
+    <string name="polkit_strip_html">Strip HTML on import</string>
+    <string name="polkit_strip_html_desc">Remove HTML tags from imported character cards.</string>
+
+    <string name="polkit_biometric_auth">Biometric authentication</string>
+    <string name="polkit_biometric_auth_desc">Require biometric to access the app.</string>
+    <string name="polkit_biometric_auth_desc_unavailable">Biometric hardware not available.</string>
+    <string name="polkit_biometric_prompt_title_enable">Enable biometric lock</string>
+    <string name="polkit_biometric_prompt_title_disable">Disable biometric lock</string>
+    <string name="polkit_biometric_prompt_subtitle">Verify your identity</string>
+
+    <string name="polkit_screen_security">Screen security</string>
+    <string name="polkit_screen_security_desc">Prevent screenshots and screen recording.</string>
+    <string name="polkit_incognito_keyboard">Incognito keyboard</string>
+    <string name="polkit_incognito_keyboard_desc">Ask keyboards to disable learning and suggestions.</string>
+    <string name="polkit_clear_clipboard">Clear clipboard on exit</string>
+    <string name="polkit_clear_clipboard_desc">Wipe clipboard when the app goes to background.</string>
+    <string name="polkit_hide_from_recents">Hide from recents</string>
+    <string name="polkit_hide_from_recents_desc">Exclude the app from the recent apps list.</string>
+
+    <!-- Message bubble -->
+    <string name="bubble_typing"><xliff:g id="character" example="Alice">%1$s</xliff:g> is typing</string>
+    <string name="bubble_guard_blocked">NokoGuard interrupted this response.</string>
+    <string name="bubble_guard_reason">Reason: <xliff:g id="reason" example="Persona impersonation [NOK_IMP]">%1$s</xliff:g></string>
+    <string name="bubble_regenerate">Regenerate</string>
+    <string name="bubble_swipe_previous">Previous</string>
+    <string name="bubble_swipe_next">Next</string>
+    <string name="bubble_stopped_by_you">Stopped by you</string>
+    <string name="bubble_emojis_trimmed">Emojis trimmed</string>
+    <string name="bubble_actions_structured">Actions structured</string>
+    <string name="bubble_no_reply">(no reply)</string>
+
+    <string name="bubble_reasoning_thinking">Thinking…</string>
+    <string name="bubble_reasoning_thought_for">Thought for <xliff:g id="duration" example="2.3s">%1$s</xliff:g></string>
+    <string name="bubble_reasoning_expand">Expand</string>
+    <string name="bubble_reasoning_collapse">Collapse</string>
 </resources>
