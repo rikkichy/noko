@@ -9,7 +9,7 @@ Noko's locale strings live in `app/src/main/res/values/strings.xml`. To translat
    - Brazilian Portuguese → `values-pt-rBR`
    - Japanese → `values-ja`
    - Simplified Chinese → `values-zh-rCN`
-2. Create the folder `app/src/main/res/values-<your-lang>/` and copy `strings.xml` into it. (See `app/src/main/res/values-es/strings.xml` for an example.)
+2. Create the folder `app/src/main/res/values-<your-lang>/` and copy `strings.xml` into it. (See `app/src/main/res/values-es/strings.xml` for an example.) Then add the matching BCP 47 tag to `app/src/main/res/xml/locales_config.xml` (e.g. `<locale android:name="ja"/>` for Japanese, `<locale android:name="pt-BR"/>` for Brazilian Portuguese — note the hyphen, not the `-r` resource-folder convention) so the OS shows Noko in **Settings → Apps → App languages**.
 3. Translate the value of each `<string>` entry. **Do not** change the `name=` attribute, because that's the key the app looks up.
 4. Inside `<xliff:g>` tags, leave the `%1$s` / `%2$s` placeholders untouched. Word order around them can be rearranged freely:
    ```xml
