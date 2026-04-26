@@ -1,0 +1,57 @@
+<resources xmlns:xliff="urn:oasis:names:tc:xliff:document:1.2">
+    <!-- Common -->
+    <string name="common_back">Назад</string>
+    <string name="common_cancel">Отмена</string>
+
+    <!-- NokoPolkit screen -->
+    <string name="polkit_title">NokoPolkit</string>
+    <string name="polkit_card_chat">Политики чата</string>
+    <string name="polkit_card_character">Политики персонажа</string>
+    <string name="polkit_card_app">Политики приложения</string>
+
+    <string name="polkit_trim_emojis">Удалять эмодзи</string>
+    <string name="polkit_trim_emojis_desc">Убирать эмодзи из ответов ИИ.</string>
+    <string name="polkit_structure_actions">Форматировать действия</string>
+    <string name="polkit_structure_actions_desc">Добавлять переносы строк до и после блоков *действий*.</string>
+    <string name="polkit_show_thinking">Показывать размышления</string>
+    <string name="polkit_show_thinking_desc">Показывать размышления модели над каждым ответом.</string>
+    <string name="polkit_stream_notifications">Уведомления об ответе</string>
+    <string name="polkit_stream_notifications_desc">Уведомлять, когда ИИ закончит отвечать в фоне.</string>
+    <string name="polkit_stream_notifications_desc_blocked">Несовместимо с биометрической аутентификацией.</string>
+
+    <string name="polkit_strip_html">Удалять HTML при импорте</string>
+    <string name="polkit_strip_html_desc">Убирать HTML-теги из импортируемых карточек персонажей.</string>
+
+    <string name="polkit_biometric_auth">Биометрическая аутентификация</string>
+    <string name="polkit_biometric_auth_desc">Требовать биометрию для входа в приложение.</string>
+    <string name="polkit_biometric_auth_desc_unavailable">Биометрический датчик недоступен.</string>
+    <string name="polkit_biometric_prompt_title_enable">Включить биометрическую блокировку</string>
+    <string name="polkit_biometric_prompt_title_disable">Отключить биометрическую блокировку</string>
+    <string name="polkit_biometric_prompt_subtitle">Подтвердите вашу личность</string>
+
+    <string name="polkit_screen_security">Защита переписки</string>
+    <string name="polkit_screen_security_desc">Блокировать скриншоты и запись экрана.</string>
+    <string name="polkit_incognito_keyboard">Инкогнито-клавиатура</string>
+    <string name="polkit_incognito_keyboard_desc">Запретить клавиатуре запоминать что вы пишете.</string>
+    <string name="polkit_clear_clipboard">Очищать буфер обмена при выходе</string>
+    <string name="polkit_clear_clipboard_desc">Стирать буфер обмена при сворачивании приложения.</string>
+    <string name="polkit_hide_from_recents">Скрыть из недавних</string>
+    <string name="polkit_hide_from_recents_desc">Не показывать приложение в списке недавних.</string>
+
+    <!-- Message bubble -->
+    <string name="bubble_typing"><xliff:g id="character" example="Alice">%1$s</xliff:g> печатает</string>
+    <string name="bubble_guard_blocked">NokoGuard прервал этот ответ.</string>
+    <string name="bubble_guard_reason">Причина: <xliff:g id="reason" example="Persona impersonation [NOK_IMP]">%1$s</xliff:g></string>
+    <string name="bubble_regenerate">Перегенерировать</string>
+    <string name="bubble_swipe_previous">Предыдущий</string>
+    <string name="bubble_swipe_next">Следующий</string>
+    <string name="bubble_stopped_by_you">Остановлено вами</string>
+    <string name="bubble_emojis_trimmed">Эмодзи убраны</string>
+    <string name="bubble_actions_structured">Ответ структурирован</string>
+    <string name="bubble_no_reply">(нет ответа)</string>
+
+    <string name="bubble_reasoning_thinking">Размышляет…</string>
+    <string name="bubble_reasoning_thought_for">Размышлял(а) <xliff:g id="duration" example="2.3s">%1$s</xliff:g></string>
+    <string name="bubble_reasoning_expand">Развернуть</string>
+    <string name="bubble_reasoning_collapse">Свернуть</string>
+</resources>

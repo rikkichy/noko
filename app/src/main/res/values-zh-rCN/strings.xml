@@ -1,0 +1,57 @@
+<resources xmlns:xliff="urn:oasis:names:tc:xliff:document:1.2">
+    <!-- Common -->
+    <string name="common_back">返回</string>
+    <string name="common_cancel">取消</string>
+
+    <!-- NokoPolkit screen -->
+    <string name="polkit_title">NokoPolkit</string>
+    <string name="polkit_card_chat">聊天策略</string>
+    <string name="polkit_card_character">角色策略</string>
+    <string name="polkit_card_app">应用策略</string>
+
+    <string name="polkit_trim_emojis">去除表情符号</string>
+    <string name="polkit_trim_emojis_desc">从 AI 回复中移除表情符号。</string>
+    <string name="polkit_structure_actions">格式化动作</string>
+    <string name="polkit_structure_actions_desc">在 *动作* 块前后添加换行。</string>
+    <string name="polkit_show_thinking">显示思考过程</string>
+    <string name="polkit_show_thinking_desc">在每条回复上方显示模型的思考过程。</string>
+    <string name="polkit_stream_notifications">回复完成通知</string>
+    <string name="polkit_stream_notifications_desc">AI 在后台完成回复时发送通知。</string>
+    <string name="polkit_stream_notifications_desc_blocked">与生物识别身份验证不兼容。</string>
+
+    <string name="polkit_strip_html">导入时移除 HTML</string>
+    <string name="polkit_strip_html_desc">从导入的角色卡中移除 HTML 标签。</string>
+
+    <string name="polkit_biometric_auth">生物识别身份验证</string>
+    <string name="polkit_biometric_auth_desc">需要生物识别才能访问应用。</string>
+    <string name="polkit_biometric_auth_desc_unavailable">设备不支持生物识别。</string>
+    <string name="polkit_biometric_prompt_title_enable">启用生物识别锁</string>
+    <string name="polkit_biometric_prompt_title_disable">禁用生物识别锁</string>
+    <string name="polkit_biometric_prompt_subtitle">验证您的身份</string>
+
+    <string name="polkit_screen_security">聊天保护</string>
+    <string name="polkit_screen_security_desc">阻止截图和屏幕录制。</string>
+    <string name="polkit_incognito_keyboard">隐身键盘</string>
+    <string name="polkit_incognito_keyboard_desc">阻止键盘记住您输入的内容。</string>
+    <string name="polkit_clear_clipboard">退出时清除剪贴板</string>
+    <string name="polkit_clear_clipboard_desc">应用进入后台时清空剪贴板。</string>
+    <string name="polkit_hide_from_recents">从近期任务中隐藏</string>
+    <string name="polkit_hide_from_recents_desc">不在近期应用列表中显示。</string>
+
+    <!-- Message bubble -->
+    <string name="bubble_typing"><xliff:g id="character" example="Alice">%1$s</xliff:g> 正在输入</string>
+    <string name="bubble_guard_blocked">NokoGuard 中断了此回复。</string>
+    <string name="bubble_guard_reason">原因：<xliff:g id="reason" example="Persona impersonation [NOK_IMP]">%1$s</xliff:g></string>
+    <string name="bubble_regenerate">重新生成</string>
+    <string name="bubble_swipe_previous">上一个</string>
+    <string name="bubble_swipe_next">下一个</string>
+    <string name="bubble_stopped_by_you">已被您停止</string>
+    <string name="bubble_emojis_trimmed">表情符号已移除</string>
+    <string name="bubble_actions_structured">回复已结构化</string>
+    <string name="bubble_no_reply">（无回复）</string>
+
+    <string name="bubble_reasoning_thinking">思考中…</string>
+    <string name="bubble_reasoning_thought_for">思考了 <xliff:g id="duration" example="2.3s">%1$s</xliff:g></string>
+    <string name="bubble_reasoning_expand">展开</string>
+    <string name="bubble_reasoning_collapse">收起</string>
+</resources>
