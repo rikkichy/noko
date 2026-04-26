@@ -5,7 +5,9 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import cat.ri.noko.R
 import cat.ri.noko.model.builtInProviders
 import cat.ri.noko.model.legacyProviders
 import cat.ri.noko.ui.util.rememberNokoHaptics
@@ -37,7 +39,7 @@ fun ProviderListContent(
     }
 
     Text(
-        "Legacy",
+        stringResource(R.string.provider_list_legacy),
         style = MaterialTheme.typography.titleSmall,
         color = MaterialTheme.colorScheme.onSurfaceVariant,
     )

@@ -31,7 +31,9 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import cat.ri.noko.R
 import cat.ri.noko.core.AvatarStorage
 import cat.ri.noko.core.SettingsManager
 import cat.ri.noko.model.PersonaEntry
@@ -58,14 +60,12 @@ fun PersonaEditScreen(
     }
 
     var name by remember(existing) { mutableStateOf(existing?.name ?: "") }
-    var description by remember(existing) {
-        mutableStateOf(
-            existing?.description ?: if (type == PersonaType.PERSONA) {
-                "A brief description of your persona..."
-            } else {
-                "Describe the AI character's personality and traits..."
-            },
-        )
+    val descriptionFallback = stringResource(
+        if (type == PersonaType.PERSONA) R.string.form_description_placeholder_persona
+        else R.string.form_description_placeholder_character
+    )
+    var description by remember(existing, descriptionFallback) {
+        mutableStateOf(existing?.description ?: descriptionFallback)
     }
     var personality by remember(existing) { mutableStateOf(existing?.personality ?: "") }
     var scenario by remember(existing) { mutableStateOf(existing?.scenario ?: "") }
@@ -84,11 +84,14 @@ fun PersonaEditScreen(
     }
 
     val isNew = editId == null
-    val title = if (isNew) {
-        "New ${if (type == PersonaType.PERSONA) "Persona" else "Character"}"
-    } else {
-        "Edit ${if (type == PersonaType.PERSONA) "Persona" else "Character"}"
-    }
+    val title = stringResource(
+        when {
+            isNew && type == PersonaType.PERSONA -> R.string.persona_edit_title_new_persona
+            isNew -> R.string.persona_edit_title_new_character
+            type == PersonaType.PERSONA -> R.string.persona_edit_title_edit_persona
+            else -> R.string.persona_edit_title_edit_character
+        }
+    )
 
     if (pendingCropUri != null) {
         ImageCropOverlay(
@@ -112,7 +115,7 @@ fun PersonaEditScreen(
                 title = { Text(title) },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(R.string.common_back))
                     }
                 },
                 actions = {
@@ -138,7 +141,7 @@ fun PersonaEditScreen(
                             }
                         },
                     ) {
-                        Icon(Icons.Filled.Check, contentDescription = "Save")
+                        Icon(Icons.Filled.Check, contentDescription = stringResource(R.string.common_save))
                     }
                 },
                 colors = nokoTopAppBarColors(),

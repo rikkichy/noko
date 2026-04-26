@@ -34,6 +34,8 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.pluralStringResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import cat.ri.noko.R
 import cat.ri.noko.core.DiscoveredInstance
@@ -80,9 +82,9 @@ fun CustomProviderCard(
                 )
                 Spacer(Modifier.size(12.dp))
                 Column(modifier = Modifier.weight(1f)) {
-                    Text("Custom", style = MaterialTheme.typography.titleMedium)
+                    Text(stringResource(R.string.provider_card_custom), style = MaterialTheme.typography.titleMedium)
                     Text(
-                        "Enter your own OpenAI-compatible endpoint.",
+                        stringResource(R.string.provider_card_custom_desc),
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
@@ -90,7 +92,7 @@ fun CustomProviderCard(
                 if (isSelected) {
                     Icon(
                         Icons.Filled.Check,
-                        contentDescription = "Selected",
+                        contentDescription = stringResource(R.string.common_selected),
                         tint = MaterialTheme.colorScheme.primary,
                     )
                 }
@@ -107,12 +109,12 @@ fun CustomProviderCard(
                                 scope.launch { SettingsManager.setCustomProviderUrl(it) }
                             }
                         },
-                        label = { Text("Base URL") },
-                        placeholder = { Text("https://api.example.com/v1/") },
+                        label = { Text(stringResource(R.string.provider_card_base_url)) },
+                        placeholder = { Text(stringResource(R.string.provider_card_base_url_placeholder)) },
                         singleLine = true,
                         isError = !customUrlValid,
                         supportingText = if (!customUrlValid) {
-                            { Text("Use https:// (or http:// for local networks)") }
+                            { Text(stringResource(R.string.provider_card_url_validation)) }
                         } else null,
                         shape = NokoFieldShape,
                         modifier = Modifier.fillMaxWidth(),
@@ -124,7 +126,7 @@ fun CustomProviderCard(
                         horizontalArrangement = Arrangement.SpaceBetween,
                     ) {
                         Text(
-                            "Requires API key",
+                            stringResource(R.string.provider_card_requires_api_key),
                             style = MaterialTheme.typography.bodyMedium,
                         )
                         Switch(
@@ -207,7 +209,7 @@ fun ProviderCard(
                         Text(provider.name, style = MaterialTheme.typography.titleMedium)
                         if (provider.id == "openrouter") {
                             Text(
-                                "Recommended",
+                                stringResource(R.string.provider_card_recommended),
                                 style = MaterialTheme.typography.labelSmall,
                                 color = MaterialTheme.colorScheme.primary,
                             )
@@ -224,7 +226,7 @@ fun ProviderCard(
                 if (isSelected) {
                     Icon(
                         Icons.Filled.Check,
-                        contentDescription = "Selected",
+                        contentDescription = stringResource(R.string.common_selected),
                         tint = MaterialTheme.colorScheme.primary,
                     )
                 }
@@ -243,18 +245,20 @@ fun ProviderCard(
                                     scope.launch { SettingsManager.setProviderUrlOverride(provider.id, override) }
                                 }
                             },
-                            label = { Text("Base URL") },
+                            label = { Text(stringResource(R.string.provider_card_base_url)) },
                             placeholder = { Text(provider.baseUrl) },
                             singleLine = true,
                             isError = !urlValid,
                             supportingText = if (!urlValid) {
-                                { Text("Use https:// (or http:// for local networks)") }
+                                { Text(stringResource(R.string.provider_card_url_validation)) }
                             } else null,
                             shape = NokoFieldShape,
                             modifier = Modifier.fillMaxWidth(),
                         )
 
                         if (provider.isLocal) {
+                            val noResultsMsg = stringResource(R.string.provider_card_scan_no_results, provider.name)
+                            val scanFailedTemplate = stringResource(R.string.provider_card_scan_failed)
                             FilledTonalButton(
                                 onClick = {
                                     haptics.tap()
@@ -270,10 +274,10 @@ fun ProviderCard(
                                             )
                                             scanResults = results
                                             if (results.isEmpty()) {
-                                                scanError = "No ${provider.name} instances found on your network"
+                                                scanError = noResultsMsg
                                             }
                                         } catch (e: Exception) {
-                                            scanError = "Scan failed: ${e.message}"
+                                            scanError = scanFailedTemplate.format(e.message ?: "")
                                         } finally {
                                             isScanning = false
                                         }
@@ -288,7 +292,7 @@ fun ProviderCard(
                                     modifier = Modifier.size(18.dp),
                                 )
                                 Spacer(Modifier.size(8.dp))
-                                Text(if (isScanning) "Scanning\u2026" else "Scan network")
+                                Text(if (isScanning) stringResource(R.string.provider_card_scanning) else stringResource(R.string.provider_card_scan))
                             }
 
                             AnimatedVisibility(visible = isScanning) {
@@ -333,7 +337,7 @@ fun ProviderCard(
                                                         style = MaterialTheme.typography.bodyMedium,
                                                     )
                                                     Text(
-                                                        "${result.models.size} model${if (result.models.size != 1) "s" else ""}",
+                                                        pluralStringResource(R.plurals.provider_card_models_count, result.models.size, result.models.size),
                                                         style = MaterialTheme.typography.bodySmall,
                                                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                                                     )

@@ -61,8 +61,12 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalFocusManager
+import androidx.compose.ui.res.pluralStringResource
+import androidx.compose.ui.res.stringArrayResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import cat.ri.noko.R
 import cat.ri.noko.core.AvatarStorage
 import cat.ri.noko.core.ChatStorage
 import cat.ri.noko.core.SettingsManager
@@ -76,32 +80,22 @@ import coil3.request.ImageRequest
 import java.util.Calendar
 import kotlinx.coroutines.launch
 
-private fun timeGreeting(): String {
-    val hour = Calendar.getInstance().get(Calendar.HOUR_OF_DAY)
-    val greetings = when {
-        hour in 5..11 -> listOf(
-            "Good morning~",
-            "Rise and roleplay",
-            "We missed you..",
-        )
-        hour in 12..16 -> listOf(
-            "Good afternoon~",
-            "Adventures await",
-            "New story arc?",
-        )
-        hour in 17..20 -> listOf(
-            "Evening vibes~",
-            "Cozy hours",
-            "Golden stories",
-        )
-        else -> listOf(
-            "Late night~",
-            "Can't sleep?",
-            "*sleeps*",
-            "Shh..",
-        )
+@Composable
+private fun timeGreeting(refreshKey: Int): String {
+    val morning = stringArrayResource(R.array.home_greetings_morning)
+    val afternoon = stringArrayResource(R.array.home_greetings_afternoon)
+    val evening = stringArrayResource(R.array.home_greetings_evening)
+    val night = stringArrayResource(R.array.home_greetings_night)
+    return remember(refreshKey, morning, afternoon, evening, night) {
+        val hour = Calendar.getInstance().get(Calendar.HOUR_OF_DAY)
+        val greetings = when {
+            hour in 5..11 -> morning
+            hour in 12..16 -> afternoon
+            hour in 17..20 -> evening
+            else -> night
+        }
+        greetings.random()
     }
-    return greetings.random()
 }
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class)
@@ -116,7 +110,7 @@ fun HomeScreen(
     val focusManager = LocalFocusManager.current
     val scope = rememberCoroutineScope()
     val haptics = rememberNokoHaptics()
-    val greeting = remember(refreshKey) { timeGreeting() }
+    val greeting = timeGreeting(refreshKey)
     val recentChats by ChatStorage.recentChats.collectAsState()
     val allEntries by SettingsManager.allEntries.collectAsState(initial = emptyList())
     val entryMap = remember(allEntries) { allEntries.associateBy { it.id } }
@@ -160,11 +154,11 @@ fun HomeScreen(
             TopAppBar(
                 title = {
                     if (selection.isActive) {
-                        Text("${selection.selectedIds.size} selected")
+                        Text(stringResource(R.string.home_selected_count, selection.selectedIds.size))
                     } else {
                         Column {
                             Text(
-                                "Noko",
+                                stringResource(R.string.app_name),
                                 style = MaterialTheme.typography.titleLarge,
                             )
                             Text(
@@ -178,7 +172,7 @@ fun HomeScreen(
                 navigationIcon = {
                     if (selection.isActive) {
                         IconButton(onClick = { selection.clear() }) {
-                            Icon(Icons.Filled.Close, contentDescription = "Cancel selection")
+                            Icon(Icons.Filled.Close, contentDescription = stringResource(R.string.common_cancel_selection))
                         }
                     }
                 },
@@ -218,7 +212,7 @@ fun HomeScreen(
                     ) {
                         Icon(Icons.Filled.PushPin, contentDescription = null)
                         Spacer(Modifier.width(8.dp))
-                        Text("Pin ${selection.selectedIds.size}")
+                        Text(stringResource(R.string.home_pin_count, selection.selectedIds.size))
                     }
                     FilledTonalButton(
                         onClick = {
@@ -233,7 +227,7 @@ fun HomeScreen(
                         Icon(Icons.Filled.Delete, contentDescription = null)
                         Spacer(Modifier.width(8.dp))
                         Text(
-                            "Delete ${selection.selectedIds.size}",
+                            stringResource(R.string.home_delete_count, selection.selectedIds.size),
                             color = MaterialTheme.colorScheme.error,
                         )
                     }
@@ -252,7 +246,7 @@ fun HomeScreen(
                     ) {
                         Icon(Icons.Filled.Add, contentDescription = null)
                         Spacer(Modifier.width(8.dp))
-                        Text("New chat")
+                        Text(stringResource(R.string.home_new_chat))
                     }
                     OutlinedButton(
                         onClick = onNewSecretChat,
@@ -263,7 +257,7 @@ fun HomeScreen(
                     ) {
                         Icon(Icons.Filled.Lock, contentDescription = null)
                         Spacer(Modifier.width(8.dp))
-                        Text("Secret chat")
+                        Text(stringResource(R.string.home_secret_chat))
                     }
                 }
             }
@@ -275,7 +269,7 @@ fun HomeScreen(
                     NokoSearchField(
                         value = searchQuery,
                         onValueChange = { searchQuery = it },
-                        placeholder = "Search chats..",
+                        placeholder = stringResource(R.string.home_search_placeholder),
                         modifier = Modifier.fillMaxWidth(),
                         focusManager = focusManager,
                     )
@@ -352,8 +346,8 @@ fun HomeScreen(
                 Spacer(Modifier.height(16.dp))
 
                 Text(
-                    if (isFiltering) "${filteredChats.size} result${if (filteredChats.size != 1) "s" else ""}"
-                    else "Recent",
+                    if (isFiltering) pluralStringResource(R.plurals.home_results_count, filteredChats.size, filteredChats.size)
+                    else stringResource(R.string.home_recent),
                     style = MaterialTheme.typography.labelLarge,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier.padding(bottom = 8.dp),
@@ -367,7 +361,7 @@ fun HomeScreen(
                         contentAlignment = Alignment.Center,
                     ) {
                         Text(
-                            "No chats found",
+                            stringResource(R.string.home_no_chats_found),
                             style = MaterialTheme.typography.bodyMedium,
                             color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f),
                         )
@@ -467,8 +461,8 @@ fun HomeScreen(
         val count = selection.selectedIds.size
         CountdownDeleteDialog(
             showCountdown = count >= 5,
-            title = { Text("Delete $count ${if (count == 1) "chat" else "chats"}?") },
-            text = { Text("This cannot be undone.") },
+            title = { Text(pluralStringResource(R.plurals.home_delete_chats_title, count, count)) },
+            text = { Text(stringResource(R.string.common_undone)) },
             onConfirm = {
                 haptics.reject()
                 val ids = selection.selectedIds

@@ -2,6 +2,385 @@
     <!-- Common -->
     <string name="common_back">Назад</string>
     <string name="common_cancel">Отмена</string>
+    <string name="common_save">Сохранить</string>
+    <string name="common_delete">Удалить</string>
+    <string name="common_close">Закрыть</string>
+    <string name="common_next">Далее</string>
+    <string name="common_skip">Пропустить</string>
+    <string name="common_continue">Продолжить</string>
+    <string name="common_create">Создать</string>
+    <string name="common_import">Импорт</string>
+    <string name="common_retry">Повторить</string>
+    <string name="common_clear">Очистить</string>
+    <string name="common_more">Ещё</string>
+    <string name="common_add">Добавить</string>
+    <string name="common_export">Экспорт</string>
+    <string name="common_selected">Выбрано</string>
+    <string name="common_undone">Это действие нельзя отменить.</string>
+    <string name="common_you">Вы</string>
+    <string name="common_assistant">Ассистент</string>
+    <string name="common_ai">ИИ</string>
+    <string name="common_no_persona">Без роли</string>
+    <string name="common_go_back">Вернуться</string>
+    <string name="common_cancel_selection">Отменить выбор</string>
+    <string name="common_search">Поиск…</string>
+
+    <!-- HomeScreen -->
+    <string-array name="home_greetings_morning">
+        <item>Доброе утро~</item>
+        <item>Просыпайтесь и за РП</item>
+        <item>Мы скучали..</item>
+    </string-array>
+    <string-array name="home_greetings_afternoon">
+        <item>Добрый день~</item>
+        <item>Приключения ждут</item>
+        <item>Новая сюжетная арка?</item>
+    </string-array>
+    <string-array name="home_greetings_evening">
+        <item>Вечерний вайб~</item>
+        <item>Уютные часы</item>
+        <item>Золотые истории</item>
+    </string-array>
+    <string-array name="home_greetings_night">
+        <item>Глубокая ночь~</item>
+        <item>Не спится?</item>
+        <item>*спит*</item>
+        <item>Тссс..</item>
+    </string-array>
+    <string name="home_selected_count">Выбрано: <xliff:g id="count" example="3">%1$d</xliff:g></string>
+    <string name="home_pin_count">Закрепить: <xliff:g id="count" example="3">%1$d</xliff:g></string>
+    <string name="home_delete_count">Удалить: <xliff:g id="count" example="3">%1$d</xliff:g></string>
+    <string name="home_new_chat">Новый чат</string>
+    <string name="home_secret_chat">Секретный чат</string>
+    <string name="home_search_placeholder">Поиск чатов..</string>
+    <string name="home_recent">Недавние</string>
+    <string name="home_no_chats_found">Чаты не найдены</string>
+    <plurals name="home_results_count">
+        <item quantity="one">%d результат</item>
+        <item quantity="few">%d результата</item>
+        <item quantity="many">%d результатов</item>
+        <item quantity="other">%d результатов</item>
+    </plurals>
+    <plurals name="home_delete_chats_title">
+        <item quantity="one">Удалить %d чат?</item>
+        <item quantity="few">Удалить %d чата?</item>
+        <item quantity="many">Удалить %d чатов?</item>
+        <item quantity="other">Удалить %d чатов?</item>
+    </plurals>
+
+    <!-- ChatScreen -->
+    <string-array name="chat_placeholder_generic">
+        <item>Сообщение</item>
+        <item>Напишите что-нибудь...</item>
+        <item>Что будет дальше?</item>
+        <item>Скажите что-нибудь...</item>
+    </string-array>
+    <string-array name="chat_placeholder_persona">
+        <item>Скажите что-нибудь как %1$s</item>
+        <item>Болтайте за %1$s</item>
+        <item>Пишите как %1$s...</item>
+        <item>Что делает %1$s?</item>
+        <item>Говорите как %1$s...</item>
+        <item>%1$s говорит...</item>
+        <item>За %1$s...</item>
+        <item>Печатайте как %1$s...</item>
+    </string-array>
+    <string-array name="chat_notification_titles">
+        <item>%1$s ответил(а) вам!</item>
+        <item>%1$s отозвался(ась)!</item>
+        <item>%1$s откликнулся(ась)!</item>
+        <item>%1$s написал(а) в ответ!</item>
+    </string-array>
+    <string name="chat_tap_to_select_character">Нажмите, чтобы выбрать персонажа</string>
+    <string name="chat_secret_label">Секретный чат</string>
+    <string name="chat_menu_new_chat">Новый чат</string>
+    <string name="chat_menu_chat_info">Информация о чате</string>
+    <string name="chat_edit_title">Изменить сообщение</string>
+    <string name="chat_send">Отправить</string>
+    <string name="chat_stop">Остановить</string>
+    <string name="chat_select_character">Выбрать персонажа</string>
+    <string name="chat_select_persona">Выбрать роль</string>
+    <string name="chat_tip_pick_model">Выберите модель в Настройках → Конфигурация.</string>
+    <string name="chat_tip_context_unknown">Лимит контекста неизвестен. Заново выберите модель.</string>
+    <string name="chat_tip_context_full">Контекст заполнен на <xliff:g id="percent" example="80">%1$d</xliff:g>%%. Стоит начать новый чат.</string>
+    <string name="chat_tip_no_persona">Роль не выбрана — добавьте её для более личных ответов.</string>
+    <string name="chat_tip_guard_blocks">NokoGuard вмешался <xliff:g id="count" example="3">%1$d</xliff:g> раз. Попробуйте подкорректировать пресет.</string>
+    <string name="chat_tip_kickoff">Скажите что-нибудь, чтобы начать ролевую!</string>
+    <string name="chat_info_title">Информация о чате</string>
+    <string name="chat_info_context_usage">Использование контекста</string>
+    <string name="chat_info_token_estimate_help">Подсчёт токенов приблизительный (~4 символа на токен).</string>
+    <string name="chat_info_messages">Сообщения</string>
+    <string name="chat_info_guards">Блокировки</string>
+    <string name="chat_info_stops">Остановки</string>
+    <string name="chat_info_setup">Настройки</string>
+    <string name="chat_info_model">Модель</string>
+    <string name="chat_info_provider">Провайдер</string>
+    <string name="chat_info_preset">Пресет</string>
+    <string name="chat_info_mode">Режим</string>
+    <string name="chat_info_tips">Советы</string>
+    <string name="chat_participants_two"><xliff:g id="first" example="Alice">%1$s</xliff:g> и <xliff:g id="second" example="Bob">%2$s</xliff:g></string>
+    <string name="chat_participants_overflow"><xliff:g id="first" example="Alice">%1$s</xliff:g>, <xliff:g id="second" example="Bob">%2$s</xliff:g> и ещё <xliff:g id="more" example="3">%3$d</xliff:g></string>
+
+    <!-- SettingsScreen -->
+    <string name="settings_title">Настройки</string>
+    <string name="settings_section_personas">Роли и персонажи</string>
+    <string name="settings_personas">Роли</string>
+    <string name="settings_personas_desc">Карточки персонажей, которых ты отыгрываешь</string>
+    <string name="settings_characters">Персонажи</string>
+    <string name="settings_characters_desc">Карточки собранных вами персонажей для ИИ</string>
+    <string name="settings_section_configuration">Конфигурация</string>
+    <string name="settings_provider">Провайдер</string>
+    <string name="settings_api_key">API-ключ</string>
+    <string name="settings_use_another_key">Использовать другой ключ</string>
+    <string name="settings_testing">Проверка…</string>
+    <string name="settings_model">Модель</string>
+    <string name="settings_tap_to_select">Нажмите для выбора</string>
+    <string name="settings_prompt_editor">Редактор промпта</string>
+    <string name="settings_prompt_editor_desc">Изменить поведение персонажей</string>
+    <string name="settings_section_appearance">Внешний вид</string>
+    <string name="settings_amoled">AMOLED-режим</string>
+    <string name="settings_amoled_desc">Использовать чёрный фон в тёмной теме.</string>
+    <string name="settings_amoled_desc_disabled">Доступно только в тёмной теме.</string>
+    <string name="settings_show_avatars">Показывать аватары</string>
+    <string name="settings_show_avatars_desc">Скрывает аватары в чате, если выключено.</string>
+    <string name="settings_show_names">Показывать имена</string>
+    <string name="settings_show_names_desc">Убирает имена в чате, если выключено.</string>
+    <string name="settings_reduce_motion">Уменьшить анимации</string>
+    <string name="settings_reduce_motion_desc">Отключает анимации по всему приложению.</string>
+    <string name="settings_section_advanced">Дополнительно</string>
+    <string name="settings_noko_guard">NokoGuard</string>
+    <string name="settings_noko_guard_desc">Прерывать ответы ИИ, выдающие себя за вашу роль, спамящие эмодзи или меняющие язык.</string>
+    <string name="settings_noko_polkit">NokoPolkit</string>
+    <string name="settings_noko_polkit_desc">Изменить поведение чата и приложения</string>
+    <string name="settings_version">Noko <xliff:g id="version" example="0.10.0">%1$s</xliff:g></string>
+    <string name="settings_credits">Сделано с 🧠 от Rikkichy</string>
+
+    <!-- OnboardingScreen -->
+    <string name="onboarding_title_provider">Noko</string>
+    <string name="onboarding_title_api_key">API-ключ</string>
+    <string name="onboarding_title_select_model">Выберите модель</string>
+    <string name="onboarding_title_persona">Создайте роль</string>
+    <string name="onboarding_title_character">Создайте персонажа</string>
+    <string name="onboarding_title_import_character">Импорт персонажа</string>
+    <string name="onboarding_welcome">Добро пожаловать!</string>
+    <string name="onboarding_welcome_desc">Выберите, где размещены ваши ИИ-модели.</string>
+    <string name="onboarding_debug_skip">(Debug) SKIP_ONBOARDING</string>
+    <string name="onboarding_api_key_desc">Введите свой API-ключ <xliff:g id="provider" example="OpenRouter">%1$s</xliff:g>, чтобы начать.</string>
+    <string name="onboarding_checking">Проверка…</string>
+    <string name="onboarding_create_openrouter_key">Получить API-ключ OpenRouter</string>
+    <string name="onboarding_persona_desc">Так ИИ будет узнавать вас.</string>
+    <string name="onboarding_persona_name_placeholder">Имя вашей роли…</string>
+    <string name="onboarding_character_desc">Создайте персонажа, которого будет играть ИИ.</string>
+    <string name="onboarding_get_started">Начать</string>
+    <string name="onboarding_import_character">Импорт персонажа</string>
+    <string name="onboarding_no_greeting_title">Уверены?</string>
+    <string name="onboarding_no_greeting_desc">Приветственное сообщение задаёт стиль и помогает погрузиться в РП — и вам, и вашему ИИ-персонажу.</string>
+
+    <!-- AiSettingsScreen -->
+    <string name="ai_settings_title">Настройки ИИ</string>
+    <string name="ai_settings_preset">Пресет</string>
+    <string name="ai_settings_built_in">Встроенный</string>
+    <string name="ai_settings_new_preset">Новый пресет</string>
+    <string name="ai_settings_duplicate_preset">Дублировать пресет</string>
+    <string name="ai_settings_delete_preset">Удалить пресет</string>
+    <string name="ai_settings_built_in_info">Встроенные пресеты только для чтения. Дублируйте, чтобы изменить.</string>
+    <string name="ai_settings_generation_params">Параметры генерации</string>
+    <string name="ai_settings_param_temperature">Температура</string>
+    <string name="ai_settings_param_top_p">Top P</string>
+    <string name="ai_settings_param_top_k">Top K</string>
+    <string name="ai_settings_param_max_tokens">Макс. токенов</string>
+    <string name="ai_settings_param_freq_penalty">Штраф за частоту</string>
+    <string name="ai_settings_param_presence_penalty">Штраф за присутствие</string>
+    <string name="ai_settings_advanced">Дополнительно</string>
+    <string name="ai_settings_continue_nudge">Подсказка для продолжения</string>
+    <string name="ai_settings_continue_nudge_desc">Отправляется при нажатии «Отправить» с пустым полем, чтобы продолжить ответ ИИ.</string>
+    <string name="ai_settings_prompt_template">Шаблон промпта</string>
+    <string name="ai_settings_new_preset_title">Новый пресет</string>
+    <string name="ai_settings_name">Название</string>
+    <string name="ai_settings_delete_preset_title">Удалить «<xliff:g id="preset" example="Creative RP">%1$s</xliff:g>»?</string>
+    <string name="ai_settings_section_main_prompt">Основной промпт</string>
+    <string name="ai_settings_section_persona_description">Описание роли</string>
+    <string name="ai_settings_section_character_description">Описание персонажа</string>
+    <string name="ai_settings_section_chat_history">История чата</string>
+    <string name="ai_settings_no_persona_selected">Роль не выбрана</string>
+    <string name="ai_settings_no_character_selected">Персонаж не выбран</string>
+    <string name="ai_settings_chat_history_inserted">Сюда будут вставлены сообщения чата</string>
+
+    <!-- ModelListScreen -->
+    <string name="model_list_title">Выбор модели</string>
+    <string name="model_list_no_api_key">Сначала укажите API-ключ</string>
+    <string name="model_list_no_provider_url">Сначала укажите URL провайдера</string>
+    <string name="model_list_search">Поиск моделей…</string>
+    <string name="model_list_ctx"><xliff:g id="thousands" example="32">%1$d</xliff:g>k ctx</string>
+    <string name="model_list_price">$<xliff:g id="price" example="0.50">%1$s</xliff:g>/M вход</string>
+
+    <!-- ProviderListScreen -->
+    <string name="provider_list_title">Провайдер API</string>
+    <string name="provider_list_desc">Выберите, где размещены ваши ИИ-модели.</string>
+
+    <!-- PersonaListScreen -->
+    <string name="persona_list_title_personas">Роли</string>
+    <string name="persona_list_title_characters">Персонажи</string>
+    <string name="persona_list_export_count">Экспортировать: <xliff:g id="count" example="3">%1$d</xliff:g></string>
+    <string name="persona_list_export_all">Экспортировать все</string>
+    <string name="persona_list_delete_all">Удалить все</string>
+    <string name="persona_list_search_personas">Поиск ролей..</string>
+    <string name="persona_list_search_characters">Поиск персонажей..</string>
+    <string name="persona_list_empty_personas">Ролей пока нет</string>
+    <string name="persona_list_empty_characters">Персонажей пока нет</string>
+    <string name="persona_list_delete_one_title">Удалить <xliff:g id="name" example="Alice">%1$s</xliff:g>?</string>
+    <string name="persona_list_delete_all_title">Воу..погодите.</string>
+    <plurals name="persona_list_delete_characters_title">
+        <item quantity="one">Удалить %d персонажа?</item>
+        <item quantity="few">Удалить %d персонажей?</item>
+        <item quantity="many">Удалить %d персонажей?</item>
+        <item quantity="other">Удалить %d персонажей?</item>
+    </plurals>
+    <string name="persona_list_bulk_delete_pre">Вы точно уверены?\nВы собираетесь\n</string>
+    <string name="persona_list_bulk_delete_phrase">УДАЛИТЬ ВСЕХ <xliff:g id="count" example="6">%1$d</xliff:g> ПЕРСОНАЖЕЙ</string>
+    <string name="persona_list_bulk_delete_post">\nкоторых вы собрали и создали.\nЭто действие нельзя отменить.</string>
+    <string name="persona_list_export_biometric_title_one">Экспорт персонажа</string>
+    <string name="persona_list_export_biometric_title_count">Экспорт <xliff:g id="count" example="3">%1$d</xliff:g> персонажей</string>
+    <string name="persona_list_export_biometric_subtitle">Подтвердите личность для экспорта</string>
+    <plurals name="persona_list_chats_count">
+        <item quantity="one">%d чат</item>
+        <item quantity="few">%d чата</item>
+        <item quantity="many">%d чатов</item>
+        <item quantity="other">%d чатов</item>
+    </plurals>
+
+    <!-- PersonaEditScreen -->
+    <string name="persona_edit_title_new_persona">Новая роль</string>
+    <string name="persona_edit_title_edit_persona">Изменить роль</string>
+    <string name="persona_edit_title_new_character">Новый персонаж</string>
+    <string name="persona_edit_title_edit_character">Изменить персонажа</string>
+
+    <!-- CharacterImportScreen -->
+    <string name="import_title_detecting">Определение…</string>
+    <string name="import_title_decrypt">Расшифровка персонажей</string>
+    <string name="import_title_import_one">Импорт персонажа</string>
+    <string name="import_title_import_count">Импорт персонажей (<xliff:g id="selected" example="2">%1$d</xliff:g>/<xliff:g id="total" example="5">%2$d</xliff:g>)</string>
+    <string name="import_title_failed">Импорт не удался</string>
+    <string name="import_unrecognized">Неизвестный формат файла</string>
+    <string name="import_passphrase_prompt">Введите ключевую фразу для расшифровки.</string>
+    <string name="import_passphrase">Ключевая фраза</string>
+    <string name="import_passphrase_required">Введите ключевую фразу</string>
+    <string name="import_passphrase_wrong">Неверная ключевая фраза</string>
+    <string name="import_decrypt">Расшифровать</string>
+    <string name="import_format_tavern">TavernAI Card</string>
+    <string name="import_format_cai">Character.AI</string>
+    <string name="import_format_nokc">Noko Encrypted</string>
+    <string name="import_format_unknown">Неизвестно</string>
+    <string name="import_has_greeting">Есть приветствие</string>
+    <plurals name="import_button_count">
+        <item quantity="one">Импортировать %d персонажа</item>
+        <item quantity="few">Импортировать %d персонажей</item>
+        <item quantity="many">Импортировать %d персонажей</item>
+        <item quantity="other">Импортировать %d персонажей</item>
+    </plurals>
+    <string name="import_importing">Импорт…</string>
+
+    <!-- BiometricAuthScreen -->
+    <string name="biometric_tap_to_unlock">Нажмите, чтобы разблокировать</string>
+    <string name="biometric_tap_to_retry">Нажмите, чтобы повторить</string>
+    <string name="biometric_prompt_title">Разблокировать Noko</string>
+    <string name="biometric_prompt_subtitle">Подтвердите личность для доступа</string>
+    <string name="biometric_unavailable_title">Биометрия недоступна</string>
+    <string name="biometric_unavailable_desc">Биометрическая аутентификация была включена, но больше недоступна на этом устройстве. Возможно, биометрические данные удалены в системных настройках. Блокировка отключена.</string>
+
+    <!-- CountdownDeleteDialog -->
+    <string name="countdown_delete_pending">Удалить (<xliff:g id="seconds" example="4">%1$d</xliff:g>)</string>
+
+    <!-- DidYouKnowCard -->
+    <string-array name="did_you_know_titles">
+        <item>А вы знали?</item>
+        <item>Любопытный факт..</item>
+        <item>Забавный факт!</item>
+        <item>Кстати..</item>
+        <item>Хмм..</item>
+    </string-array>
+    <string-array name="did_you_know_trivia">
+        <item>Интернет-РП появился в начале 1990-х, когда люди общались между собой. Многое изменилось.. ну да.</item>
+        <item>Если ваш ответ длинный и структурированный, ИИ реже выдаёт себя за вас.</item>
+        <item>Подробное описание роли помогает ИИ понять ваш стиль письма.</item>
+        <item>Использование *блоков действий* помогает ИИ отделять описание от речи.</item>
+        <item>NokoGuard отлично ловит галлюцинации ИИ.</item>
+        <item>Секретные чаты не сохраняются в историю. Просто к слову..</item>
+        <item>Короткие системные промпты часто дают более творческие ответы ИИ.</item>
+        <item>Термин «ролевая игра» в онлайне восходит к IRC-каналам начала 90-х.</item>
+    </string-array>
+    <plurals name="did_you_know_chats_with">
+        <item quantity="one">У вас %1$d чат с %2$s</item>
+        <item quantity="few">У вас %1$d чата с %2$s</item>
+        <item quantity="many">У вас %1$d чатов с %2$s</item>
+        <item quantity="other">У вас %1$d чатов с %2$s</item>
+    </plurals>
+    <plurals name="did_you_know_messages_as">
+        <item quantity="one">Вы отправили %1$d сообщение как %2$s</item>
+        <item quantity="few">Вы отправили %1$d сообщения как %2$s</item>
+        <item quantity="many">Вы отправили %1$d сообщений как %2$s</item>
+        <item quantity="other">Вы отправили %1$d сообщений как %2$s</item>
+    </plurals>
+
+    <!-- ExportPassphraseDialog -->
+    <string name="export_dialog_title_one">Экспорт в .nokc</string>
+    <string name="export_dialog_title_count">Экспорт <xliff:g id="count" example="3">%1$d</xliff:g> персонажей в .nokc</string>
+    <string name="export_dialog_desc_one">Задайте ключевую фразу для шифрования персонажа.</string>
+    <string name="export_dialog_desc_count">Задайте ключевую фразу для шифрования <xliff:g id="count" example="3">%1$d</xliff:g> персонажей.</string>
+    <string name="export_dialog_passphrase">Ключевая фраза</string>
+    <string name="export_dialog_confirm_passphrase">Подтвердите фразу</string>
+    <string name="export_dialog_min_length">Минимум 8 символов</string>
+    <string name="export_dialog_mismatch">Фразы не совпадают</string>
+
+    <!-- ImageCropOverlay -->
+    <string name="crop_action">Обрезать</string>
+
+    <!-- PersonaFormFields -->
+    <string name="form_avatar_hint">Нажмите, чтобы установить аватар</string>
+    <string name="form_avatar_content_desc">Аватар</string>
+    <string name="form_add_avatar_content_desc">Добавить аватар</string>
+    <string name="form_name">Имя</string>
+    <string name="form_name_placeholder_persona">Имя роли…</string>
+    <string name="form_name_placeholder_character">Имя персонажа…</string>
+    <string name="form_name_required">Имя обязательно</string>
+    <string name="form_description">Описание</string>
+    <string name="form_description_placeholder_persona">Краткое описание вашей роли…</string>
+    <string name="form_description_placeholder_character">Опишите личность и черты ИИ-персонажа…</string>
+    <string name="form_description_placeholder_persona_default">Опишите вашу роль…</string>
+    <string name="form_description_placeholder_character_default">Опишите персонажа…</string>
+    <string name="form_description_required">Описание обязательно</string>
+    <string name="form_personality">Личность</string>
+    <string name="form_personality_placeholder">Черты, манера речи, привычки…</string>
+    <string name="form_scenario">Сценарий</string>
+    <string name="form_scenario_placeholder">Обстановка и обстоятельства разговора…</string>
+    <string name="form_greeting">Приветственное сообщение</string>
+    <string name="form_greeting_placeholder">Первое сообщение при старте чата…</string>
+
+    <!-- PersonaPickerSheet -->
+    <string name="picker_search_placeholder">Поиск…</string>
+    <string name="picker_empty">Пока ничего нет. Создайте в Настройках.</string>
+
+    <!-- ProviderCard -->
+    <string name="provider_card_custom">Свой</string>
+    <string name="provider_card_custom_desc">Введите свой OpenAI-совместимый эндпоинт.</string>
+    <string name="provider_card_base_url">Базовый URL</string>
+    <string name="provider_card_base_url_placeholder">https://api.example.com/v1/</string>
+    <string name="provider_card_url_validation">Используйте https:// (или http:// для локальной сети)</string>
+    <string name="provider_card_requires_api_key">Требует API-ключ</string>
+    <string name="provider_card_recommended">Рекомендуется</string>
+    <string name="provider_card_scan_no_results">В вашей сети не найдено инстансов <xliff:g id="provider" example="Ollama">%1$s</xliff:g></string>
+    <string name="provider_card_scan_failed">Ошибка сканирования: <xliff:g id="error" example="timeout">%1$s</xliff:g></string>
+    <string name="provider_card_scanning">Сканирование…</string>
+    <string name="provider_card_scan">Сканировать сеть</string>
+    <plurals name="provider_card_models_count">
+        <item quantity="one">%d модель</item>
+        <item quantity="few">%d модели</item>
+        <item quantity="many">%d моделей</item>
+        <item quantity="other">%d моделей</item>
+    </plurals>
+
+    <!-- ProviderListContent -->
+    <string name="provider_list_legacy">Устаревшие</string>
 
     <!-- NokoPolkit screen -->
     <string name="polkit_title">NokoPolkit</string>

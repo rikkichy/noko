@@ -31,10 +31,12 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
 import androidx.fragment.app.FragmentActivity
+import cat.ri.noko.R
 import cat.ri.noko.core.SettingsManager
 import kotlinx.coroutines.launch
 
@@ -43,7 +45,9 @@ fun BiometricAuthScreen(onSuccess: () -> Unit) {
     val context = LocalContext.current
     val activity = context as FragmentActivity
     val scope = rememberCoroutineScope()
-    var subtitle by remember { mutableStateOf("Tap to unlock") }
+    val tapToUnlock = stringResource(R.string.biometric_tap_to_unlock)
+    val tapToRetry = stringResource(R.string.biometric_tap_to_retry)
+    var subtitle by remember { mutableStateOf(tapToUnlock) }
     var authTrigger by remember { mutableIntStateOf(0) }
     var biometricUnavailable by remember { mutableStateOf(false) }
 
@@ -77,18 +81,18 @@ fun BiometricAuthScreen(onSuccess: () -> Unit) {
             }
 
             override fun onAuthenticationError(errorCode: Int, errString: CharSequence) {
-                subtitle = "Tap to try again"
+                subtitle = tapToRetry
             }
 
             override fun onAuthenticationFailed() {
-                subtitle = "Tap to try again"
+                subtitle = tapToRetry
             }
         }
         val prompt = BiometricPrompt(activity, executor, callback)
         val info = BiometricPrompt.PromptInfo.Builder()
-            .setTitle("Unlock Noko")
-            .setSubtitle("Authenticate to access your data")
-            .setNegativeButtonText("Cancel")
+            .setTitle(context.getString(R.string.biometric_prompt_title))
+            .setSubtitle(context.getString(R.string.biometric_prompt_subtitle))
+            .setNegativeButtonText(context.getString(R.string.common_cancel))
             .setAllowedAuthenticators(BIOMETRIC_STRONG)
             .build()
         prompt.authenticate(info)
@@ -113,7 +117,7 @@ fun BiometricAuthScreen(onSuccess: () -> Unit) {
                 tint = MaterialTheme.colorScheme.primary,
             )
             Text(
-                "Noko",
+                stringResource(R.string.app_name),
                 style = MaterialTheme.typography.headlineLarge,
                 modifier = Modifier.padding(top = 16.dp),
             )
@@ -145,12 +149,12 @@ private fun BiometricUnavailableScreen(onAcknowledge: () -> Unit) {
                 tint = MaterialTheme.colorScheme.error,
             )
             Text(
-                "Biometric unavailable",
+                stringResource(R.string.biometric_unavailable_title),
                 style = MaterialTheme.typography.headlineSmall,
                 modifier = Modifier.padding(top = 16.dp),
             )
             Text(
-                "Biometric authentication was enabled, but is no longer available on this device. This may happen if biometric data was removed from system settings. The lock has been disabled.",
+                stringResource(R.string.biometric_unavailable_desc),
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 textAlign = TextAlign.Center,
@@ -163,7 +167,7 @@ private fun BiometricUnavailableScreen(onAcknowledge: () -> Unit) {
                     .padding(top = 24.dp),
                 shape = NokoFieldShape,
             ) {
-                Text("Continue")
+                Text(stringResource(R.string.common_continue))
             }
         }
     }

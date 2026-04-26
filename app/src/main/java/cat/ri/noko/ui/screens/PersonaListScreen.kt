@@ -59,6 +59,8 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalFocusManager
+import androidx.compose.ui.res.pluralStringResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.buildAnnotatedString
@@ -66,6 +68,7 @@ import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
 import androidx.fragment.app.FragmentActivity
+import cat.ri.noko.R
 import cat.ri.noko.core.AvatarStorage
 import cat.ri.noko.core.CharacterCodec
 import cat.ri.noko.core.ChatStorage
@@ -90,7 +93,10 @@ fun PersonaListScreen(
     onCreate: () -> Unit,
     onImport: ((Uri) -> Unit)? = null,
 ) {
-    val title = if (type == PersonaType.PERSONA) "Personas" else "Characters"
+    val title = stringResource(
+        if (type == PersonaType.PERSONA) R.string.persona_list_title_personas
+        else R.string.persona_list_title_characters
+    )
     val entries by (if (type == PersonaType.PERSONA) SettingsManager.personas else SettingsManager.characters)
         .collectAsState(initial = SettingsManager.getEntries(type))
     val biometricAuth by SettingsManager.biometricAuth.collectAsState(initial = false)
@@ -161,9 +167,10 @@ fun PersonaListScreen(
         }
         val prompt = BiometricPrompt(activity, executor, callback)
         val info = BiometricPrompt.PromptInfo.Builder()
-            .setTitle(if (targets.size == 1) "Export character" else "Export ${targets.size} characters")
-            .setSubtitle("Verify your identity to export")
-            .setNegativeButtonText("Cancel")
+            .setTitle(if (targets.size == 1) context.getString(R.string.persona_list_export_biometric_title_one)
+                else context.getString(R.string.persona_list_export_biometric_title_count, targets.size))
+            .setSubtitle(context.getString(R.string.persona_list_export_biometric_subtitle))
+            .setNegativeButtonText(context.getString(R.string.common_cancel))
             .setAllowedAuthenticators(androidx.biometric.BiometricManager.Authenticators.BIOMETRIC_STRONG)
             .build()
         prompt.authenticate(info)
@@ -173,16 +180,16 @@ fun PersonaListScreen(
         topBar = {
             TopAppBar(
                 title = {
-                    Text(if (selection.isActive) "${selection.selectedIds.size} selected" else title)
+                    Text(if (selection.isActive) stringResource(R.string.home_selected_count, selection.selectedIds.size) else title)
                 },
                 navigationIcon = {
                     if (selection.isActive) {
                         IconButton(onClick = { selection.clear() }) {
-                            Icon(Icons.Filled.Close, contentDescription = "Cancel selection")
+                            Icon(Icons.Filled.Close, contentDescription = stringResource(R.string.common_cancel_selection))
                         }
                     } else {
                         IconButton(onClick = onBack) {
-                            Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
+                            Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(R.string.common_back))
                         }
                     }
                 },
@@ -197,7 +204,7 @@ fun PersonaListScreen(
                         onCreate()
                     },
                 ) {
-                    Icon(Icons.Filled.Add, contentDescription = "Add")
+                    Icon(Icons.Filled.Add, contentDescription = stringResource(R.string.common_add))
                 }
             }
         },
@@ -229,7 +236,7 @@ fun PersonaListScreen(
                                 modifier = Modifier.size(18.dp),
                             )
                             Spacer(Modifier.size(8.dp))
-                            Text("Export ${selection.selectedIds.size}")
+                            Text(stringResource(R.string.persona_list_export_count, selection.selectedIds.size))
                         }
                         FilledTonalButton(
                             onClick = {
@@ -244,7 +251,7 @@ fun PersonaListScreen(
                                 tint = MaterialTheme.colorScheme.error,
                             )
                             Spacer(Modifier.size(8.dp))
-                            Text("Delete ${selection.selectedIds.size}", color = MaterialTheme.colorScheme.error)
+                            Text(stringResource(R.string.home_delete_count, selection.selectedIds.size), color = MaterialTheme.colorScheme.error)
                         }
                     } else {
                         if (onImport != null) {
@@ -263,7 +270,7 @@ fun PersonaListScreen(
                                     modifier = Modifier.size(18.dp),
                                 )
                                 Spacer(Modifier.size(8.dp))
-                                Text("Import")
+                                Text(stringResource(R.string.common_import))
                             }
                         }
                         if (entries.size > 1) {
@@ -279,7 +286,7 @@ fun PersonaListScreen(
                                     modifier = Modifier.size(18.dp),
                                 )
                                 Spacer(Modifier.size(8.dp))
-                                Text("Export all")
+                                Text(stringResource(R.string.persona_list_export_all))
                             }
                             FilledTonalButton(
                                 onClick = {
@@ -294,7 +301,7 @@ fun PersonaListScreen(
                                     tint = MaterialTheme.colorScheme.error,
                                 )
                                 Spacer(Modifier.size(8.dp))
-                                Text("Delete all", color = MaterialTheme.colorScheme.error)
+                                Text(stringResource(R.string.persona_list_delete_all), color = MaterialTheme.colorScheme.error)
                             }
                         }
                     }
@@ -304,7 +311,7 @@ fun PersonaListScreen(
                     NokoSearchField(
                         value = searchQuery,
                         onValueChange = { searchQuery = it },
-                        placeholder = "Search characters..",
+                        placeholder = stringResource(R.string.persona_list_search_characters),
                         modifier = Modifier
                             .fillMaxWidth()
                             .padding(horizontal = 16.dp)
@@ -328,7 +335,10 @@ fun PersonaListScreen(
                         )
                         Spacer(Modifier.size(8.dp))
                         Text(
-                            "No ${title.lowercase()} yet",
+                            stringResource(
+                                if (type == PersonaType.PERSONA) R.string.persona_list_empty_personas
+                                else R.string.persona_list_empty_characters
+                            ),
                             style = MaterialTheme.typography.bodyLarge,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                         )
@@ -416,7 +426,7 @@ fun PersonaListScreen(
                                     ) {
                                         Icon(
                                             Icons.Filled.Delete,
-                                            contentDescription = "Delete",
+                                            contentDescription = stringResource(R.string.common_delete),
                                             tint = MaterialTheme.colorScheme.error,
                                         )
                                     }
@@ -432,8 +442,8 @@ fun PersonaListScreen(
     deleteTarget?.let { entry ->
         AlertDialog(
             onDismissRequest = { deleteTarget = null },
-            title = { Text("Delete ${entry.name}?") },
-            text = { Text("This cannot be undone.") },
+            title = { Text(stringResource(R.string.persona_list_delete_one_title, entry.name)) },
+            text = { Text(stringResource(R.string.common_undone)) },
             confirmButton = {
                 TextButton(
                     onClick = {
@@ -446,12 +456,12 @@ fun PersonaListScreen(
                         deleteTarget = null
                     },
                 ) {
-                    Text("Delete", color = MaterialTheme.colorScheme.error)
+                    Text(stringResource(R.string.common_delete), color = MaterialTheme.colorScheme.error)
                 }
             },
             dismissButton = {
                 TextButton(onClick = { deleteTarget = null }) {
-                    Text("Cancel")
+                    Text(stringResource(R.string.common_cancel))
                 }
             },
         )
@@ -464,18 +474,17 @@ fun PersonaListScreen(
 
         CountdownDeleteDialog(
             showCountdown = isAll,
-            title = { Text(if (isAll) "Woah..hold on." else "Delete $count ${if (count == 1) "character" else "characters"}?") },
+            title = { Text(if (isAll) stringResource(R.string.persona_list_delete_all_title)
+                else pluralStringResource(R.plurals.persona_list_delete_characters_title, count, count)) },
             text = {
                 Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                     if (isAll) {
                         Text(buildAnnotatedString {
-                            append("Are you really sure about that?\n")
-                            append("You're about to\n")
+                            append(stringResource(R.string.persona_list_bulk_delete_pre))
                             withStyle(SpanStyle(color = MaterialTheme.colorScheme.error, fontWeight = FontWeight.Bold)) {
-                                append("DELETE ALL $count CHARACTERS")
+                                append(stringResource(R.string.persona_list_bulk_delete_phrase, count))
                             }
-                            append("\nyou've collected and created so far.\n")
-                            append("This cannot be undone.")
+                            append(stringResource(R.string.persona_list_bulk_delete_post))
                         })
                         val chatCounts = remember(recentChats, bulkDeleteTargets) {
                             bulkDeleteTargets.associateWith { entry ->
@@ -501,7 +510,7 @@ fun PersonaListScreen(
                                             Column {
                                                 Text(entry.name, style = MaterialTheme.typography.bodyMedium)
                                                 Text(
-                                                    "$chats ${if (chats == 1) "chat" else "chats"}",
+                                                    pluralStringResource(R.plurals.persona_list_chats_count, chats, chats),
                                                     style = MaterialTheme.typography.bodySmall,
                                                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                                                 )
@@ -512,7 +521,7 @@ fun PersonaListScreen(
                             }
                         }
                     } else {
-                        Text("This cannot be undone.")
+                        Text(stringResource(R.string.common_undone))
                     }
                 }
             },

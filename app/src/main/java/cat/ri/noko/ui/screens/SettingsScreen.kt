@@ -45,6 +45,7 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
@@ -53,6 +54,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.navigation.NavController
 import cat.ri.noko.BuildConfig
+import cat.ri.noko.R
 import cat.ri.noko.core.SettingsManager
 import cat.ri.noko.core.api.ApiClient
 import cat.ri.noko.model.PersonaType
@@ -93,7 +95,7 @@ fun SettingsScreen(navController: NavController) {
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Settings") },
+                title = { Text(stringResource(R.string.settings_title)) },
                 colors = nokoTopAppBarColors(),
             )
         },
@@ -121,7 +123,7 @@ fun SettingsScreen(navController: NavController) {
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Icon(Icons.Rounded.People, contentDescription = null)
                         Spacer(Modifier.size(8.dp))
-                        Text("Personas & Characters", style = MaterialTheme.typography.titleMedium)
+                        Text(stringResource(R.string.settings_section_personas), style = MaterialTheme.typography.titleMedium)
                     }
 
                     Row(
@@ -134,9 +136,9 @@ fun SettingsScreen(navController: NavController) {
                         verticalAlignment = Alignment.CenterVertically,
                     ) {
                         Column(modifier = Modifier.weight(1f)) {
-                            Text("Personas")
+                            Text(stringResource(R.string.settings_personas))
                             Text(
-                                "Your roleplay identities",
+                                stringResource(R.string.settings_personas_desc),
                                 style = MaterialTheme.typography.bodySmall,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                             )
@@ -160,9 +162,9 @@ fun SettingsScreen(navController: NavController) {
                         verticalAlignment = Alignment.CenterVertically,
                     ) {
                         Column(modifier = Modifier.weight(1f)) {
-                            Text("Characters")
+                            Text(stringResource(R.string.settings_characters))
                             Text(
-                                "AI character profiles",
+                                stringResource(R.string.settings_characters_desc),
                                 style = MaterialTheme.typography.bodySmall,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                             )
@@ -191,7 +193,7 @@ fun SettingsScreen(navController: NavController) {
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Icon(Icons.Rounded.SmartToy, contentDescription = null)
                         Spacer(Modifier.size(8.dp))
-                        Text("Configuration", style = MaterialTheme.typography.titleMedium)
+                        Text(stringResource(R.string.settings_section_configuration), style = MaterialTheme.typography.titleMedium)
                     }
 
                     Row(
@@ -204,7 +206,7 @@ fun SettingsScreen(navController: NavController) {
                         verticalAlignment = Alignment.CenterVertically,
                     ) {
                         Column(modifier = Modifier.weight(1f)) {
-                            Text("Provider")
+                            Text(stringResource(R.string.settings_provider))
                             Text(
                                 providerName,
                                 style = MaterialTheme.typography.bodySmall,
@@ -227,7 +229,7 @@ fun SettingsScreen(navController: NavController) {
                                 verticalAlignment = Alignment.CenterVertically,
                                 horizontalArrangement = Arrangement.SpaceBetween,
                             ) {
-                                Text("API Key", modifier = Modifier.weight(1f))
+                                Text(stringResource(R.string.settings_api_key), modifier = Modifier.weight(1f))
                                 Spacer(Modifier.size(12.dp))
                                 TextButton(
                                     onClick = {
@@ -236,7 +238,7 @@ fun SettingsScreen(navController: NavController) {
                                         apiKeyInput = ""
                                         keyError = null
                                     },
-                                ) { Text("Use another key") }
+                                ) { Text(stringResource(R.string.settings_use_another_key)) }
                             }
                         } else {
                             val placeholder = when (providerId) {
@@ -250,7 +252,7 @@ fun SettingsScreen(navController: NavController) {
                                     apiKeyInput = it
                                     if (keyError != null) keyError = null
                                 },
-                                label = { Text("API Key") },
+                                label = { Text(stringResource(R.string.settings_api_key)) },
                                 modifier = Modifier
                                     .fillMaxWidth()
                                     .offset { IntOffset(shakeOffset.value.toInt(), 0) },
@@ -304,7 +306,7 @@ fun SettingsScreen(navController: NavController) {
                                         )
                                         Spacer(Modifier.width(8.dp))
                                     }
-                                    Text(if (isTestingKey) "Testing..." else "Save")
+                                    Text(if (isTestingKey) stringResource(R.string.settings_testing) else stringResource(R.string.common_save))
                                 }
                                 if (isChangingKey && hasKey) {
                                     TextButton(
@@ -317,7 +319,7 @@ fun SettingsScreen(navController: NavController) {
                                                 ApiClient.configure(apiKey, providerBaseUrl, providerId)
                                             }
                                         },
-                                    ) { Text("Cancel") }
+                                    ) { Text(stringResource(R.string.common_cancel)) }
                                 }
                             }
                         }
@@ -335,9 +337,9 @@ fun SettingsScreen(navController: NavController) {
                         verticalAlignment = Alignment.CenterVertically,
                     ) {
                         Column(modifier = Modifier.weight(1f)) {
-                            Text("Model")
+                            Text(stringResource(R.string.settings_model))
                             Text(
-                                if (modelName.isNotBlank()) modelName else "Tap to select",
+                                if (modelName.isNotBlank()) modelName else stringResource(R.string.settings_tap_to_select),
                                 style = MaterialTheme.typography.bodySmall,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                                 maxLines = 1,
@@ -363,9 +365,9 @@ fun SettingsScreen(navController: NavController) {
                         verticalAlignment = Alignment.CenterVertically,
                     ) {
                         Column(modifier = Modifier.weight(1f)) {
-                            Text("Prompt Editor")
+                            Text(stringResource(R.string.settings_prompt_editor))
                             Text(
-                                "Change how your characters behave",
+                                stringResource(R.string.settings_prompt_editor_desc),
                                 style = MaterialTheme.typography.bodySmall,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                             )
@@ -395,7 +397,7 @@ fun SettingsScreen(navController: NavController) {
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Icon(Icons.Rounded.Brush, contentDescription = null)
                         Spacer(Modifier.size(8.dp))
-                        Text("Appearance", style = MaterialTheme.typography.titleMedium)
+                        Text(stringResource(R.string.settings_section_appearance), style = MaterialTheme.typography.titleMedium)
                     }
 
                     val isDarkTheme = isSystemInDarkTheme()
@@ -406,13 +408,13 @@ fun SettingsScreen(navController: NavController) {
                     ) {
                         Column(modifier = Modifier.weight(1f)) {
                             Text(
-                                "AMOLED mode",
+                                stringResource(R.string.settings_amoled),
                                 color = if (isDarkTheme) MaterialTheme.colorScheme.onSurface
                                 else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.38f),
                             )
                             Text(
-                                if (isDarkTheme) "Use pure black background in dark theme."
-                                else "Available only on dark theme.",
+                                if (isDarkTheme) stringResource(R.string.settings_amoled_desc)
+                                else stringResource(R.string.settings_amoled_desc_disabled),
                                 style = MaterialTheme.typography.bodySmall,
                                 color = if (isDarkTheme) MaterialTheme.colorScheme.onSurfaceVariant
                                 else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.38f),
@@ -437,9 +439,9 @@ fun SettingsScreen(navController: NavController) {
                         horizontalArrangement = Arrangement.SpaceBetween,
                     ) {
                         Column(modifier = Modifier.weight(1f)) {
-                            Text("Show avatars")
+                            Text(stringResource(R.string.settings_show_avatars))
                             Text(
-                                "Hides avatars in the chat if disabled.",
+                                stringResource(R.string.settings_show_avatars_desc),
                                 style = MaterialTheme.typography.bodySmall,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                             )
@@ -462,9 +464,9 @@ fun SettingsScreen(navController: NavController) {
                         horizontalArrangement = Arrangement.SpaceBetween,
                     ) {
                         Column(modifier = Modifier.weight(1f)) {
-                            Text("Show names")
+                            Text(stringResource(R.string.settings_show_names))
                             Text(
-                                "Removes names in the chat if disabled.",
+                                stringResource(R.string.settings_show_names_desc),
                                 style = MaterialTheme.typography.bodySmall,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                             )
@@ -487,9 +489,9 @@ fun SettingsScreen(navController: NavController) {
                         horizontalArrangement = Arrangement.SpaceBetween,
                     ) {
                         Column(modifier = Modifier.weight(1f)) {
-                            Text("Reduce motion")
+                            Text(stringResource(R.string.settings_reduce_motion))
                             Text(
-                                "Disables animations throughout the app.",
+                                stringResource(R.string.settings_reduce_motion_desc),
                                 style = MaterialTheme.typography.bodySmall,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                             )
@@ -521,7 +523,7 @@ fun SettingsScreen(navController: NavController) {
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Icon(Icons.Rounded.Shield, contentDescription = null)
                         Spacer(Modifier.size(8.dp))
-                        Text("Advanced", style = MaterialTheme.typography.titleMedium)
+                        Text(stringResource(R.string.settings_section_advanced), style = MaterialTheme.typography.titleMedium)
                     }
 
                     Row(
@@ -530,9 +532,9 @@ fun SettingsScreen(navController: NavController) {
                         horizontalArrangement = Arrangement.SpaceBetween,
                     ) {
                         Column(modifier = Modifier.weight(1f)) {
-                            Text("NokoGuard")
+                            Text(stringResource(R.string.settings_noko_guard))
                             Text(
-                                "Interrupt AI responses that impersonate your persona, use excessive emojis, or switch languages.",
+                                stringResource(R.string.settings_noko_guard_desc),
                                 style = MaterialTheme.typography.bodySmall,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                             )
@@ -559,9 +561,9 @@ fun SettingsScreen(navController: NavController) {
                         verticalAlignment = Alignment.CenterVertically,
                     ) {
                         Column(modifier = Modifier.weight(1f)) {
-                            Text("NokoPolkit")
+                            Text(stringResource(R.string.settings_noko_polkit))
                             Text(
-                                "Change how chat and app behaves",
+                                stringResource(R.string.settings_noko_polkit_desc),
                                 style = MaterialTheme.typography.bodySmall,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                             )
@@ -583,13 +585,13 @@ fun SettingsScreen(navController: NavController) {
                 verticalArrangement = Arrangement.spacedBy(4.dp),
             ) {
                 Text(
-                    text = "Noko ${BuildConfig.VERSION_NAME}",
+                    text = stringResource(R.string.settings_version, BuildConfig.VERSION_NAME),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     textAlign = TextAlign.Center,
                 )
                 Text(
-                    text = "Made with \uD83E\uDD0D by Rikkichy",
+                    text = stringResource(R.string.settings_credits),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     textAlign = TextAlign.Center,

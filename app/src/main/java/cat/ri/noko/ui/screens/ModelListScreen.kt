@@ -38,8 +38,10 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import cat.ri.noko.R
 import cat.ri.noko.core.SettingsManager
 import cat.ri.noko.core.api.ApiClient
 import cat.ri.noko.core.api.humanizeException
@@ -55,10 +57,10 @@ fun ModelListScreen(onBack: () -> Unit) {
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Select Model") },
+                title = { Text(stringResource(R.string.model_list_title)) },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(R.string.common_back))
                     }
                 },
                 colors = nokoTopAppBarColors(),
@@ -94,15 +96,17 @@ fun ModelListContent(
     var loading by remember { mutableStateOf(true) }
     var error by remember { mutableStateOf<String?>(null) }
     var search by remember { mutableStateOf("") }
+    val noApiKeyMsg = stringResource(R.string.model_list_no_api_key)
+    val noUrlMsg = stringResource(R.string.model_list_no_provider_url)
 
     LaunchedEffect(apiKey, providerId, providerBaseUrl) {
         if (providerRequiresAuth && apiKey.isBlank()) {
-            error = "Set your API key first"
+            error = noApiKeyMsg
             loading = false
             return@LaunchedEffect
         }
         if (providerBaseUrl.isBlank()) {
-            error = "Set the provider URL first"
+            error = noUrlMsg
             loading = false
             return@LaunchedEffect
         }
@@ -132,7 +136,7 @@ fun ModelListContent(
         NokoSearchField(
             value = search,
             onValueChange = { search = it },
-            placeholder = "Search models...",
+            placeholder = stringResource(R.string.model_list_search),
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(horizontal = 16.dp, vertical = 8.dp),
@@ -174,7 +178,7 @@ fun ModelListContent(
                                 loading = false
                             }
                         }) {
-                            Text("Retry")
+                            Text(stringResource(R.string.common_retry))
                         }
                     }
                 }
@@ -229,7 +233,7 @@ fun ModelListContent(
                                     ) {
                                         model.contextLength?.let { ctx ->
                                             Text(
-                                                "${ctx / 1000}k ctx",
+                                                stringResource(R.string.model_list_ctx, ctx / 1000),
                                                 style = MaterialTheme.typography.labelSmall,
                                                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                                             )
@@ -239,7 +243,7 @@ fun ModelListContent(
                                             if (promptPrice != null) {
                                                 val perMillion = promptPrice * 1_000_000
                                                 Text(
-                                                    "$${formatPrice(perMillion)}/M in",
+                                                    stringResource(R.string.model_list_price, formatPrice(perMillion)),
                                                     style = MaterialTheme.typography.labelSmall,
                                                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                                                 )
@@ -250,7 +254,7 @@ fun ModelListContent(
                                 if (isSelected) {
                                     Icon(
                                         Icons.Filled.Check,
-                                        contentDescription = "Selected",
+                                        contentDescription = stringResource(R.string.common_selected),
                                         tint = MaterialTheme.colorScheme.primary,
                                     )
                                 }

@@ -25,9 +25,11 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
+import cat.ri.noko.R
 import cat.ri.noko.core.AvatarStorage
 import cat.ri.noko.model.PersonaType
 import coil3.compose.AsyncImage
@@ -55,9 +57,17 @@ fun PersonaFormFields(
     onGreetingChange: (String) -> Unit = {},
     avatarSize: Dp = 128.dp,
     fallbackIcon: ImageVector = Icons.Filled.Person,
-    namePlaceholder: String = if (type == PersonaType.PERSONA) "Persona name..." else "Character name...",
-    descriptionPlaceholder: String = if (type == PersonaType.PERSONA) "Describe your persona..." else "Describe the character...",
+    namePlaceholder: String? = null,
+    descriptionPlaceholder: String? = null,
 ) {
+    val resolvedNamePlaceholder = namePlaceholder ?: stringResource(
+        if (type == PersonaType.PERSONA) R.string.form_name_placeholder_persona
+        else R.string.form_name_placeholder_character
+    )
+    val resolvedDescPlaceholder = descriptionPlaceholder ?: stringResource(
+        if (type == PersonaType.PERSONA) R.string.form_description_placeholder_persona_default
+        else R.string.form_description_placeholder_character_default
+    )
     val context = LocalContext.current
 
     Column(
@@ -76,7 +86,7 @@ fun PersonaFormFields(
                     model = ImageRequest.Builder(context)
                         .data(AvatarStorage.getFile(context, avatarFileName))
                         .build(),
-                    contentDescription = "Avatar",
+                    contentDescription = stringResource(R.string.form_avatar_content_desc),
                     modifier = Modifier
                         .fillMaxSize()
                         .clip(CircleShape),
@@ -85,7 +95,7 @@ fun PersonaFormFields(
             } else {
                 Icon(
                     fallbackIcon,
-                    contentDescription = "Add avatar",
+                    contentDescription = stringResource(R.string.form_add_avatar_content_desc),
                     modifier = Modifier.size(avatarSize * 0.4f),
                     tint = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
@@ -93,7 +103,7 @@ fun PersonaFormFields(
         }
         Spacer(Modifier.height(4.dp))
         Text(
-            "Tap to set avatar",
+            stringResource(R.string.form_avatar_hint),
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
@@ -104,12 +114,12 @@ fun PersonaFormFields(
     OutlinedTextField(
         value = name,
         onValueChange = { if (it.length <= 100) onNameChange(it) },
-        label = { Text("Name") },
-        placeholder = { Text(namePlaceholder) },
+        label = { Text(stringResource(R.string.form_name)) },
+        placeholder = { Text(resolvedNamePlaceholder) },
         singleLine = true,
         isError = nameError,
         supportingText = if (nameError) {
-            { Text("Name is required") }
+            { Text(stringResource(R.string.form_name_required)) }
         } else null,
         shape = NokoFieldShape,
         modifier = Modifier
@@ -120,11 +130,11 @@ fun PersonaFormFields(
     OutlinedTextField(
         value = description,
         onValueChange = { if (it.length <= 10_000) onDescriptionChange(it) },
-        label = { Text("Description") },
-        placeholder = { Text(descriptionPlaceholder) },
+        label = { Text(stringResource(R.string.form_description)) },
+        placeholder = { Text(resolvedDescPlaceholder) },
         isError = descError,
         supportingText = if (descError) {
-            { Text("Description is required") }
+            { Text(stringResource(R.string.form_description_required)) }
         } else null,
         shape = NokoFieldShape,
         modifier = Modifier
@@ -138,8 +148,8 @@ fun PersonaFormFields(
             OutlinedTextField(
                 value = personality,
                 onValueChange = { if (it.length <= 5_000) onPersonalityChange(it) },
-                label = { Text("Personality") },
-                placeholder = { Text("Traits, speech patterns, quirks...") },
+                label = { Text(stringResource(R.string.form_personality)) },
+                placeholder = { Text(stringResource(R.string.form_personality_placeholder)) },
                 shape = NokoFieldShape,
                 modifier = Modifier
                     .fillMaxWidth()
@@ -149,8 +159,8 @@ fun PersonaFormFields(
             OutlinedTextField(
                 value = scenario,
                 onValueChange = { if (it.length <= 5_000) onScenarioChange(it) },
-                label = { Text("Scenario") },
-                placeholder = { Text("Setting and circumstances of the conversation...") },
+                label = { Text(stringResource(R.string.form_scenario)) },
+                placeholder = { Text(stringResource(R.string.form_scenario_placeholder)) },
                 shape = NokoFieldShape,
                 modifier = Modifier
                     .fillMaxWidth()
@@ -161,8 +171,8 @@ fun PersonaFormFields(
         OutlinedTextField(
             value = greetingMessage,
             onValueChange = { if (it.length <= 5_000) onGreetingChange(it) },
-            label = { Text("Greeting Message") },
-            placeholder = { Text("First message when starting a chat...") },
+            label = { Text(stringResource(R.string.form_greeting)) },
+            placeholder = { Text(stringResource(R.string.form_greeting_placeholder)) },
             shape = NokoFieldShape,
             modifier = Modifier
                 .fillMaxWidth()

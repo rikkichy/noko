@@ -1,11 +1,375 @@
 <resources xmlns:xliff="urn:oasis:names:tc:xliff:document:1.2">
     <string name="app_name">Noko</string>
 
-    <!-- Common -->
+    <!-- ===== Common ===== -->
     <string name="common_back">Back</string>
     <string name="common_cancel">Cancel</string>
+    <string name="common_save">Save</string>
+    <string name="common_delete">Delete</string>
+    <string name="common_close">Close</string>
+    <string name="common_next">Next</string>
+    <string name="common_skip">Skip</string>
+    <string name="common_continue">Continue</string>
+    <string name="common_create">Create</string>
+    <string name="common_import">Import</string>
+    <string name="common_retry">Retry</string>
+    <string name="common_clear">Clear</string>
+    <string name="common_more">More</string>
+    <string name="common_add">Add</string>
+    <string name="common_export">Export</string>
+    <string name="common_selected">Selected</string>
+    <string name="common_undone">This cannot be undone.</string>
+    <string name="common_you">You</string>
+    <string name="common_assistant">Assistant</string>
+    <string name="common_ai">AI</string>
+    <string name="common_no_persona">No persona</string>
+    <string name="common_go_back">Go back</string>
+    <string name="common_cancel_selection">Cancel selection</string>
+    <string name="common_search">Search…</string>
 
-    <!-- NokoPolkit screen -->
+    <!-- ===== HomeScreen ===== -->
+    <string-array name="home_greetings_morning">
+        <item>Good morning~</item>
+        <item>Rise and roleplay</item>
+        <item>We missed you..</item>
+    </string-array>
+    <string-array name="home_greetings_afternoon">
+        <item>Good afternoon~</item>
+        <item>Adventures await</item>
+        <item>New story arc?</item>
+    </string-array>
+    <string-array name="home_greetings_evening">
+        <item>Evening vibes~</item>
+        <item>Cozy hours</item>
+        <item>Golden stories</item>
+    </string-array>
+    <string-array name="home_greetings_night">
+        <item>Late night~</item>
+        <item>Can\'t sleep?</item>
+        <item>*sleeps*</item>
+        <item>Shh..</item>
+    </string-array>
+    <string name="home_selected_count"><xliff:g id="count" example="3">%1$d</xliff:g> selected</string>
+    <string name="home_pin_count">Pin <xliff:g id="count" example="3">%1$d</xliff:g></string>
+    <string name="home_delete_count">Delete <xliff:g id="count" example="3">%1$d</xliff:g></string>
+    <string name="home_new_chat">New chat</string>
+    <string name="home_secret_chat">Secret chat</string>
+    <string name="home_search_placeholder">Search chats..</string>
+    <string name="home_recent">Recent</string>
+    <string name="home_no_chats_found">No chats found</string>
+    <plurals name="home_results_count">
+        <item quantity="one">%d result</item>
+        <item quantity="other">%d results</item>
+    </plurals>
+    <plurals name="home_delete_chats_title">
+        <item quantity="one">Delete %d chat?</item>
+        <item quantity="other">Delete %d chats?</item>
+    </plurals>
+
+    <!-- ===== ChatScreen ===== -->
+    <string-array name="chat_placeholder_generic">
+        <item>Message</item>
+        <item>Write something...</item>
+        <item>What happens next?</item>
+        <item>Say something...</item>
+    </string-array>
+    <string-array name="chat_placeholder_persona">
+        <item>Say something as %1$s</item>
+        <item>Yap as %1$s</item>
+        <item>Write as %1$s...</item>
+        <item>What does %1$s do?</item>
+        <item>Speak as %1$s...</item>
+        <item>%1$s says...</item>
+        <item>Talk as %1$s...</item>
+        <item>Type as %1$s...</item>
+    </string-array>
+    <string-array name="chat_notification_titles">
+        <item>%1$s replied to you!</item>
+        <item>%1$s answered you!</item>
+        <item>%1$s responded!</item>
+        <item>%1$s wrote back!</item>
+    </string-array>
+    <string name="chat_tap_to_select_character">Tap to select character</string>
+    <string name="chat_secret_label">Secret chat</string>
+    <string name="chat_menu_new_chat">New chat</string>
+    <string name="chat_menu_chat_info">Chat info</string>
+    <string name="chat_edit_title">Edit message</string>
+    <string name="chat_send">Send</string>
+    <string name="chat_stop">Stop</string>
+    <string name="chat_select_character">Select Character</string>
+    <string name="chat_select_persona">Select Persona</string>
+    <string name="chat_tip_pick_model">Pick a model in Settings → Configuration.</string>
+    <string name="chat_tip_context_unknown">Context limit unknown. Re-select your model to populate it.</string>
+    <string name="chat_tip_context_full">Context is <xliff:g id="percent" example="80">%1$d</xliff:g>%% full. Consider starting a fresh chat.</string>
+    <string name="chat_tip_no_persona">No persona selected — add one for more personal replies.</string>
+    <string name="chat_tip_guard_blocks">NokoGuard stepped in <xliff:g id="count" example="3">%1$d</xliff:g> times. Tweaking your preset may help.</string>
+    <string name="chat_tip_kickoff">Say something to kick off the roleplay!</string>
+    <string name="chat_info_title">Chat info</string>
+    <string name="chat_info_context_usage">Context usage</string>
+    <string name="chat_info_token_estimate_help">Token count is a rough estimate (~4 chars per token).</string>
+    <string name="chat_info_messages">Messages</string>
+    <string name="chat_info_guards">Guards</string>
+    <string name="chat_info_stops">Stops</string>
+    <string name="chat_info_setup">Setup</string>
+    <string name="chat_info_model">Model</string>
+    <string name="chat_info_provider">Provider</string>
+    <string name="chat_info_preset">Preset</string>
+    <string name="chat_info_mode">Mode</string>
+    <string name="chat_info_tips">Tips</string>
+    <string name="chat_participants_two"><xliff:g id="first" example="Alice">%1$s</xliff:g> &amp; <xliff:g id="second" example="Bob">%2$s</xliff:g></string>
+    <string name="chat_participants_overflow"><xliff:g id="first" example="Alice">%1$s</xliff:g>, <xliff:g id="second" example="Bob">%2$s</xliff:g> and <xliff:g id="more" example="3">%3$d</xliff:g> more</string>
+
+    <!-- ===== SettingsScreen ===== -->
+    <string name="settings_title">Settings</string>
+    <string name="settings_section_personas">Personas &amp; Characters</string>
+    <string name="settings_personas">Personas</string>
+    <string name="settings_personas_desc">Your roleplay identities</string>
+    <string name="settings_characters">Characters</string>
+    <string name="settings_characters_desc">AI character profiles</string>
+    <string name="settings_section_configuration">Configuration</string>
+    <string name="settings_provider">Provider</string>
+    <string name="settings_api_key">API Key</string>
+    <string name="settings_use_another_key">Use another key</string>
+    <string name="settings_testing">Testing…</string>
+    <string name="settings_model">Model</string>
+    <string name="settings_tap_to_select">Tap to select</string>
+    <string name="settings_prompt_editor">Prompt Editor</string>
+    <string name="settings_prompt_editor_desc">Change how your characters behave</string>
+    <string name="settings_section_appearance">Appearance</string>
+    <string name="settings_amoled">AMOLED mode</string>
+    <string name="settings_amoled_desc">Use pure black background in dark theme.</string>
+    <string name="settings_amoled_desc_disabled">Available only on dark theme.</string>
+    <string name="settings_show_avatars">Show avatars</string>
+    <string name="settings_show_avatars_desc">Hides avatars in the chat if disabled.</string>
+    <string name="settings_show_names">Show names</string>
+    <string name="settings_show_names_desc">Removes names in the chat if disabled.</string>
+    <string name="settings_reduce_motion">Reduce motion</string>
+    <string name="settings_reduce_motion_desc">Disables animations throughout the app.</string>
+    <string name="settings_section_advanced">Advanced</string>
+    <string name="settings_noko_guard">NokoGuard</string>
+    <string name="settings_noko_guard_desc">Interrupt AI responses that impersonate your persona, use excessive emojis, or switch languages.</string>
+    <string name="settings_noko_polkit">NokoPolkit</string>
+    <string name="settings_noko_polkit_desc">Change how chat and app behaves</string>
+    <string name="settings_version">Noko <xliff:g id="version" example="0.10.0">%1$s</xliff:g></string>
+    <string name="settings_credits">Made with 🧠 by Rikkichy</string>
+
+    <!-- ===== OnboardingScreen ===== -->
+    <string name="onboarding_title_provider">Noko</string>
+    <string name="onboarding_title_api_key">API Key</string>
+    <string name="onboarding_title_select_model">Select a model</string>
+    <string name="onboarding_title_persona">Create your persona</string>
+    <string name="onboarding_title_character">Create a character</string>
+    <string name="onboarding_title_import_character">Import character</string>
+    <string name="onboarding_welcome">Welcome!</string>
+    <string name="onboarding_welcome_desc">Choose where your AI models are hosted.</string>
+    <string name="onboarding_debug_skip">(Debug) SKIP_ONBOARDING</string>
+    <string name="onboarding_api_key_desc">Enter your <xliff:g id="provider" example="OpenRouter">%1$s</xliff:g> API key to get started.</string>
+    <string name="onboarding_checking">Checking…</string>
+    <string name="onboarding_create_openrouter_key">Create OpenRouter API Key</string>
+    <string name="onboarding_persona_desc">This is how the AI will know you.</string>
+    <string name="onboarding_persona_name_placeholder">Your persona name…</string>
+    <string name="onboarding_character_desc">Create a character for the AI to play.</string>
+    <string name="onboarding_get_started">Get started</string>
+    <string name="onboarding_import_character">Import character</string>
+    <string name="onboarding_no_greeting_title">Are you sure?</string>
+    <string name="onboarding_no_greeting_desc">A greeting message helps set the style and makes it much easier to immerse yourself in the RP, both for you and your AI character.</string>
+
+    <!-- ===== AiSettingsScreen ===== -->
+    <string name="ai_settings_title">AI Settings</string>
+    <string name="ai_settings_preset">Preset</string>
+    <string name="ai_settings_built_in">Built-in</string>
+    <string name="ai_settings_new_preset">New preset</string>
+    <string name="ai_settings_duplicate_preset">Duplicate preset</string>
+    <string name="ai_settings_delete_preset">Delete preset</string>
+    <string name="ai_settings_built_in_info">Built-in presets are read-only. Duplicate to customize.</string>
+    <string name="ai_settings_generation_params">Generation Parameters</string>
+    <string name="ai_settings_param_temperature">Temperature</string>
+    <string name="ai_settings_param_top_p">Top P</string>
+    <string name="ai_settings_param_top_k">Top K</string>
+    <string name="ai_settings_param_max_tokens">Max Tokens</string>
+    <string name="ai_settings_param_freq_penalty">Frequency Penalty</string>
+    <string name="ai_settings_param_presence_penalty">Presence Penalty</string>
+    <string name="ai_settings_advanced">Advanced</string>
+    <string name="ai_settings_continue_nudge">Continue nudge prompt</string>
+    <string name="ai_settings_continue_nudge_desc">Sent when you tap Send with an empty message to continue the AI\'s response.</string>
+    <string name="ai_settings_prompt_template">Prompt Template</string>
+    <string name="ai_settings_new_preset_title">New Preset</string>
+    <string name="ai_settings_name">Name</string>
+    <string name="ai_settings_delete_preset_title">Delete <xliff:g id="preset" example="Creative RP">%1$s</xliff:g>?</string>
+    <string name="ai_settings_section_main_prompt">Main Prompt</string>
+    <string name="ai_settings_section_persona_description">Persona Description</string>
+    <string name="ai_settings_section_character_description">Character Description</string>
+    <string name="ai_settings_section_chat_history">Chat History</string>
+    <string name="ai_settings_no_persona_selected">No persona selected</string>
+    <string name="ai_settings_no_character_selected">No character selected</string>
+    <string name="ai_settings_chat_history_inserted">Chat messages will be inserted here</string>
+
+    <!-- ===== ModelListScreen ===== -->
+    <string name="model_list_title">Select Model</string>
+    <string name="model_list_no_api_key">Set your API key first</string>
+    <string name="model_list_no_provider_url">Set the provider URL first</string>
+    <string name="model_list_search">Search models…</string>
+    <string name="model_list_ctx"><xliff:g id="thousands" example="32">%1$d</xliff:g>k ctx</string>
+    <string name="model_list_price">$<xliff:g id="price" example="0.50">%1$s</xliff:g>/M in</string>
+
+    <!-- ===== ProviderListScreen ===== -->
+    <string name="provider_list_title">API Provider</string>
+    <string name="provider_list_desc">Select where your AI models are hosted.</string>
+
+    <!-- ===== PersonaListScreen ===== -->
+    <string name="persona_list_title_personas">Personas</string>
+    <string name="persona_list_title_characters">Characters</string>
+    <string name="persona_list_export_count">Export <xliff:g id="count" example="3">%1$d</xliff:g></string>
+    <string name="persona_list_export_all">Export all</string>
+    <string name="persona_list_delete_all">Delete all</string>
+    <string name="persona_list_search_personas">Search personas..</string>
+    <string name="persona_list_search_characters">Search characters..</string>
+    <string name="persona_list_empty_personas">No personas yet</string>
+    <string name="persona_list_empty_characters">No characters yet</string>
+    <string name="persona_list_delete_one_title">Delete <xliff:g id="name" example="Alice">%1$s</xliff:g>?</string>
+    <string name="persona_list_delete_all_title">Woah..hold on.</string>
+    <plurals name="persona_list_delete_characters_title">
+        <item quantity="one">Delete %d character?</item>
+        <item quantity="other">Delete %d characters?</item>
+    </plurals>
+    <string name="persona_list_bulk_delete_pre">Are you really sure about that?\nYou\'re about to\n</string>
+    <string name="persona_list_bulk_delete_phrase">DELETE ALL <xliff:g id="count" example="6">%1$d</xliff:g> CHARACTERS</string>
+    <string name="persona_list_bulk_delete_post">\nyou\'ve collected and created so far.\nThis cannot be undone.</string>
+    <string name="persona_list_export_biometric_title_one">Export character</string>
+    <string name="persona_list_export_biometric_title_count">Export <xliff:g id="count" example="3">%1$d</xliff:g> characters</string>
+    <string name="persona_list_export_biometric_subtitle">Verify your identity to export</string>
+    <plurals name="persona_list_chats_count">
+        <item quantity="one">%d chat</item>
+        <item quantity="other">%d chats</item>
+    </plurals>
+
+    <!-- ===== PersonaEditScreen ===== -->
+    <string name="persona_edit_title_new_persona">New persona</string>
+    <string name="persona_edit_title_edit_persona">Edit persona</string>
+    <string name="persona_edit_title_new_character">New character</string>
+    <string name="persona_edit_title_edit_character">Edit character</string>
+
+    <!-- ===== CharacterImportScreen ===== -->
+    <string name="import_title_detecting">Detecting…</string>
+    <string name="import_title_decrypt">Decrypt characters</string>
+    <string name="import_title_import_one">Import character</string>
+    <string name="import_title_import_count">Import characters (<xliff:g id="selected" example="2">%1$d</xliff:g>/<xliff:g id="total" example="5">%2$d</xliff:g>)</string>
+    <string name="import_title_failed">Import failed</string>
+    <string name="import_unrecognized">Unrecognized file format</string>
+    <string name="import_passphrase_prompt">Enter the passphrase to decrypt this file.</string>
+    <string name="import_passphrase">Passphrase</string>
+    <string name="import_passphrase_required">Enter a passphrase</string>
+    <string name="import_passphrase_wrong">Wrong passphrase</string>
+    <string name="import_decrypt">Decrypt</string>
+    <string name="import_format_tavern">TavernAI Card</string>
+    <string name="import_format_cai">Character.AI</string>
+    <string name="import_format_nokc">Noko Encrypted</string>
+    <string name="import_format_unknown">Unknown</string>
+    <string name="import_has_greeting">Has greeting message</string>
+    <plurals name="import_button_count">
+        <item quantity="one">Import %d character</item>
+        <item quantity="other">Import %d characters</item>
+    </plurals>
+    <string name="import_importing">Importing…</string>
+
+    <!-- ===== BiometricAuthScreen ===== -->
+    <string name="biometric_tap_to_unlock">Tap to unlock</string>
+    <string name="biometric_tap_to_retry">Tap to try again</string>
+    <string name="biometric_prompt_title">Unlock Noko</string>
+    <string name="biometric_prompt_subtitle">Authenticate to access your data</string>
+    <string name="biometric_unavailable_title">Biometric unavailable</string>
+    <string name="biometric_unavailable_desc">Biometric authentication was enabled, but is no longer available on this device. This may happen if biometric data was removed from system settings. The lock has been disabled.</string>
+
+    <!-- ===== Components ===== -->
+    <!-- CountdownDeleteDialog -->
+    <string name="countdown_delete_pending">Delete (<xliff:g id="seconds" example="4">%1$d</xliff:g>)</string>
+
+    <!-- DidYouKnowCard -->
+    <string-array name="did_you_know_titles">
+        <item>Did you know?</item>
+        <item>Interesting fact..</item>
+        <item>Fun fact!</item>
+        <item>By the way..</item>
+        <item>Hmm..</item>
+    </string-array>
+    <string-array name="did_you_know_trivia">
+        <item>Internet RP appeared in the early 1990s, where people used to chat with each other. Things have changed.. yeah.</item>
+        <item>If your response is long and structured, AI is less prone to impersonate you.</item>
+        <item>Adding a detailed persona description helps the AI understand your writing style.</item>
+        <item>Using *action blocks* in your messages helps AI distinguish narration from dialogue.</item>
+        <item>NokoGuard detects AI hallucinations really well.</item>
+        <item>Secret chats aren\'t saved to history. Just saying..</item>
+        <item>Shorter system prompts often lead to more creative AI responses.</item>
+        <item>The term \'roleplay\' in online contexts dates back to IRC channels in the early 90s.</item>
+    </string-array>
+    <plurals name="did_you_know_chats_with">
+        <item quantity="one">You have %1$d chat with %2$s</item>
+        <item quantity="other">You have %1$d chats with %2$s</item>
+    </plurals>
+    <plurals name="did_you_know_messages_as">
+        <item quantity="one">You\'ve sent %1$d message as %2$s</item>
+        <item quantity="other">You\'ve sent %1$d messages as %2$s</item>
+    </plurals>
+
+    <!-- ExportPassphraseDialog -->
+    <string name="export_dialog_title_one">Export as .nokc</string>
+    <string name="export_dialog_title_count">Export <xliff:g id="count" example="3">%1$d</xliff:g> characters as .nokc</string>
+    <string name="export_dialog_desc_one">Set a passphrase to encrypt this character.</string>
+    <string name="export_dialog_desc_count">Set a passphrase to encrypt <xliff:g id="count" example="3">%1$d</xliff:g> characters.</string>
+    <string name="export_dialog_passphrase">Passphrase</string>
+    <string name="export_dialog_confirm_passphrase">Confirm passphrase</string>
+    <string name="export_dialog_min_length">At least 8 characters</string>
+    <string name="export_dialog_mismatch">Passphrases don\'t match</string>
+
+    <!-- ImageCropOverlay -->
+    <string name="crop_action">Crop</string>
+
+    <!-- PersonaFormFields -->
+    <string name="form_avatar_hint">Tap to set avatar</string>
+    <string name="form_avatar_content_desc">Avatar</string>
+    <string name="form_add_avatar_content_desc">Add avatar</string>
+    <string name="form_name">Name</string>
+    <string name="form_name_placeholder_persona">Persona name…</string>
+    <string name="form_name_placeholder_character">Character name…</string>
+    <string name="form_name_required">Name is required</string>
+    <string name="form_description">Description</string>
+    <string name="form_description_placeholder_persona">A brief description of your persona…</string>
+    <string name="form_description_placeholder_character">Describe the AI character\'s personality and traits…</string>
+    <string name="form_description_placeholder_persona_default">Describe your persona…</string>
+    <string name="form_description_placeholder_character_default">Describe the character…</string>
+    <string name="form_description_required">Description is required</string>
+    <string name="form_personality">Personality</string>
+    <string name="form_personality_placeholder">Traits, speech patterns, quirks…</string>
+    <string name="form_scenario">Scenario</string>
+    <string name="form_scenario_placeholder">Setting and circumstances of the conversation…</string>
+    <string name="form_greeting">Greeting Message</string>
+    <string name="form_greeting_placeholder">First message when starting a chat…</string>
+
+    <!-- PersonaPickerSheet -->
+    <string name="picker_search_placeholder">Search…</string>
+    <string name="picker_empty">No entries yet. Create one in Settings.</string>
+
+    <!-- ProviderCard -->
+    <string name="provider_card_custom">Custom</string>
+    <string name="provider_card_custom_desc">Enter your own OpenAI-compatible endpoint.</string>
+    <string name="provider_card_base_url">Base URL</string>
+    <string name="provider_card_base_url_placeholder">https://api.example.com/v1/</string>
+    <string name="provider_card_url_validation">Use https:// (or http:// for local networks)</string>
+    <string name="provider_card_requires_api_key">Requires API key</string>
+    <string name="provider_card_recommended">Recommended</string>
+    <string name="provider_card_scan_no_results">No <xliff:g id="provider" example="Ollama">%1$s</xliff:g> instances found on your network</string>
+    <string name="provider_card_scan_failed">Scan failed: <xliff:g id="error" example="timeout">%1$s</xliff:g></string>
+    <string name="provider_card_scanning">Scanning…</string>
+    <string name="provider_card_scan">Scan network</string>
+    <plurals name="provider_card_models_count">
+        <item quantity="one">%d model</item>
+        <item quantity="other">%d models</item>
+    </plurals>
+
+    <!-- ProviderListContent -->
+    <string name="provider_list_legacy">Legacy</string>
+
+    <!-- ===== NokoPolkit screen (existing) ===== -->
     <string name="polkit_title">NokoPolkit</string>
     <string name="polkit_card_chat">Chat Policies</string>
     <string name="polkit_card_character">Character Policies</string>
@@ -40,7 +404,7 @@
     <string name="polkit_hide_from_recents">Hide from recents</string>
     <string name="polkit_hide_from_recents_desc">Exclude the app from the recent apps list.</string>
 
-    <!-- Message bubble -->
+    <!-- ===== Message bubble (existing) ===== -->
     <string name="bubble_typing"><xliff:g id="character" example="Alice">%1$s</xliff:g> is typing</string>
     <string name="bubble_guard_blocked">NokoGuard interrupted this response.</string>
     <string name="bubble_guard_reason">Reason: <xliff:g id="reason" example="Persona impersonation [NOK_IMP]">%1$s</xliff:g></string>

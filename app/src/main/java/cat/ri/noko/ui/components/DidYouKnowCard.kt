@@ -24,23 +24,15 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.pluralStringResource
+import androidx.compose.ui.res.stringArrayResource
 import androidx.compose.ui.unit.dp
+import cat.ri.noko.R
 import cat.ri.noko.core.AvatarStorage
 import cat.ri.noko.model.ChatSessionMeta
 import cat.ri.noko.model.PersonaEntry
 import coil3.compose.AsyncImage
 import coil3.request.ImageRequest
-
-private val triviaFacts = listOf(
-    "Internet RP appeared in the early 1990s, where people used to chat with each other. Things have changed.. yeah.",
-    "If your response is long and structured, AI is less prone to impersonate you.",
-    "Adding a detailed persona description helps the AI understand your writing style.",
-    "Using *action blocks* in your messages helps AI distinguish narration from dialogue.",
-    "NokoGuard detects AI hallucinations really well.",
-    "Secret chats aren't saved to history. Just saying..",
-    "Shorter system prompts often lead to more creative AI responses.",
-    "The term 'roleplay' in online contexts dates back to IRC channels in the early 90s.",
-)
 
 private sealed class CardItem {
     data class Fact(val text: String) : CardItem()
@@ -54,9 +46,10 @@ fun DidYouKnowCard(
     entryMap: Map<String, PersonaEntry>,
     refreshKey: Int = 0,
 ) {
-    val titles = listOf("Did you know?", "Interesting fact..", "Fun fact!", "By the way..", "Hmm..")
+    val titles = stringArrayResource(R.array.did_you_know_titles)
+    val triviaFacts = stringArrayResource(R.array.did_you_know_trivia)
 
-    val items = remember(recentChats, entryMap, refreshKey) {
+    val items = remember(recentChats, entryMap, refreshKey, triviaFacts) {
         val pool = mutableListOf<CardItem>()
         pool.addAll(triviaFacts.map { CardItem.Fact(it) })
 
@@ -83,7 +76,7 @@ fun DidYouKnowCard(
         pool.random()
     }
 
-    val title = remember(refreshKey) { titles.random() }
+    val title = remember(refreshKey, titles) { titles.random() }
     val context = LocalContext.current
 
     Card(
@@ -149,7 +142,7 @@ fun DidYouKnowCard(
                             )
                         }
                         Text(
-                            "You have ${items.count} chat${if (items.count != 1) "s" else ""} with ${items.name}",
+                            pluralStringResource(R.plurals.did_you_know_chats_with, items.count, items.count, items.name),
                             style = MaterialTheme.typography.bodyLarge,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                         )
@@ -180,7 +173,7 @@ fun DidYouKnowCard(
                             )
                         }
                         Text(
-                            "You've sent ${items.messageCount} message${if (items.messageCount != 1) "s" else ""} as ${items.name}",
+                            pluralStringResource(R.plurals.did_you_know_messages_as, items.messageCount, items.messageCount, items.name),
                             style = MaterialTheme.typography.bodyLarge,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                         )

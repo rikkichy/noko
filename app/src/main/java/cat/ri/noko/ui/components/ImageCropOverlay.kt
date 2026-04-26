@@ -34,9 +34,11 @@ import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.graphics.drawscope.clipPath
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
+import cat.ri.noko.R
 import kotlin.math.min
 import kotlin.math.roundToInt
 
@@ -76,7 +78,7 @@ fun ImageCropOverlay(
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 TextButton(onClick = onCancel) {
-                    Text("Cancel", color = Color.White)
+                    Text(stringResource(R.string.common_cancel), color = Color.White)
                 }
                 Button(onClick = {
                     val cropped = cropCircularBitmap(
@@ -90,7 +92,7 @@ fun ImageCropOverlay(
                     )
                     onCrop(cropped)
                 }) {
-                    Text("Crop")
+                    Text(stringResource(R.string.crop_action))
                 }
             }
         },

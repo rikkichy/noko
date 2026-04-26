@@ -48,9 +48,11 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
+import cat.ri.noko.R
 import cat.ri.noko.core.AvatarStorage
 import cat.ri.noko.core.CharacterCodec
 import cat.ri.noko.core.SettingsManager
@@ -73,7 +75,8 @@ fun CharacterImportScreen(
     uri: Uri,
     onBack: () -> Unit,
 ) {
-    var importTitle by remember { mutableStateOf("Detecting...") }
+    val initialTitle = stringResource(R.string.import_title_detecting)
+    var importTitle by remember(initialTitle) { mutableStateOf(initialTitle) }
 
     Scaffold(
         topBar = {
@@ -81,7 +84,7 @@ fun CharacterImportScreen(
                 title = { Text(importTitle) },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(R.string.common_back))
                     }
                 },
                 colors = nokoTopAppBarColors(),
@@ -122,16 +125,26 @@ fun CharacterImportContent(
     val selectedCount = selected.size
     val totalCount = characters.size
 
-    LaunchedEffect(state, totalCount, selectedCount) {
+    val titleDetecting = stringResource(R.string.import_title_detecting)
+    val titleDecrypt = stringResource(R.string.import_title_decrypt)
+    val titleImportOne = stringResource(R.string.import_title_import_one)
+    val titleImportCountTemplate = stringResource(R.string.import_title_import_count, selectedCount, totalCount)
+    val titleFailed = stringResource(R.string.import_title_failed)
+
+    val unrecognizedMsg = stringResource(R.string.import_unrecognized)
+    val passphraseRequiredMsg = stringResource(R.string.import_passphrase_required)
+    val wrongPassphraseMsg = stringResource(R.string.import_passphrase_wrong)
+
+    LaunchedEffect(state, totalCount, selectedCount, titleDetecting, titleDecrypt, titleImportOne, titleImportCountTemplate, titleFailed) {
         onTitleChange?.invoke(
             when (state) {
-                ImportState.DETECTING -> "Detecting..."
-                ImportState.PASSPHRASE -> "Decrypt characters"
+                ImportState.DETECTING -> titleDetecting
+                ImportState.PASSPHRASE -> titleDecrypt
                 ImportState.PREVIEW, ImportState.IMPORTING -> {
-                    if (totalCount == 1) "Import character"
-                    else "Import characters ($selectedCount/$totalCount)"
+                    if (totalCount == 1) titleImportOne
+                    else titleImportCountTemplate
                 }
-                ImportState.ERROR -> "Import failed"
+                ImportState.ERROR -> titleFailed
             },
         )
     }
@@ -165,7 +178,7 @@ fun CharacterImportContent(
                     state = ImportState.PASSPHRASE
                 }
                 CharacterCodec.CharacterFormat.UNKNOWN -> {
-                    errorMessage = "Unrecognized file format"
+                    errorMessage = unrecognizedMsg
                     state = ImportState.ERROR
                 }
             }
@@ -190,7 +203,7 @@ fun CharacterImportContent(
                 verticalArrangement = Arrangement.spacedBy(16.dp),
             ) {
                 Text(
-                    "Enter the passphrase to decrypt this file.",
+                    stringResource(R.string.import_passphrase_prompt),
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
@@ -203,7 +216,7 @@ fun CharacterImportContent(
                             passphraseError = null
                         }
                     },
-                    label = { Text("Passphrase") },
+                    label = { Text(stringResource(R.string.import_passphrase)) },
                     visualTransformation = PasswordVisualTransformation(),
                     singleLine = true,
                     isError = passphraseError != null,
@@ -217,7 +230,7 @@ fun CharacterImportContent(
                 Button(
                     onClick = {
                         if (passphrase.isBlank()) {
-                            passphraseError = "Enter a passphrase"
+                            passphraseError = passphraseRequiredMsg
                             scope.launch {
                                 haptics.reject()
                                 shakeOffset.shake()
@@ -240,7 +253,7 @@ fun CharacterImportContent(
                                 result.message == "Wrong passphrase"
                             ) {
                                 state = ImportState.PASSPHRASE
-                                passphraseError = "Wrong passphrase"
+                                passphraseError = wrongPassphraseMsg
                                 haptics.reject()
                                 shakeOffset.shake()
                             } else {
@@ -251,7 +264,7 @@ fun CharacterImportContent(
                     modifier = Modifier.fillMaxWidth(),
                     shape = NokoFieldShape,
                 ) {
-                    Text("Decrypt")
+                    Text(stringResource(R.string.import_decrypt))
                 }
             }
         }
@@ -260,12 +273,14 @@ fun CharacterImportContent(
             Column(
                 modifier = modifier.fillMaxSize(),
             ) {
-                val formatLabel = when (format) {
-                    CharacterCodec.CharacterFormat.TAVERN_PNG -> "TavernAI Card"
-                    CharacterCodec.CharacterFormat.CHARACTER_AI_JSON -> "Character.AI"
-                    CharacterCodec.CharacterFormat.NOKC -> "Noko Encrypted"
-                    else -> "Unknown"
-                }
+                val formatLabel = stringResource(
+                    when (format) {
+                        CharacterCodec.CharacterFormat.TAVERN_PNG -> R.string.import_format_tavern
+                        CharacterCodec.CharacterFormat.CHARACTER_AI_JSON -> R.string.import_format_cai
+                        CharacterCodec.CharacterFormat.NOKC -> R.string.import_format_nokc
+                        else -> R.string.import_format_unknown
+                    }
+                )
                 Text(
                     formatLabel,
                     style = MaterialTheme.typography.labelMedium,
@@ -348,7 +363,7 @@ fun CharacterImportContent(
                                     }
                                     if (!char.greetingMessage.isNullOrBlank()) {
                                         Text(
-                                            "Has greeting message",
+                                            stringResource(R.string.import_has_greeting),
                                             style = MaterialTheme.typography.labelSmall,
                                             color = MaterialTheme.colorScheme.primary,
                                         )
@@ -396,10 +411,7 @@ fun CharacterImportContent(
                 ) {
                     Icon(Icons.Filled.Check, contentDescription = null)
                     Spacer(Modifier.size(8.dp))
-                    Text(
-                        if (selectedCount == 1) "Import 1 character"
-                        else "Import $selectedCount characters",
-                    )
+                    Text(androidx.compose.ui.res.pluralStringResource(R.plurals.import_button_count, selectedCount, selectedCount))
                 }
             }
         }
@@ -412,7 +424,7 @@ fun CharacterImportContent(
                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
                     CircularProgressIndicator()
                     Spacer(Modifier.size(16.dp))
-                    Text("Importing...")
+                    Text(stringResource(R.string.import_importing))
                 }
             }
         }
@@ -437,7 +449,7 @@ fun CharacterImportContent(
                         onClick = onBack,
                         shape = NokoFieldShape,
                     ) {
-                        Text("Go back")
+                        Text(stringResource(R.string.common_go_back))
                     }
                 }
             }

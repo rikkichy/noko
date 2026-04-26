@@ -2,6 +2,361 @@
     <!-- Common -->
     <string name="common_back">返回</string>
     <string name="common_cancel">取消</string>
+    <string name="common_save">保存</string>
+    <string name="common_delete">删除</string>
+    <string name="common_close">关闭</string>
+    <string name="common_next">下一步</string>
+    <string name="common_skip">跳过</string>
+    <string name="common_continue">继续</string>
+    <string name="common_create">创建</string>
+    <string name="common_import">导入</string>
+    <string name="common_retry">重试</string>
+    <string name="common_clear">清除</string>
+    <string name="common_more">更多</string>
+    <string name="common_add">添加</string>
+    <string name="common_export">导出</string>
+    <string name="common_selected">已选择</string>
+    <string name="common_undone">此操作无法撤销。</string>
+    <string name="common_you">你</string>
+    <string name="common_assistant">助手</string>
+    <string name="common_ai">AI</string>
+    <string name="common_no_persona">无人格</string>
+    <string name="common_go_back">返回</string>
+    <string name="common_cancel_selection">取消选择</string>
+    <string name="common_search">搜索…</string>
+
+    <!-- HomeScreen -->
+    <string-array name="home_greetings_morning">
+        <item>早上好~</item>
+        <item>起床来角色扮演吧</item>
+        <item>想你了..</item>
+    </string-array>
+    <string-array name="home_greetings_afternoon">
+        <item>下午好~</item>
+        <item>冒险等着你</item>
+        <item>新的剧情线？</item>
+    </string-array>
+    <string-array name="home_greetings_evening">
+        <item>晚间氛围~</item>
+        <item>惬意时光</item>
+        <item>金色故事</item>
+    </string-array>
+    <string-array name="home_greetings_night">
+        <item>深夜了~</item>
+        <item>睡不着？</item>
+        <item>*睡着*</item>
+        <item>嘘..</item>
+    </string-array>
+    <string name="home_selected_count">已选择 <xliff:g id="count" example="3">%1$d</xliff:g> 项</string>
+    <string name="home_pin_count">置顶 <xliff:g id="count" example="3">%1$d</xliff:g> 项</string>
+    <string name="home_delete_count">删除 <xliff:g id="count" example="3">%1$d</xliff:g> 项</string>
+    <string name="home_new_chat">新对话</string>
+    <string name="home_secret_chat">秘密对话</string>
+    <string name="home_search_placeholder">搜索对话..</string>
+    <string name="home_recent">最近</string>
+    <string name="home_no_chats_found">未找到对话</string>
+    <plurals name="home_results_count">
+        <item quantity="other">%d 个结果</item>
+    </plurals>
+    <plurals name="home_delete_chats_title">
+        <item quantity="other">删除 %d 个对话？</item>
+    </plurals>
+
+    <!-- ChatScreen -->
+    <string-array name="chat_placeholder_generic">
+        <item>消息</item>
+        <item>写点什么...</item>
+        <item>接下来会发生什么？</item>
+        <item>说点什么...</item>
+    </string-array>
+    <string-array name="chat_placeholder_persona">
+        <item>以 %1$s 的身份说点什么</item>
+        <item>用 %1$s 的口吻聊聊</item>
+        <item>以 %1$s 的身份写...</item>
+        <item>%1$s 在做什么？</item>
+        <item>用 %1$s 的口吻说...</item>
+        <item>%1$s 说...</item>
+        <item>以 %1$s 的身份发言...</item>
+        <item>用 %1$s 的口吻输入...</item>
+    </string-array>
+    <string-array name="chat_notification_titles">
+        <item>%1$s 回复了你！</item>
+        <item>%1$s 答复你了！</item>
+        <item>%1$s 已回应！</item>
+        <item>%1$s 回信了！</item>
+    </string-array>
+    <string name="chat_tap_to_select_character">点击以选择角色</string>
+    <string name="chat_secret_label">秘密对话</string>
+    <string name="chat_menu_new_chat">新对话</string>
+    <string name="chat_menu_chat_info">对话信息</string>
+    <string name="chat_edit_title">编辑消息</string>
+    <string name="chat_send">发送</string>
+    <string name="chat_stop">停止</string>
+    <string name="chat_select_character">选择角色</string>
+    <string name="chat_select_persona">选择人格</string>
+    <string name="chat_tip_pick_model">在 设置 → 配置 中选择模型。</string>
+    <string name="chat_tip_context_unknown">上下文长度未知。请重新选择模型以获取。</string>
+    <string name="chat_tip_context_full">上下文已使用 <xliff:g id="percent" example="80">%1$d</xliff:g>%%。建议开启新对话。</string>
+    <string name="chat_tip_no_persona">未选择人格 — 添加一个以获得更具个性的回复。</string>
+    <string name="chat_tip_guard_blocks">NokoGuard 已介入 <xliff:g id="count" example="3">%1$d</xliff:g> 次。调整预设可能会有帮助。</string>
+    <string name="chat_tip_kickoff">说点什么来开始角色扮演吧！</string>
+    <string name="chat_info_title">对话信息</string>
+    <string name="chat_info_context_usage">上下文使用</string>
+    <string name="chat_info_token_estimate_help">Token 数为粗略估算（每 token 约 4 字符）。</string>
+    <string name="chat_info_messages">消息</string>
+    <string name="chat_info_guards">拦截</string>
+    <string name="chat_info_stops">停止</string>
+    <string name="chat_info_setup">配置</string>
+    <string name="chat_info_model">模型</string>
+    <string name="chat_info_provider">提供商</string>
+    <string name="chat_info_preset">预设</string>
+    <string name="chat_info_mode">模式</string>
+    <string name="chat_info_tips">提示</string>
+    <string name="chat_participants_two"><xliff:g id="first" example="Alice">%1$s</xliff:g> 与 <xliff:g id="second" example="Bob">%2$s</xliff:g></string>
+    <string name="chat_participants_overflow"><xliff:g id="first" example="Alice">%1$s</xliff:g>、<xliff:g id="second" example="Bob">%2$s</xliff:g> 等 <xliff:g id="more" example="3">%3$d</xliff:g> 人</string>
+
+    <!-- SettingsScreen -->
+    <string name="settings_title">设置</string>
+    <string name="settings_section_personas">人格与角色</string>
+    <string name="settings_personas">人格</string>
+    <string name="settings_personas_desc">你的角色扮演身份</string>
+    <string name="settings_characters">角色</string>
+    <string name="settings_characters_desc">AI 角色档案</string>
+    <string name="settings_section_configuration">配置</string>
+    <string name="settings_provider">提供商</string>
+    <string name="settings_api_key">API 密钥</string>
+    <string name="settings_use_another_key">使用其他密钥</string>
+    <string name="settings_testing">测试中…</string>
+    <string name="settings_model">模型</string>
+    <string name="settings_tap_to_select">点击以选择</string>
+    <string name="settings_prompt_editor">提示词编辑器</string>
+    <string name="settings_prompt_editor_desc">调整角色行为方式</string>
+    <string name="settings_section_appearance">外观</string>
+    <string name="settings_amoled">AMOLED 模式</string>
+    <string name="settings_amoled_desc">在深色主题下使用纯黑背景。</string>
+    <string name="settings_amoled_desc_disabled">仅在深色主题下可用。</string>
+    <string name="settings_show_avatars">显示头像</string>
+    <string name="settings_show_avatars_desc">关闭后聊天中将隐藏头像。</string>
+    <string name="settings_show_names">显示名称</string>
+    <string name="settings_show_names_desc">关闭后聊天中将不显示名称。</string>
+    <string name="settings_reduce_motion">减少动效</string>
+    <string name="settings_reduce_motion_desc">禁用应用中的全部动画。</string>
+    <string name="settings_section_advanced">高级</string>
+    <string name="settings_noko_guard">NokoGuard</string>
+    <string name="settings_noko_guard_desc">中断冒充你的人格、滥用表情符号或切换语言的 AI 回复。</string>
+    <string name="settings_noko_polkit">NokoPolkit</string>
+    <string name="settings_noko_polkit_desc">调整聊天和应用的行为</string>
+    <string name="settings_version">Noko <xliff:g id="version" example="0.10.0">%1$s</xliff:g></string>
+    <string name="settings_credits">由 Rikkichy 用 🧠 制作</string>
+
+    <!-- OnboardingScreen -->
+    <string name="onboarding_title_provider">Noko</string>
+    <string name="onboarding_title_api_key">API 密钥</string>
+    <string name="onboarding_title_select_model">选择模型</string>
+    <string name="onboarding_title_persona">创建你的人格</string>
+    <string name="onboarding_title_character">创建角色</string>
+    <string name="onboarding_title_import_character">导入角色</string>
+    <string name="onboarding_welcome">欢迎！</string>
+    <string name="onboarding_welcome_desc">选择你的 AI 模型由谁托管。</string>
+    <string name="onboarding_debug_skip">(Debug) SKIP_ONBOARDING</string>
+    <string name="onboarding_api_key_desc">输入你的 <xliff:g id="provider" example="OpenRouter">%1$s</xliff:g> API 密钥以开始。</string>
+    <string name="onboarding_checking">检查中…</string>
+    <string name="onboarding_create_openrouter_key">创建 OpenRouter API 密钥</string>
+    <string name="onboarding_persona_desc">这是 AI 认识你的方式。</string>
+    <string name="onboarding_persona_name_placeholder">你的人格名…</string>
+    <string name="onboarding_character_desc">创建一个让 AI 扮演的角色。</string>
+    <string name="onboarding_get_started">开始使用</string>
+    <string name="onboarding_import_character">导入角色</string>
+    <string name="onboarding_no_greeting_title">确定吗？</string>
+    <string name="onboarding_no_greeting_desc">问候语能定下风格，让你和 AI 角色都更容易沉浸到角色扮演中。</string>
+
+    <!-- AiSettingsScreen -->
+    <string name="ai_settings_title">AI 设置</string>
+    <string name="ai_settings_preset">预设</string>
+    <string name="ai_settings_built_in">内置</string>
+    <string name="ai_settings_new_preset">新建预设</string>
+    <string name="ai_settings_duplicate_preset">复制预设</string>
+    <string name="ai_settings_delete_preset">删除预设</string>
+    <string name="ai_settings_built_in_info">内置预设为只读。复制后可自定义。</string>
+    <string name="ai_settings_generation_params">生成参数</string>
+    <string name="ai_settings_param_temperature">温度</string>
+    <string name="ai_settings_param_top_p">Top P</string>
+    <string name="ai_settings_param_top_k">Top K</string>
+    <string name="ai_settings_param_max_tokens">最大 token 数</string>
+    <string name="ai_settings_param_freq_penalty">频率惩罚</string>
+    <string name="ai_settings_param_presence_penalty">存在惩罚</string>
+    <string name="ai_settings_advanced">高级</string>
+    <string name="ai_settings_continue_nudge">续写提示</string>
+    <string name="ai_settings_continue_nudge_desc">当你点击"发送"但内容为空时，发送此提示让 AI 续写回复。</string>
+    <string name="ai_settings_prompt_template">提示词模板</string>
+    <string name="ai_settings_new_preset_title">新建预设</string>
+    <string name="ai_settings_name">名称</string>
+    <string name="ai_settings_delete_preset_title">删除"<xliff:g id="preset" example="Creative RP">%1$s</xliff:g>"？</string>
+    <string name="ai_settings_section_main_prompt">主提示词</string>
+    <string name="ai_settings_section_persona_description">人格描述</string>
+    <string name="ai_settings_section_character_description">角色描述</string>
+    <string name="ai_settings_section_chat_history">聊天历史</string>
+    <string name="ai_settings_no_persona_selected">未选择人格</string>
+    <string name="ai_settings_no_character_selected">未选择角色</string>
+    <string name="ai_settings_chat_history_inserted">聊天消息将插入到这里</string>
+
+    <!-- ModelListScreen -->
+    <string name="model_list_title">选择模型</string>
+    <string name="model_list_no_api_key">请先设置 API 密钥</string>
+    <string name="model_list_no_provider_url">请先设置提供商 URL</string>
+    <string name="model_list_search">搜索模型…</string>
+    <string name="model_list_ctx"><xliff:g id="thousands" example="32">%1$d</xliff:g>k 上下文</string>
+    <string name="model_list_price">$<xliff:g id="price" example="0.50">%1$s</xliff:g>/M 输入</string>
+
+    <!-- ProviderListScreen -->
+    <string name="provider_list_title">API 提供商</string>
+    <string name="provider_list_desc">选择你的 AI 模型由谁托管。</string>
+
+    <!-- PersonaListScreen -->
+    <string name="persona_list_title_personas">人格</string>
+    <string name="persona_list_title_characters">角色</string>
+    <string name="persona_list_export_count">导出 <xliff:g id="count" example="3">%1$d</xliff:g> 项</string>
+    <string name="persona_list_export_all">全部导出</string>
+    <string name="persona_list_delete_all">全部删除</string>
+    <string name="persona_list_search_personas">搜索人格..</string>
+    <string name="persona_list_search_characters">搜索角色..</string>
+    <string name="persona_list_empty_personas">暂无人格</string>
+    <string name="persona_list_empty_characters">暂无角色</string>
+    <string name="persona_list_delete_one_title">删除 <xliff:g id="name" example="Alice">%1$s</xliff:g>？</string>
+    <string name="persona_list_delete_all_title">哇..等等。</string>
+    <plurals name="persona_list_delete_characters_title">
+        <item quantity="other">删除 %d 个角色？</item>
+    </plurals>
+    <string name="persona_list_bulk_delete_pre">你真的确定吗？\n你即将\n</string>
+    <string name="persona_list_bulk_delete_phrase">删除全部 <xliff:g id="count" example="6">%1$d</xliff:g> 个角色</string>
+    <string name="persona_list_bulk_delete_post">\n这些是你收集和创建的全部角色。\n此操作无法撤销。</string>
+    <string name="persona_list_export_biometric_title_one">导出角色</string>
+    <string name="persona_list_export_biometric_title_count">导出 <xliff:g id="count" example="3">%1$d</xliff:g> 个角色</string>
+    <string name="persona_list_export_biometric_subtitle">验证身份以进行导出</string>
+    <plurals name="persona_list_chats_count">
+        <item quantity="other">%d 个对话</item>
+    </plurals>
+
+    <!-- PersonaEditScreen -->
+    <string name="persona_edit_title_new_persona">新建人格</string>
+    <string name="persona_edit_title_edit_persona">编辑人格</string>
+    <string name="persona_edit_title_new_character">新建角色</string>
+    <string name="persona_edit_title_edit_character">编辑角色</string>
+
+    <!-- CharacterImportScreen -->
+    <string name="import_title_detecting">检测中…</string>
+    <string name="import_title_decrypt">解密角色</string>
+    <string name="import_title_import_one">导入角色</string>
+    <string name="import_title_import_count">导入角色 (<xliff:g id="selected" example="2">%1$d</xliff:g>/<xliff:g id="total" example="5">%2$d</xliff:g>)</string>
+    <string name="import_title_failed">导入失败</string>
+    <string name="import_unrecognized">无法识别的文件格式</string>
+    <string name="import_passphrase_prompt">输入密码以解密此文件。</string>
+    <string name="import_passphrase">密码</string>
+    <string name="import_passphrase_required">请输入密码</string>
+    <string name="import_passphrase_wrong">密码错误</string>
+    <string name="import_decrypt">解密</string>
+    <string name="import_format_tavern">TavernAI 角色卡</string>
+    <string name="import_format_cai">Character.AI</string>
+    <string name="import_format_nokc">Noko 加密</string>
+    <string name="import_format_unknown">未知</string>
+    <string name="import_has_greeting">含问候消息</string>
+    <plurals name="import_button_count">
+        <item quantity="other">导入 %d 个角色</item>
+    </plurals>
+    <string name="import_importing">导入中…</string>
+
+    <!-- BiometricAuthScreen -->
+    <string name="biometric_tap_to_unlock">点击以解锁</string>
+    <string name="biometric_tap_to_retry">点击以重试</string>
+    <string name="biometric_prompt_title">解锁 Noko</string>
+    <string name="biometric_prompt_subtitle">验证身份以访问数据</string>
+    <string name="biometric_unavailable_title">生物识别不可用</string>
+    <string name="biometric_unavailable_desc">生物识别身份验证已启用，但此设备已不再支持。可能是因为系统设置中已删除生物识别数据。锁已被禁用。</string>
+
+    <!-- CountdownDeleteDialog -->
+    <string name="countdown_delete_pending">删除 (<xliff:g id="seconds" example="4">%1$d</xliff:g>)</string>
+
+    <!-- DidYouKnowCard -->
+    <string-array name="did_you_know_titles">
+        <item>你知道吗？</item>
+        <item>有趣的事..</item>
+        <item>趣闻一则！</item>
+        <item>顺便说一句..</item>
+        <item>嗯..</item>
+    </string-array>
+    <string-array name="did_you_know_trivia">
+        <item>互联网角色扮演兴起于 1990 年代初，那时人们开始用文字互相聊天。如今早已大不相同了..</item>
+        <item>回复越长越有结构，AI 越不容易冒充你。</item>
+        <item>详细的人格描述能帮助 AI 理解你的写作风格。</item>
+        <item>在消息中使用 *动作描写* 能帮 AI 区分叙述和对白。</item>
+        <item>NokoGuard 检测 AI 幻觉的效果非常好。</item>
+        <item>秘密对话不会保存到历史记录。顺便提一下..</item>
+        <item>较短的系统提示词往往能带来更具创造力的 AI 回复。</item>
+        <item>线上「角色扮演」一词可追溯到 1990 年代早期的 IRC 频道。</item>
+    </string-array>
+    <plurals name="did_you_know_chats_with">
+        <item quantity="other">你与 %2$s 有 %1$d 个对话</item>
+    </plurals>
+    <plurals name="did_you_know_messages_as">
+        <item quantity="other">你以 %2$s 的身份发送了 %1$d 条消息</item>
+    </plurals>
+
+    <!-- ExportPassphraseDialog -->
+    <string name="export_dialog_title_one">导出为 .nokc</string>
+    <string name="export_dialog_title_count">将 <xliff:g id="count" example="3">%1$d</xliff:g> 个角色导出为 .nokc</string>
+    <string name="export_dialog_desc_one">设置密码以加密此角色。</string>
+    <string name="export_dialog_desc_count">设置密码以加密 <xliff:g id="count" example="3">%1$d</xliff:g> 个角色。</string>
+    <string name="export_dialog_passphrase">密码</string>
+    <string name="export_dialog_confirm_passphrase">确认密码</string>
+    <string name="export_dialog_min_length">至少 8 个字符</string>
+    <string name="export_dialog_mismatch">两次输入的密码不一致</string>
+
+    <!-- ImageCropOverlay -->
+    <string name="crop_action">裁剪</string>
+
+    <!-- PersonaFormFields -->
+    <string name="form_avatar_hint">点击以设置头像</string>
+    <string name="form_avatar_content_desc">头像</string>
+    <string name="form_add_avatar_content_desc">添加头像</string>
+    <string name="form_name">名称</string>
+    <string name="form_name_placeholder_persona">人格名…</string>
+    <string name="form_name_placeholder_character">角色名…</string>
+    <string name="form_name_required">名称不能为空</string>
+    <string name="form_description">描述</string>
+    <string name="form_description_placeholder_persona">关于你的人格的简短描述…</string>
+    <string name="form_description_placeholder_character">描述 AI 角色的性格和特点…</string>
+    <string name="form_description_placeholder_persona_default">描述你的人格…</string>
+    <string name="form_description_placeholder_character_default">描述这个角色…</string>
+    <string name="form_description_required">描述不能为空</string>
+    <string name="form_personality">性格</string>
+    <string name="form_personality_placeholder">特征、说话方式、习惯…</string>
+    <string name="form_scenario">场景</string>
+    <string name="form_scenario_placeholder">对话发生的环境和背景…</string>
+    <string name="form_greeting">问候消息</string>
+    <string name="form_greeting_placeholder">开启对话时的第一条消息…</string>
+
+    <!-- PersonaPickerSheet -->
+    <string name="picker_search_placeholder">搜索…</string>
+    <string name="picker_empty">还没有任何条目。请在设置中创建。</string>
+
+    <!-- ProviderCard -->
+    <string name="provider_card_custom">自定义</string>
+    <string name="provider_card_custom_desc">输入你自己的 OpenAI 兼容端点。</string>
+    <string name="provider_card_base_url">基础 URL</string>
+    <string name="provider_card_base_url_placeholder">https://api.example.com/v1/</string>
+    <string name="provider_card_url_validation">使用 https://（本地网络可使用 http://）</string>
+    <string name="provider_card_requires_api_key">需要 API 密钥</string>
+    <string name="provider_card_recommended">推荐</string>
+    <string name="provider_card_scan_no_results">网络中未找到 <xliff:g id="provider" example="Ollama">%1$s</xliff:g> 实例</string>
+    <string name="provider_card_scan_failed">扫描失败：<xliff:g id="error" example="timeout">%1$s</xliff:g></string>
+    <string name="provider_card_scanning">扫描中…</string>
+    <string name="provider_card_scan">扫描网络</string>
+    <plurals name="provider_card_models_count">
+        <item quantity="other">%d 个模型</item>
+    </plurals>
+
+    <!-- ProviderListContent -->
+    <string name="provider_list_legacy">遗留</string>
 
     <!-- NokoPolkit screen -->
     <string name="polkit_title">NokoPolkit</string>

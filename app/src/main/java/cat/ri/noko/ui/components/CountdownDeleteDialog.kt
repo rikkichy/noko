@@ -10,6 +10,8 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.res.stringResource
+import cat.ri.noko.R
 import kotlinx.coroutines.delay
 
 @Composable
@@ -41,7 +43,8 @@ fun CountdownDeleteDialog(
                 onClick = onConfirm,
             ) {
                 Text(
-                    if (countdown > 0) "Delete ($countdown)" else "Delete",
+                    if (countdown > 0) stringResource(R.string.countdown_delete_pending, countdown)
+                    else stringResource(R.string.common_delete),
                     color = if (countdown == 0) MaterialTheme.colorScheme.error
                         else MaterialTheme.colorScheme.onSurfaceVariant,
                 )
@@ -49,7 +52,7 @@ fun CountdownDeleteDialog(
         },
         dismissButton = {
             TextButton(onClick = onDismiss) {
-                Text("Cancel")
+                Text(stringResource(R.string.common_cancel))
             }
         },
     )

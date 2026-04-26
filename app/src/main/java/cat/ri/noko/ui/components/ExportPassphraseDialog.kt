@@ -17,9 +17,11 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
+import cat.ri.noko.R
 import cat.ri.noko.ui.theme.NokoFieldShape
 import cat.ri.noko.ui.util.rememberNokoHaptics
 import cat.ri.noko.ui.util.shake
@@ -37,20 +39,22 @@ fun ExportPassphraseDialog(
     val shakeOffset = remember { Animatable(0f) }
     val scope = rememberCoroutineScope()
     val haptics = rememberNokoHaptics()
+    val errorMinLength = stringResource(R.string.export_dialog_min_length)
+    val errorMismatch = stringResource(R.string.export_dialog_mismatch)
 
     AlertDialog(
         onDismissRequest = onDismiss,
         title = {
             Text(
-                if (exportCount == 1) "Export as .nokc"
-                else "Export $exportCount characters as .nokc",
+                if (exportCount == 1) stringResource(R.string.export_dialog_title_one)
+                else stringResource(R.string.export_dialog_title_count, exportCount),
             )
         },
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                 Text(
-                    if (exportCount == 1) "Set a passphrase to encrypt this character."
-                    else "Set a passphrase to encrypt ${exportCount} characters.",
+                    if (exportCount == 1) stringResource(R.string.export_dialog_desc_one)
+                    else stringResource(R.string.export_dialog_desc_count, exportCount),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
@@ -62,7 +66,7 @@ fun ExportPassphraseDialog(
                             error = null
                         }
                     },
-                    label = { Text("Passphrase") },
+                    label = { Text(stringResource(R.string.export_dialog_passphrase)) },
                     visualTransformation = PasswordVisualTransformation(),
                     singleLine = true,
                     isError = error != null,
@@ -79,7 +83,7 @@ fun ExportPassphraseDialog(
                             error = null
                         }
                     },
-                    label = { Text("Confirm passphrase") },
+                    label = { Text(stringResource(R.string.export_dialog_confirm_passphrase)) },
                     visualTransformation = PasswordVisualTransformation(),
                     singleLine = true,
                     isError = error != null,
@@ -96,14 +100,14 @@ fun ExportPassphraseDialog(
                 onClick = {
                     when {
                         passphrase.length < 8 -> {
-                            error = "At least 8 characters"
+                            error = errorMinLength
                             scope.launch {
                                 haptics.reject()
                                 shakeOffset.shake()
                             }
                         }
                         passphrase != passphraseConfirm -> {
-                            error = "Passphrases don't match"
+                            error = errorMismatch
                             scope.launch {
                                 haptics.reject()
                                 shakeOffset.shake()
@@ -115,12 +119,12 @@ fun ExportPassphraseDialog(
                     }
                 },
             ) {
-                Text("Export")
+                Text(stringResource(R.string.common_export))
             }
         },
         dismissButton = {
             TextButton(onClick = onDismiss) {
-                Text("Cancel")
+                Text(stringResource(R.string.common_cancel))
             }
         },
     )

@@ -49,8 +49,10 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import cat.ri.noko.R
 import cat.ri.noko.core.SettingsManager
 import cat.ri.noko.model.PersonaEntry
 import cat.ri.noko.model.PromptPreset
@@ -115,10 +117,10 @@ fun AiSettingsScreen(onBack: () -> Unit) {
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("AI Settings") },
+                title = { Text(stringResource(R.string.ai_settings_title)) },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(R.string.common_back))
                     }
                 },
                 actions = {
@@ -130,7 +132,7 @@ fun AiSettingsScreen(onBack: () -> Unit) {
                                 onBack()
                             }
                         }) {
-                            Icon(Icons.Filled.Check, contentDescription = "Save")
+                            Icon(Icons.Filled.Check, contentDescription = stringResource(R.string.common_save))
                         }
                     }
                 },
@@ -158,7 +160,7 @@ fun AiSettingsScreen(onBack: () -> Unit) {
                         .padding(16.dp),
                     verticalArrangement = Arrangement.spacedBy(8.dp),
                 ) {
-                    Text("Preset", style = MaterialTheme.typography.titleMedium)
+                    Text(stringResource(R.string.ai_settings_preset), style = MaterialTheme.typography.titleMedium)
 
                     Row(
                         modifier = Modifier.fillMaxWidth(),
@@ -201,7 +203,7 @@ fun AiSettingsScreen(onBack: () -> Unit) {
                                                 if (preset.builtIn) {
                                                     Spacer(Modifier.size(8.dp))
                                                     Text(
-                                                        "Built-in",
+                                                        stringResource(R.string.ai_settings_built_in),
                                                         style = MaterialTheme.typography.labelSmall,
                                                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                                                     )
@@ -225,7 +227,7 @@ fun AiSettingsScreen(onBack: () -> Unit) {
                             haptics.tap()
                             showNewPresetDialog = true
                         }) {
-                            Icon(Icons.Filled.Add, contentDescription = "New preset")
+                            Icon(Icons.Filled.Add, contentDescription = stringResource(R.string.ai_settings_new_preset))
                         }
                         IconButton(onClick = {
                             haptics.tap()
@@ -236,7 +238,7 @@ fun AiSettingsScreen(onBack: () -> Unit) {
                                 SettingsManager.setSelectedPresetId(dup.id)
                             }
                         }) {
-                            Icon(Icons.Filled.ContentCopy, contentDescription = "Duplicate preset")
+                            Icon(Icons.Filled.ContentCopy, contentDescription = stringResource(R.string.ai_settings_duplicate_preset))
                         }
                         if (!isBuiltIn) {
                             IconButton(onClick = {
@@ -245,7 +247,7 @@ fun AiSettingsScreen(onBack: () -> Unit) {
                             }) {
                                 Icon(
                                     Icons.Filled.Delete,
-                                    contentDescription = "Delete preset",
+                                    contentDescription = stringResource(R.string.ai_settings_delete_preset),
                                     tint = MaterialTheme.colorScheme.error,
                                 )
                             }
@@ -254,7 +256,7 @@ fun AiSettingsScreen(onBack: () -> Unit) {
 
                     if (isBuiltIn) {
                         Text(
-                            "Built-in presets are read-only. Duplicate to customize.",
+                            stringResource(R.string.ai_settings_built_in_info),
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                         )
@@ -274,11 +276,11 @@ fun AiSettingsScreen(onBack: () -> Unit) {
                         .alpha(if (isBuiltIn) 0.6f else 1f),
                     verticalArrangement = Arrangement.spacedBy(4.dp),
                 ) {
-                    Text("Generation Parameters", style = MaterialTheme.typography.titleMedium)
+                    Text(stringResource(R.string.ai_settings_generation_params), style = MaterialTheme.typography.titleMedium)
                     Spacer(Modifier.size(4.dp))
 
                     ParamSlider(
-                        label = "Temperature",
+                        label = stringResource(R.string.ai_settings_param_temperature),
                         value = temperature,
                         range = 0f..2f,
                         steps = 39,
@@ -288,7 +290,7 @@ fun AiSettingsScreen(onBack: () -> Unit) {
                         onChange = { temperature = it },
                     )
                     ParamSlider(
-                        label = "Top P",
+                        label = stringResource(R.string.ai_settings_param_top_p),
                         value = topP,
                         range = 0f..1f,
                         steps = 19,
@@ -298,7 +300,7 @@ fun AiSettingsScreen(onBack: () -> Unit) {
                         onChange = { topP = it },
                     )
                     ParamIntSlider(
-                        label = "Top K",
+                        label = stringResource(R.string.ai_settings_param_top_k),
                         value = topK,
                         range = 0f..200f,
                         steps = 199,
@@ -307,7 +309,7 @@ fun AiSettingsScreen(onBack: () -> Unit) {
                         onChange = { topK = it },
                     )
                     ParamIntSlider(
-                        label = "Max Tokens",
+                        label = stringResource(R.string.ai_settings_param_max_tokens),
                         value = maxTokens,
                         range = 0f..32768f,
                         steps = 511,
@@ -316,7 +318,7 @@ fun AiSettingsScreen(onBack: () -> Unit) {
                         onChange = { maxTokens = it },
                     )
                     ParamSlider(
-                        label = "Frequency Penalty",
+                        label = stringResource(R.string.ai_settings_param_freq_penalty),
                         value = frequencyPenalty,
                         range = -2f..2f,
                         steps = 79,
@@ -326,7 +328,7 @@ fun AiSettingsScreen(onBack: () -> Unit) {
                         onChange = { frequencyPenalty = it },
                     )
                     ParamSlider(
-                        label = "Presence Penalty",
+                        label = stringResource(R.string.ai_settings_param_presence_penalty),
                         value = presencePenalty,
                         range = -2f..2f,
                         steps = 79,
@@ -350,13 +352,13 @@ fun AiSettingsScreen(onBack: () -> Unit) {
                         .alpha(if (isBuiltIn) 0.6f else 1f),
                     verticalArrangement = Arrangement.spacedBy(8.dp),
                 ) {
-                    Text("Advanced", style = MaterialTheme.typography.titleMedium)
+                    Text(stringResource(R.string.ai_settings_advanced), style = MaterialTheme.typography.titleMedium)
                     Text(
-                        "Continue nudge prompt",
+                        stringResource(R.string.ai_settings_continue_nudge),
                         style = MaterialTheme.typography.bodyMedium,
                     )
                     Text(
-                        "Sent when you tap Send with an empty message to continue the AI's response.",
+                        stringResource(R.string.ai_settings_continue_nudge_desc),
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
@@ -383,7 +385,7 @@ fun AiSettingsScreen(onBack: () -> Unit) {
                         .alpha(if (isBuiltIn) 0.6f else 1f),
                     verticalArrangement = Arrangement.spacedBy(12.dp),
                 ) {
-                    Text("Prompt Template", style = MaterialTheme.typography.titleMedium)
+                    Text(stringResource(R.string.ai_settings_prompt_template), style = MaterialTheme.typography.titleMedium)
 
                     sections.forEachIndexed { index, section ->
                         PromptSectionCard(
@@ -413,12 +415,12 @@ fun AiSettingsScreen(onBack: () -> Unit) {
         var name by remember { mutableStateOf("") }
         AlertDialog(
             onDismissRequest = { showNewPresetDialog = false },
-            title = { Text("New Preset") },
+            title = { Text(stringResource(R.string.ai_settings_new_preset_title)) },
             text = {
                 OutlinedTextField(
                     value = name,
                     onValueChange = { if (it.length <= 50) name = it },
-                    label = { Text("Name") },
+                    label = { Text(stringResource(R.string.ai_settings_name)) },
                     singleLine = true,
                     shape = NokoFieldShape,
                     modifier = Modifier.fillMaxWidth(),
@@ -441,12 +443,12 @@ fun AiSettingsScreen(onBack: () -> Unit) {
                         showNewPresetDialog = false
                     },
                 ) {
-                    Text("Create")
+                    Text(stringResource(R.string.common_create))
                 }
             },
             dismissButton = {
                 TextButton(onClick = { showNewPresetDialog = false }) {
-                    Text("Cancel")
+                    Text(stringResource(R.string.common_cancel))
                 }
             },
         )
@@ -455,8 +457,8 @@ fun AiSettingsScreen(onBack: () -> Unit) {
     if (showDeleteDialog) {
         AlertDialog(
             onDismissRequest = { showDeleteDialog = false },
-            title = { Text("Delete ${activePreset.name}?") },
-            text = { Text("This cannot be undone.") },
+            title = { Text(stringResource(R.string.ai_settings_delete_preset_title, activePreset.name)) },
+            text = { Text(stringResource(R.string.common_undone)) },
             confirmButton = {
                 TextButton(onClick = {
                     haptics.reject()
@@ -467,12 +469,12 @@ fun AiSettingsScreen(onBack: () -> Unit) {
                     }
                     showDeleteDialog = false
                 }) {
-                    Text("Delete", color = MaterialTheme.colorScheme.error)
+                    Text(stringResource(R.string.common_delete), color = MaterialTheme.colorScheme.error)
                 }
             },
             dismissButton = {
                 TextButton(onClick = { showDeleteDialog = false }) {
-                    Text("Cancel")
+                    Text(stringResource(R.string.common_cancel))
                 }
             },
         )
@@ -594,12 +596,14 @@ private fun PromptSectionCard(
             horizontalArrangement = Arrangement.SpaceBetween,
         ) {
             Text(
-                text = when (section.type) {
-                    PromptSectionType.MAIN_PROMPT -> "Main Prompt"
-                    PromptSectionType.PERSONA_DESCRIPTION -> "Persona Description"
-                    PromptSectionType.CHARACTER_DESCRIPTION -> "Character Description"
-                    PromptSectionType.CHAT_HISTORY -> "Chat History"
-                },
+                text = stringResource(
+                    when (section.type) {
+                        PromptSectionType.MAIN_PROMPT -> R.string.ai_settings_section_main_prompt
+                        PromptSectionType.PERSONA_DESCRIPTION -> R.string.ai_settings_section_persona_description
+                        PromptSectionType.CHARACTER_DESCRIPTION -> R.string.ai_settings_section_character_description
+                        PromptSectionType.CHAT_HISTORY -> R.string.ai_settings_section_chat_history
+                    }
+                ),
                 style = MaterialTheme.typography.bodyMedium,
             )
             if (section.type != PromptSectionType.CHAT_HISTORY) {
@@ -625,7 +629,7 @@ private fun PromptSectionCard(
             PromptSectionType.PERSONA_DESCRIPTION -> {
                 Text(
                     text = persona?.let { "${it.name}: ${it.description}" }
-                        ?: "No persona selected",
+                        ?: stringResource(R.string.ai_settings_no_persona_selected),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     maxLines = 3,
@@ -635,7 +639,7 @@ private fun PromptSectionCard(
             PromptSectionType.CHARACTER_DESCRIPTION -> {
                 Text(
                     text = character?.let { "${it.name}: ${it.description}" }
-                        ?: "No character selected",
+                        ?: stringResource(R.string.ai_settings_no_character_selected),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     maxLines = 3,
@@ -644,7 +648,7 @@ private fun PromptSectionCard(
             }
             PromptSectionType.CHAT_HISTORY -> {
                 Text(
-                    text = "Chat messages will be inserted here",
+                    text = stringResource(R.string.ai_settings_chat_history_inserted),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )

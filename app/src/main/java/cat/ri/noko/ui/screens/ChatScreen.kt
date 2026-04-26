@@ -111,6 +111,9 @@ import cat.ri.noko.core.ChatStorage
 import cat.ri.noko.core.HallucinationDetector
 import cat.ri.noko.core.PromptBuilder
 import cat.ri.noko.core.SettingsManager
+import androidx.compose.ui.res.pluralStringResource
+import androidx.compose.ui.res.stringArrayResource
+import androidx.compose.ui.res.stringResource
 import cat.ri.noko.core.api.ApiClient
 import cat.ri.noko.core.api.StreamEvent
 import cat.ri.noko.model.getProviderById
@@ -142,23 +145,14 @@ private data class Participant(
     val avatarFileName: String?,
 )
 
-private fun randomPlaceholder(personaName: String?): String {
-    if (personaName == null) return listOf(
-        "Message",
-        "Write something...",
-        "What happens next?",
-        "Say something...",
-    ).random()
-    return listOf(
-        "Say something as $personaName",
-        "Yap as $personaName",
-        "Write as $personaName...",
-        "What does $personaName do?",
-        "Speak as $personaName...",
-        "$personaName says...",
-        "Talk as $personaName...",
-        "Type as $personaName...",
-    ).random()
+@Composable
+private fun rememberPlaceholder(personaName: String?): String {
+    val genericPlaceholders = stringArrayResource(R.array.chat_placeholder_generic)
+    val personaPlaceholders = stringArrayResource(R.array.chat_placeholder_persona)
+    return remember(personaName, genericPlaceholders, personaPlaceholders) {
+        if (personaName == null) genericPlaceholders.random()
+        else personaPlaceholders.random().format(personaName)
+    }
 }
 
 private val rpFormats = listOf(
@@ -247,22 +241,23 @@ fun ChatScreen(
         presets.find { it.id == selectedPresetId } ?: presets.first()
     }
 
-    val placeholder = remember(activePersona) {
-        randomPlaceholder(activePersona?.name)
-    }
+    val placeholder = rememberPlaceholder(activePersona?.name)
 
     var editingMessageIdx by remember { mutableStateOf(-1) }
     var editingText by remember { mutableStateOf("") }
     var showStatsSheet by remember { mutableStateOf(false) }
     var activeFormatIdx by remember { mutableStateOf(-1) }
+    val notificationTitleTemplates = stringArrayResource(R.array.chat_notification_titles)
+    val aiFallbackName = stringResource(R.string.common_ai)
 
 
     fun saveCurrentChat() {
         if (isSecretChat) return
         val character = activeCharacter ?: return
         val lastMsg = messages.lastOrNull { !it.isGreeting && it.content.isNotBlank() } ?: return
+        val youFallback = context.getString(R.string.common_you)
         val senderName = lastMsg.senderName ?: when (lastMsg.role) {
-            ChatMessage.Role.USER -> activePersona?.name ?: "You"
+            ChatMessage.Role.USER -> activePersona?.name ?: youFallback
             ChatMessage.Role.ASSISTANT -> character.name
         }
         val cleanContent = lastMsg.content
@@ -496,12 +491,8 @@ fun ChatScreen(
                     val msg = messages[assistantIdx]
                     val isBackground = !ProcessLifecycleOwner.get().lifecycle.currentState.isAtLeast(Lifecycle.State.RESUMED)
                     if (isBackground && msg.content.isNotBlank() && !msg.stoppedByUser && !msg.guardBlocked) {
-                        val titles = listOf(
-                            "${activeCharacter?.name ?: "AI"} replied to you!",
-                            "${activeCharacter?.name ?: "AI"} answered you!",
-                            "${activeCharacter?.name ?: "AI"} responded!",
-                            "${activeCharacter?.name ?: "AI"} wrote back!",
-                        )
+                        val charName = activeCharacter?.name ?: aiFallbackName
+                        val titles = notificationTitleTemplates.map { it.format(charName) }
                         val preview = msg.content.take(100).let { if (msg.content.length > 100) "$it..." else it }
                         val tapIntent = PendingIntent.getActivity(
                             context, currentChatId.hashCode(),
@@ -621,7 +612,7 @@ fun ChatScreen(
                                 )
                             } else {
                                 Text(
-                                    "Tap to select character",
+                                    stringResource(R.string.chat_tap_to_select_character),
                                     style = MaterialTheme.typography.titleMedium,
                                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                                 )
@@ -636,7 +627,7 @@ fun ChatScreen(
                                     )
                                     Spacer(Modifier.width(4.dp))
                                     Text(
-                                        "Secret chat",
+                                        stringResource(R.string.chat_secret_label),
                                         style = MaterialTheme.typography.labelSmall,
                                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                                     )
@@ -653,14 +644,14 @@ fun ChatScreen(
                         haptics.tap()
                         menuOpen = true
                     }) {
-                        Icon(Icons.Filled.MoreVert, contentDescription = "More")
+                        Icon(Icons.Filled.MoreVert, contentDescription = stringResource(R.string.common_more))
                     }
                     NokoDropdown(
                         expanded = menuOpen,
                         onDismissRequest = { menuOpen = false },
                     ) {
                         DropdownMenuItem(
-                            text = { Text("New chat") },
+                            text = { Text(stringResource(R.string.chat_menu_new_chat)) },
                             leadingIcon = { Icon(Icons.Filled.Add, contentDescription = null) },
                             onClick = {
                                 menuOpen = false
@@ -685,7 +676,7 @@ fun ChatScreen(
                             },
                         )
                         DropdownMenuItem(
-                            text = { Text("Chat info") },
+                            text = { Text(stringResource(R.string.chat_menu_chat_info)) },
                             leadingIcon = { Icon(Icons.Outlined.Info, contentDescription = null) },
                             onClick = {
                                 menuOpen = false
@@ -720,7 +711,7 @@ fun ChatScreen(
             if (showTyping) {
                 item(key = "typing_indicator") {
                     TypingIndicator(
-                        characterName = activeCharacter?.name ?: "Assistant",
+                        characterName = activeCharacter?.name ?: stringResource(R.string.common_assistant),
                         avatarFileName = activeCharacter?.avatarFileName,
                         showAvatar = showAvatars,
                         reduceMotion = reduceMotion,
@@ -806,7 +797,7 @@ fun ChatScreen(
         if (editingMessageIdx >= 0) {
             AlertDialog(
                 onDismissRequest = { editingMessageIdx = -1 },
-                title = { Text("Edit message") },
+                title = { Text(stringResource(R.string.chat_edit_title)) },
                 text = {
                     TextField(
                         value = editingText,
@@ -827,12 +818,12 @@ fun ChatScreen(
                             }
                             editingMessageIdx = -1
                         },
-                    ) { Text("Save") }
+                    ) { Text(stringResource(R.string.common_save)) }
                 },
                 dismissButton = {
                     androidx.compose.material3.TextButton(
                         onClick = { editingMessageIdx = -1 },
-                    ) { Text("Cancel") }
+                    ) { Text(stringResource(R.string.common_cancel)) }
                 },
             )
         }
@@ -976,9 +967,9 @@ fun ChatScreen(
                 ),
             ) {
                 if (isGenerating) {
-                    Icon(Icons.Filled.Stop, contentDescription = "Stop")
+                    Icon(Icons.Filled.Stop, contentDescription = stringResource(R.string.chat_stop))
                 } else {
-                    Icon(Icons.AutoMirrored.Filled.Send, contentDescription = "Send")
+                    Icon(Icons.AutoMirrored.Filled.Send, contentDescription = stringResource(R.string.chat_send))
                 }
             }
         }
@@ -987,7 +978,7 @@ fun ChatScreen(
 
     if (showCharacterPicker) {
         PersonaPickerSheet(
-            title = "Select Character",
+            title = stringResource(R.string.chat_select_character),
             entries = characters,
             selectedId = effectiveCharacterId,
             onSelect = { entry ->
@@ -1010,7 +1001,7 @@ fun ChatScreen(
 
     if (showPersonaPicker) {
         PersonaPickerSheet(
-            title = "Select Persona",
+            title = stringResource(R.string.chat_select_persona),
             entries = personas,
             selectedId = selectedPersonaId,
             onSelect = { entry ->
@@ -1047,25 +1038,19 @@ fun ChatScreen(
         }
         val characterParticipant = activeCharacter?.let { Participant(it.name, it.avatarFileName) }
 
+        val tipPickModel = stringResource(R.string.chat_tip_pick_model)
+        val tipContextUnknown = stringResource(R.string.chat_tip_context_unknown)
+        val tipContextFull = stringResource(R.string.chat_tip_context_full, (contextPct * 100).toInt())
+        val tipNoPersona = stringResource(R.string.chat_tip_no_persona)
+        val tipGuardBlocks = stringResource(R.string.chat_tip_guard_blocks, guardBlocks)
+        val tipKickoff = stringResource(R.string.chat_tip_kickoff)
         val tips = buildList {
-            if (modelId.isBlank()) {
-                add("Pick a model in Settings → Configuration.")
-            }
-            if (modelId.isNotBlank() && modelContextLength == 0) {
-                add("Context limit unknown. Re-select your model to populate it.")
-            }
-            if (modelContextLength > 0 && contextPct > 0.8f) {
-                add("Context is ${(contextPct * 100).toInt()}% full. Consider starting a fresh chat.")
-            }
-            if (activePersona == null) {
-                add("No persona selected — add one for more personal replies.")
-            }
-            if (guardBlocks >= 3) {
-                add("NokoGuard stepped in $guardBlocks times. Tweaking your preset may help.")
-            }
-            if (userMsgs == 0 && assistantMsgs <= 1) {
-                add("Say something to kick off the roleplay!")
-            }
+            if (modelId.isBlank()) add(tipPickModel)
+            if (modelId.isNotBlank() && modelContextLength == 0) add(tipContextUnknown)
+            if (modelContextLength > 0 && contextPct > 0.8f) add(tipContextFull)
+            if (activePersona == null) add(tipNoPersona)
+            if (guardBlocks >= 3) add(tipGuardBlocks)
+            if (userMsgs == 0 && assistantMsgs <= 1) add(tipKickoff)
         }
 
         ModalBottomSheet(
@@ -1079,7 +1064,7 @@ fun ChatScreen(
                     .padding(bottom = 32.dp),
                 verticalArrangement = Arrangement.spacedBy(22.dp),
             ) {
-                Text("Chat info", style = MaterialTheme.typography.titleLarge)
+                Text(stringResource(R.string.chat_info_title), style = MaterialTheme.typography.titleLarge)
 
                 Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                     Row(
@@ -1088,7 +1073,7 @@ fun ChatScreen(
                         modifier = Modifier.fillMaxWidth(),
                     ) {
                         Text(
-                            "Context usage",
+                            stringResource(R.string.chat_info_context_usage),
                             style = MaterialTheme.typography.titleSmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                         )
@@ -1108,14 +1093,14 @@ fun ChatScreen(
                         )
                     }
                     Text(
-                        "Token count is a rough estimate (~4 chars per token).",
+                        stringResource(R.string.chat_info_token_estimate_help),
                         style = MaterialTheme.typography.labelSmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
                     )
                 }
 
                 Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                    Text("Messages", style = MaterialTheme.typography.titleSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    Text(stringResource(R.string.chat_info_messages), style = MaterialTheme.typography.titleSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                     if (userParticipants.isNotEmpty() || characterParticipant != null) {
                         ParticipantsCard(userParticipants, characterParticipant)
                     }
@@ -1124,23 +1109,23 @@ fun ChatScreen(
                             horizontalArrangement = Arrangement.spacedBy(12.dp),
                             modifier = Modifier.fillMaxWidth(),
                         ) {
-                            if (guardBlocks > 0) StatTile("Guards", guardBlocks.toString(), Modifier.weight(1f))
-                            if (stoppedCount > 0) StatTile("Stops", stoppedCount.toString(), Modifier.weight(1f))
+                            if (guardBlocks > 0) StatTile(stringResource(R.string.chat_info_guards), guardBlocks.toString(), Modifier.weight(1f))
+                            if (stoppedCount > 0) StatTile(stringResource(R.string.chat_info_stops), stoppedCount.toString(), Modifier.weight(1f))
                         }
                     }
                 }
 
                 Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                    Text("Setup", style = MaterialTheme.typography.titleSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                    InfoRow("Model", modelName.ifBlank { modelId.ifBlank { "Not selected" } })
-                    InfoRow("Provider", provider?.name ?: "Custom")
-                    InfoRow("Preset", activePreset.name)
-                    if (isSecretChat) InfoRow("Mode", "Secret chat")
+                    Text(stringResource(R.string.chat_info_setup), style = MaterialTheme.typography.titleSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    InfoRow(stringResource(R.string.chat_info_model), modelName.ifBlank { modelId.ifBlank { stringResource(R.string.settings_tap_to_select) } })
+                    InfoRow(stringResource(R.string.chat_info_provider), provider?.name ?: stringResource(R.string.provider_card_custom))
+                    InfoRow(stringResource(R.string.chat_info_preset), activePreset.name)
+                    if (isSecretChat) InfoRow(stringResource(R.string.chat_info_mode), stringResource(R.string.chat_secret_label))
                 }
 
                 if (tips.isNotEmpty()) {
                     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                        Text("Tips", style = MaterialTheme.typography.titleSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        Text(stringResource(R.string.chat_info_tips), style = MaterialTheme.typography.titleSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                         tips.forEach { TipCard(it) }
                     }
                 }
@@ -1149,13 +1134,16 @@ fun ChatScreen(
     }
 }
 
+@Composable
 private fun formatUserNames(participants: List<Participant>): String {
-    val names = participants.map { it.name?.takeIf { n -> n.isNotBlank() } ?: "Anonymous" }
+    val anonymous = stringResource(R.string.common_assistant)
+    val noPersona = stringResource(R.string.common_no_persona)
+    val names = participants.map { it.name?.takeIf { n -> n.isNotBlank() } ?: anonymous }
     return when (names.size) {
-        0 -> "No persona"
+        0 -> noPersona
         1 -> names[0]
-        2 -> "${names[0]} & ${names[1]}"
-        else -> "${names[0]}, ${names[1]} and ${names.size - 2} more"
+        2 -> stringResource(R.string.chat_participants_two, names[0], names[1])
+        else -> stringResource(R.string.chat_participants_overflow, names[0], names[1], names.size - 2)
     }
 }
 
@@ -1257,7 +1245,7 @@ private fun ParticipantsCard(
                     overflow = TextOverflow.Ellipsis,
                 )
                 Text(
-                    text = "You",
+                    text = stringResource(R.string.common_you),
                     style = MaterialTheme.typography.labelSmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
@@ -1281,14 +1269,14 @@ private fun ParticipantsCard(
                     ringColor = ringColor,
                 )
                 Text(
-                    text = character?.name?.takeIf { it.isNotBlank() } ?: "No character",
+                    text = character?.name?.takeIf { it.isNotBlank() } ?: stringResource(R.string.common_assistant),
                     style = MaterialTheme.typography.labelLarge,
                     textAlign = TextAlign.Center,
                     maxLines = 2,
                     overflow = TextOverflow.Ellipsis,
                 )
                 Text(
-                    text = "AI",
+                    text = stringResource(R.string.common_ai),
                     style = MaterialTheme.typography.labelSmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )

@@ -51,10 +51,12 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import cat.ri.noko.BuildConfig
+import cat.ri.noko.R
 import cat.ri.noko.core.AvatarStorage
 import cat.ri.noko.core.SettingsManager
 import cat.ri.noko.core.api.ApiClient
@@ -165,19 +167,19 @@ fun OnboardingScreen(onComplete: () -> Unit) {
             when (step) {
                 OnboardingStep.Provider -> {
                     TopAppBar(
-                        title = { Text("Noko") },
+                        title = { Text(stringResource(R.string.onboarding_title_provider)) },
                         colors = nokoTopAppBarColors(),
                     )
                 }
                 OnboardingStep.ApiKey -> {
                     TopAppBar(
-                        title = { Text("API Key") },
+                        title = { Text(stringResource(R.string.onboarding_title_api_key)) },
                         navigationIcon = {
                             IconButton(onClick = {
                                 haptics.tap()
                                 step = OnboardingStep.Provider
                             }) {
-                                Icon(Icons.AutoMirrored.Rounded.ArrowBack, contentDescription = "Back")
+                                Icon(Icons.AutoMirrored.Rounded.ArrowBack, contentDescription = stringResource(R.string.common_back))
                             }
                         },
                         colors = nokoTopAppBarColors(),
@@ -185,13 +187,13 @@ fun OnboardingScreen(onComplete: () -> Unit) {
                 }
                 OnboardingStep.Model -> {
                     TopAppBar(
-                        title = { Text("Select a model") },
+                        title = { Text(stringResource(R.string.onboarding_title_select_model)) },
                         navigationIcon = {
                             IconButton(onClick = {
                                 haptics.tap()
                                 step = if (requiresAuth()) OnboardingStep.ApiKey else OnboardingStep.Provider
                             }) {
-                                Icon(Icons.AutoMirrored.Rounded.ArrowBack, contentDescription = "Back")
+                                Icon(Icons.AutoMirrored.Rounded.ArrowBack, contentDescription = stringResource(R.string.common_back))
                             }
                         },
                         actions = {
@@ -199,7 +201,7 @@ fun OnboardingScreen(onComplete: () -> Unit) {
                                 haptics.tap()
                                 step = OnboardingStep.Persona
                             }) {
-                                Text("Skip")
+                                Text(stringResource(R.string.common_skip))
                             }
                         },
                         colors = nokoTopAppBarColors(),
@@ -207,13 +209,13 @@ fun OnboardingScreen(onComplete: () -> Unit) {
                 }
                 OnboardingStep.Persona -> {
                     TopAppBar(
-                        title = { Text("Create your persona") },
+                        title = { Text(stringResource(R.string.onboarding_title_persona)) },
                         navigationIcon = {
                             IconButton(onClick = {
                                 haptics.tap()
                                 step = OnboardingStep.Model
                             }) {
-                                Icon(Icons.AutoMirrored.Rounded.ArrowBack, contentDescription = "Back")
+                                Icon(Icons.AutoMirrored.Rounded.ArrowBack, contentDescription = stringResource(R.string.common_back))
                             }
                         },
                         colors = nokoTopAppBarColors(),
@@ -221,13 +223,13 @@ fun OnboardingScreen(onComplete: () -> Unit) {
                 }
                 OnboardingStep.Character -> {
                     TopAppBar(
-                        title = { Text("Create a character") },
+                        title = { Text(stringResource(R.string.onboarding_title_character)) },
                         navigationIcon = {
                             IconButton(onClick = {
                                 haptics.tap()
                                 step = OnboardingStep.Persona
                             }) {
-                                Icon(Icons.AutoMirrored.Rounded.ArrowBack, contentDescription = "Back")
+                                Icon(Icons.AutoMirrored.Rounded.ArrowBack, contentDescription = stringResource(R.string.common_back))
                             }
                         },
                         colors = nokoTopAppBarColors(),
@@ -235,13 +237,13 @@ fun OnboardingScreen(onComplete: () -> Unit) {
                 }
                 OnboardingStep.ImportCharacter -> {
                     TopAppBar(
-                        title = { Text("Import character") },
+                        title = { Text(stringResource(R.string.onboarding_title_import_character)) },
                         navigationIcon = {
                             IconButton(onClick = {
                                 haptics.tap()
                                 step = OnboardingStep.Character
                             }) {
-                                Icon(Icons.AutoMirrored.Rounded.ArrowBack, contentDescription = "Back")
+                                Icon(Icons.AutoMirrored.Rounded.ArrowBack, contentDescription = stringResource(R.string.common_back))
                             }
                         },
                         colors = nokoTopAppBarColors(),
@@ -262,14 +264,14 @@ fun OnboardingScreen(onComplete: () -> Unit) {
                     verticalArrangement = Arrangement.spacedBy(12.dp),
                 ) {
                     Text(
-                        "Welcome!",
+                        stringResource(R.string.onboarding_welcome),
                         style = MaterialTheme.typography.headlineMedium,
                     )
 
                     Spacer(Modifier.height(4.dp))
 
                     Text(
-                        "Choose where your AI models are hosted.",
+                        stringResource(R.string.onboarding_welcome_desc),
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
@@ -293,7 +295,7 @@ fun OnboardingScreen(onComplete: () -> Unit) {
                     ) {
                         Icon(Icons.AutoMirrored.Rounded.ArrowForward, contentDescription = null)
                         Spacer(Modifier.width(8.dp))
-                        Text("Next")
+                        Text(stringResource(R.string.common_next))
                     }
 
                     if (BuildConfig.DEBUG) {
@@ -306,7 +308,7 @@ fun OnboardingScreen(onComplete: () -> Unit) {
                             },
                             modifier = Modifier.fillMaxWidth(),
                         ) {
-                            Text("(Debug) SKIP_ONBOARDING")
+                            Text(stringResource(R.string.onboarding_debug_skip))
                         }
                     }
                 }
@@ -334,7 +336,7 @@ fun OnboardingScreen(onComplete: () -> Unit) {
                     }
 
                     Text(
-                        "Enter your $providerName API key to get started.",
+                        stringResource(R.string.onboarding_api_key_desc, providerName),
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
@@ -347,7 +349,7 @@ fun OnboardingScreen(onComplete: () -> Unit) {
                             apiKeyInput = it
                             if (keyError != null) keyError = null
                         },
-                        label = { Text("API Key") },
+                        label = { Text(stringResource(R.string.settings_api_key)) },
                         placeholder = { Text(placeholder) },
                         singleLine = true,
                         isError = keyError != null,
@@ -396,7 +398,7 @@ fun OnboardingScreen(onComplete: () -> Unit) {
                         }
                         Icon(Icons.AutoMirrored.Rounded.ArrowForward, contentDescription = null)
                         Spacer(Modifier.width(8.dp))
-                        Text(if (isTesting) "Checking..." else "Next")
+                        Text(if (isTesting) stringResource(R.string.onboarding_checking) else stringResource(R.string.common_next))
                     }
 
                     if (selectedProviderId == "openrouter") {
@@ -413,7 +415,7 @@ fun OnboardingScreen(onComplete: () -> Unit) {
                         ) {
                             Icon(Icons.AutoMirrored.Rounded.OpenInNew, contentDescription = null)
                             Spacer(Modifier.width(8.dp))
-                            Text("Create OpenRouter API Key")
+                            Text(stringResource(R.string.onboarding_create_openrouter_key))
                         }
                     }
                 }
@@ -437,7 +439,7 @@ fun OnboardingScreen(onComplete: () -> Unit) {
                     verticalArrangement = Arrangement.spacedBy(12.dp),
                 ) {
                     Text(
-                        "This is how the AI will know you.",
+                        stringResource(R.string.onboarding_persona_desc),
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
@@ -470,7 +472,7 @@ fun OnboardingScreen(onComplete: () -> Unit) {
                         descShakeOffset = descShake.value,
                         avatarSize = 100.dp,
                         fallbackIcon = Icons.Filled.Person,
-                        namePlaceholder = "Your persona name...",
+                        namePlaceholder = stringResource(R.string.onboarding_persona_name_placeholder),
                     )
 
                     Button(
@@ -509,7 +511,7 @@ fun OnboardingScreen(onComplete: () -> Unit) {
                     ) {
                         Icon(Icons.AutoMirrored.Rounded.ArrowForward, contentDescription = null)
                         Spacer(Modifier.width(8.dp))
-                        Text("Next")
+                        Text(stringResource(R.string.common_next))
                     }
                 }
             }
@@ -525,7 +527,7 @@ fun OnboardingScreen(onComplete: () -> Unit) {
                     verticalArrangement = Arrangement.spacedBy(12.dp),
                 ) {
                     Text(
-                        "Create a character for the AI to play.",
+                        stringResource(R.string.onboarding_character_desc),
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
@@ -607,7 +609,7 @@ fun OnboardingScreen(onComplete: () -> Unit) {
                         },
                         modifier = Modifier.fillMaxWidth(),
                     ) {
-                        Text("Get started")
+                        Text(stringResource(R.string.onboarding_get_started))
                     }
 
                     OutlinedButton(
@@ -622,30 +624,27 @@ fun OnboardingScreen(onComplete: () -> Unit) {
                     ) {
                         Icon(Icons.Rounded.FileOpen, contentDescription = null)
                         Spacer(Modifier.width(8.dp))
-                        Text("Import character")
+                        Text(stringResource(R.string.onboarding_import_character))
                     }
 
                     if (showGreetingWarning) {
                         AlertDialog(
                             onDismissRequest = { showGreetingWarning = false },
-                            title = { Text("Are you sure?") },
+                            title = { Text(stringResource(R.string.onboarding_no_greeting_title)) },
                             text = {
-                                Text(
-                                    "A greeting message helps set the style and makes it much easier " +
-                                        "to immerse yourself in the RP, both for you and your AI character.",
-                                )
+                                Text(stringResource(R.string.onboarding_no_greeting_desc))
                             },
                             confirmButton = {
                                 TextButton(onClick = {
                                     showGreetingWarning = false
                                     finishOnboarding()
                                 }) {
-                                    Text("Skip")
+                                    Text(stringResource(R.string.common_skip))
                                 }
                             },
                             dismissButton = {
                                 TextButton(onClick = { showGreetingWarning = false }) {
-                                    Text("Go back")
+                                    Text(stringResource(R.string.common_go_back))
                                 }
                             },
                         )

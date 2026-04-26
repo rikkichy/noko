@@ -27,8 +27,10 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import cat.ri.noko.R
 import cat.ri.noko.model.PersonaEntry
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -69,7 +71,7 @@ fun PersonaPickerSheet(
                     NokoSearchField(
                         value = searchQuery,
                         onValueChange = { searchQuery = it },
-                        placeholder = "Search..",
+                        placeholder = stringResource(R.string.picker_search_placeholder),
                         modifier = Modifier
                             .fillMaxWidth()
                             .padding(horizontal = 24.dp, vertical = 4.dp),
@@ -88,7 +90,7 @@ fun PersonaPickerSheet(
                         contentAlignment = Alignment.Center,
                     ) {
                         Text(
-                            "No entries yet. Create one in Settings.",
+                            stringResource(R.string.picker_empty),
                             style = MaterialTheme.typography.bodyMedium,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                         )

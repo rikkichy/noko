@@ -11,6 +11,8 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusManager
+import androidx.compose.ui.res.stringResource
+import cat.ri.noko.R
 import cat.ri.noko.ui.theme.NokoFieldShape
 
 @Composable
@@ -44,7 +46,7 @@ fun NokoSearchField(
                 }) {
                     Icon(
                         Icons.Filled.Clear,
-                        contentDescription = "Clear",
+                        contentDescription = stringResource(R.string.common_clear),
                         tint = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                 }
